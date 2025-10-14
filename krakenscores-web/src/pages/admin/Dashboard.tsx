@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
@@ -17,23 +18,72 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header style={{
+        backgroundColor: 'white',
+        borderBottom: '1px solid #e5e7eb',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+      }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '20px 0'
+          }}>
             <div>
-              <h1 className="text-2xl font-bold text-blue-600">KrakenScores</h1>
-              <p className="text-sm text-gray-500">Admin Dashboard</p>
+              <h1 style={{
+                fontSize: '32px',
+                fontWeight: 'bold',
+                color: '#2563eb',
+                marginBottom: '4px'
+              }}>
+                KrakenScores
+              </h1>
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280'
+              }}>
+                Admin Dashboard
+              </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">
-                  {admin?.displayName || user?.email}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#111827',
+                  marginBottom: '2px'
+                }}>
+                  Admin User
                 </p>
-                <p className="text-xs text-gray-500">{admin?.role}</p>
+                <p style={{
+                  fontSize: '13px',
+                  color: '#6b7280'
+                }}>
+                  {admin?.role || 'super_admin'}
+                </p>
               </div>
               <button
                 onClick={handleSignOut}
-                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  backgroundColor: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f9fafb'
+                  e.currentTarget.style.borderColor = '#9ca3af'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white'
+                  e.currentTarget.style.borderColor = '#d1d5db'
+                }}
               >
                 Sign Out
               </button>
@@ -44,17 +94,30 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        <div style={{ marginBottom: '40px' }}>
+          <h2 style={{
+            fontSize: '30px',
+            fontWeight: 'bold',
+            color: '#111827',
+            marginBottom: '8px'
+          }}>
             Welcome to KrakenScores Admin
           </h2>
-          <p className="text-gray-600">
+          <p style={{
+            fontSize: '16px',
+            color: '#6b7280'
+          }}>
             Manage tournaments, teams, schedules, and scores for Team Orlando Water Polo Club.
           </p>
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: '16px',
+          maxWidth: '700px'
+        }}>
           <QuickActionCard
             title="Tournaments"
             description="Create and manage tournaments"
@@ -82,8 +145,22 @@ export default function Dashboard() {
         </div>
 
         {/* Status Section */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">System Status</h3>
+        <div style={{
+          marginTop: '48px',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '32px',
+          border: '1px solid #e5e7eb'
+        }}>
+          <h3 style={{
+            fontSize: '20px',
+            fontWeight: '600',
+            color: '#111827',
+            marginBottom: '24px'
+          }}>
+            System Status
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <StatusItem label="Firebase Connection" status="Connected" color="green" />
             <StatusItem label="Active Tournament" status="None" color="gray" />
@@ -103,14 +180,48 @@ interface QuickActionCardProps {
 }
 
 function QuickActionCard({ title, description, icon, onClick }: QuickActionCardProps) {
+  const [isHovered, setIsHovered] = useState(false)
+
   return (
     <button
       onClick={onClick}
-      className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow text-left border border-gray-200 hover:border-blue-300"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        backgroundColor: isHovered ? '#2563eb' : '#475569',
+        padding: '20px',
+        borderRadius: '8px',
+        boxShadow: isHovered
+          ? '0 6px 16px rgba(37, 99, 235, 0.3)'
+          : '0 2px 6px rgba(0, 0, 0, 0.15)',
+        textAlign: 'center',
+        border: 'none',
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        width: '100%',
+        aspectRatio: '1',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        transform: isHovered ? 'translateY(-2px)' : 'translateY(0)'
+      }}
     >
-      <div className="text-4xl mb-3">{icon}</div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-1">{title}</h3>
-      <p className="text-sm text-gray-600">{description}</p>
+      <div style={{
+        fontSize: '36px',
+        lineHeight: '1'
+      }}>
+        {icon}
+      </div>
+      <h3 style={{
+        fontSize: '15px',
+        fontWeight: '600',
+        color: 'white',
+        lineHeight: '1.2'
+      }}>
+        {title}
+      </h3>
     </button>
   )
 }
@@ -122,16 +233,49 @@ interface StatusItemProps {
 }
 
 function StatusItem({ label, status, color }: StatusItemProps) {
-  const colorClasses = {
-    green: 'text-green-600 bg-green-50 border-green-200',
-    gray: 'text-gray-600 bg-gray-50 border-gray-200',
-    red: 'text-red-600 bg-red-50 border-red-200'
+  const colorStyles = {
+    green: {
+      text: '#059669',
+      bg: '#d1fae5',
+      border: '#6ee7b7'
+    },
+    gray: {
+      text: '#4b5563',
+      bg: '#f3f4f6',
+      border: '#d1d5db'
+    },
+    red: {
+      text: '#dc2626',
+      bg: '#fee2e2',
+      border: '#fca5a5'
+    }
   }
 
+  const styles = colorStyles[color]
+
   return (
-    <div className="flex justify-between items-center">
-      <span className="text-sm text-gray-700">{label}:</span>
-      <span className={`text-sm font-medium px-3 py-1 rounded-full border ${colorClasses[color]}`}>
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '12px 0'
+    }}>
+      <span style={{
+        fontSize: '14px',
+        fontWeight: '500',
+        color: '#374151'
+      }}>
+        {label}:
+      </span>
+      <span style={{
+        fontSize: '14px',
+        fontWeight: '600',
+        color: styles.text,
+        backgroundColor: styles.bg,
+        padding: '6px 14px',
+        borderRadius: '20px',
+        border: `1px solid ${styles.border}`
+      }}>
         {status}
       </span>
     </div>

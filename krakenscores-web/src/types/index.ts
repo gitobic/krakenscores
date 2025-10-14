@@ -13,10 +13,8 @@ export interface Tournament {
 
 export interface Division {
   id: string;
-  tournamentId: string;
   name: string; // e.g., "12u CoEd", "16u Boys"
   colorHex: string; // Color-blind safe color from CLAUDE.md
-  order: number; // Display order
   createdAt: Date;
   updatedAt: Date;
 }

@@ -6,6 +6,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   query,
   orderBy,
   Timestamp
@@ -99,12 +100,14 @@ export async function updateTournament(
     if (data.name !== undefined) updateData.name = data.name
     if (data.isPublished !== undefined) updateData.isPublished = data.isPublished
 
-    // Handle logoUrl - only add if it's a non-empty string
+    // Handle logoUrl - delete if empty, update if has value
     if (data.logoUrl !== undefined) {
       if (data.logoUrl && data.logoUrl.trim() !== '') {
         updateData.logoUrl = data.logoUrl
+      } else {
+        // Delete the field if logoUrl is empty
+        updateData.logoUrl = deleteField()
       }
-      // If logoUrl is empty string, we don't add it (keeps existing value)
     }
 
     // Convert Date fields to Timestamps if present

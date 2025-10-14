@@ -79,9 +79,27 @@ export default function Tournaments() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb Navigation */}
-        <nav className="mb-4 text-sm">
-          <a href="/admin" className="text-blue-600 hover:text-blue-800">
+        {/* Navigation */}
+        <nav className="mb-6">
+          <a
+            href="/admin"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '8px 16px',
+              backgroundColor: 'white',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              color: '#374151',
+              fontSize: '14px',
+              fontWeight: '500',
+              textDecoration: 'none',
+              transition: 'all 0.2s',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+          >
             ← Back to Dashboard
           </a>
         </nav>
@@ -93,7 +111,20 @@ export default function Tournaments() {
           </div>
           <button
             onClick={handleCreate}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            style={{
+              padding: '10px 20px',
+              fontSize: '15px',
+              fontWeight: '600',
+              color: 'white',
+              backgroundColor: '#2563eb',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
           >
             + Create Tournament
           </button>
@@ -117,71 +148,71 @@ export default function Tournaments() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <table className="min-w-full" style={{ borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
                     Tournament
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
                     Dates
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {tournaments.map((tournament) => (
-                  <tr key={tournament.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
+              <tbody>
+                {tournaments.map((tournament, index) => (
+                  <tr key={tournament.id} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '8px 12px', borderRight: '1px solid #e5e7eb' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {tournament.logoUrl && (
-                          <img
-                            src={tournament.logoUrl}
-                            alt={tournament.name}
-                            className="h-10 w-10 rounded-full mr-3"
-                          />
+                          <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <img
+                              src={tournament.logoUrl}
+                              alt={tournament.name}
+                              style={{ maxWidth: '40px', maxHeight: '40px', objectFit: 'contain' }}
+                            />
+                          </div>
                         )}
-                        <div className="text-sm font-medium text-gray-900">
-                          {tournament.name}
-                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '500' }}>{tournament.name}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(tournament.startDate, 'MMM d, yyyy')} -{' '}
-                      {format(tournament.endDate, 'MMM d, yyyy')}
+                    <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb' }}>
+                      {format(tournament.startDate, 'MMM d, yyyy')} - {format(tournament.endDate, 'MMM d, yyyy')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          tournament.isPublished
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
+                    <td style={{ padding: '8px 12px', textAlign: 'center', borderRight: '1px solid #e5e7eb' }}>
+                      <span style={{
+                        padding: '4px 8px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        borderRadius: '12px',
+                        backgroundColor: tournament.isPublished ? '#dcfce7' : '#f3f4f6',
+                        color: tournament.isPublished ? '#166534' : '#4b5563'
+                      }}>
                         {tournament.isPublished ? 'Published' : 'Draft'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button
                         onClick={() => handleTogglePublish(tournament.id, tournament.isPublished)}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
+                        style={{ color: '#2563eb', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
                       >
                         {tournament.isPublished ? 'Unpublish' : 'Publish'}
                       </button>
                       <button
                         onClick={() => handleEdit(tournament)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        style={{ color: '#4f46e5', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(tournament.id)}
-                        className="text-red-600 hover:text-red-900"
+                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
                       >
                         Delete
                       </button>
@@ -239,7 +270,7 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
           name: formData.name,
           startDate: new Date(formData.startDate),
           endDate: new Date(formData.endDate),
-          logoUrl: formData.logoUrl || undefined,
+          logoUrl: formData.logoUrl, // Pass empty string to delete, or URL to update
           isPublished: formData.isPublished
         })
       } else {
@@ -262,21 +293,49 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <h2 className="text-2xl font-bold mb-4">
-          {tournament ? 'Edit Tournament' : 'Create Tournament'}
-        </h2>
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        zIndex: 9999
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          width: '100%',
+          maxWidth: '672px',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ overflowY: 'scroll', padding: '32px', flexGrow: 1 }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px' }}>
+            {tournament ? 'Edit Tournament' : 'Create Tournament'}
+          </h2>
 
-        {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded p-3">
-            <p className="text-red-800 text-sm">{error}</p>
-          </div>
-        )}
+          {error && (
+            <div style={{ marginBottom: '24px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '4px', padding: '12px' }}>
+              <p style={{ color: '#991b1b', fontSize: '14px' }}>{error}</p>
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '32px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
               Tournament Name *
             </label>
             <input
@@ -284,14 +343,14 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
               placeholder="e.g., 2025 NOID Tournament"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
                 Start Date *
               </label>
               <input
@@ -299,12 +358,12 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
                 End Date *
               </label>
               <input
@@ -312,55 +371,77 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div style={{ marginBottom: '32px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
               Logo URL (optional)
             </label>
             <input
               type="url"
               value={formData.logoUrl}
               onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
               placeholder="https://example.com/logo.png"
             />
           </div>
 
-          <div className="flex items-center">
+          <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center' }}>
             <input
               type="checkbox"
               id="isPublished"
               checked={formData.isPublished}
               onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
             />
-            <label htmlFor="isPublished" className="ml-2 block text-sm text-gray-700">
+            <label htmlFor="isPublished" style={{ marginLeft: '8px', fontSize: '14px', color: '#374151', cursor: 'pointer' }}>
               Publish tournament (make visible to public)
             </label>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div style={{ display: 'flex', gap: '16px', paddingTop: '24px', borderTop: '1px solid #e5e7eb', marginTop: '16px' }}>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              style={{
+                flex: 1,
+                padding: '12px 24px',
+                fontSize: '16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                backgroundColor: 'white',
+                color: '#374151',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
               disabled={saving}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              style={{
+                flex: 1,
+                padding: '12px 24px',
+                fontSize: '16px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                fontWeight: '500',
+                cursor: 'pointer',
+                opacity: saving ? 0.5 : 1
+              }}
               disabled={saving}
             >
-              {saving ? 'Saving...' : tournament ? 'Update' : 'Create'}
+              {saving ? 'Saving...' : tournament ? 'Update Tournament' : 'Create Tournament'}
             </button>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   )

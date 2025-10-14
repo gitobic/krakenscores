@@ -4,6 +4,9 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/admin/Login'
 import Dashboard from './pages/admin/Dashboard'
 import Tournaments from './pages/admin/Tournaments'
+import Clubs from './pages/admin/Clubs'
+import Divisions from './pages/admin/Divisions'
+import Teams from './pages/admin/Teams'
 
 function App() {
   return (
@@ -30,6 +33,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <Tournaments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/clubs"
+            element={
+              <ProtectedRoute>
+                <Clubs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/divisions"
+            element={
+              <ProtectedRoute>
+                <Divisions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/teams"
+            element={
+              <ProtectedRoute>
+                <Teams />
               </ProtectedRoute>
             }
           />
