@@ -1,0 +1,69 @@
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+
+      // Helper functions
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isAdmin() {
+        return isSignedIn() &&
+               exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      }
+
+      // Public read for all tournament data (anyone can view scores)
+      // Only admins can write
+      match /tournaments/{tournamentId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      match /clubs/{clubId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      match /divisions/{divisionId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      match /teams/{teamId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      match /pools/{poolId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      match /games/{gameId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      match /scheduleBreaks/{breakId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      match /announcements/{announcementId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      match /standings/{standingId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      // Admin list - CRITICAL: Only admins can read this
+      // Nobody can write (manual setup only via Firebase Console)
+      match /admins/{userId} {
+        allow read: if isAdmin();
+        allow write: if false;  // Prevent any writes via app
+      }
+    }
+  }
