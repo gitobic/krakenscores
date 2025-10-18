@@ -24,6 +24,11 @@ interface TimeSlot {
   breaks: ScheduleBreak[]
 }
 
+interface DaySchedule {
+  date: string
+  timeSlots: TimeSlot[]
+}
+
 export default function ScheduleGrid({
   matches,
   pools,
@@ -40,40 +45,54 @@ export default function ScheduleGrid({
   const [draggedMatch, setDraggedMatch] = useState<Match | null>(null)
   const [dragOverSlot, setDragOverSlot] = useState<{ poolId: string; time: string } | null>(null)
 
-  // Generate time slots from matches and schedule breaks
-  const timeSlots = useMemo(() => {
-    const slots = new Map<string, TimeSlot>()
+  // Generate day schedules from matches and schedule breaks
+  const daySchedules = useMemo((): DaySchedule[] => {
+    const dayMap = new Map<string, Map<string, TimeSlot>>()
 
-    // Add all match times
+    // Add all match times grouped by date
     matches.forEach(match => {
-      if (!slots.has(match.scheduledTime)) {
-        slots.set(match.scheduledTime, {
+      const date = match.scheduledDate
+      if (!dayMap.has(date)) {
+        dayMap.set(date, new Map<string, TimeSlot>())
+      }
+      const daySlots = dayMap.get(date)!
+
+      if (!daySlots.has(match.scheduledTime)) {
+        daySlots.set(match.scheduledTime, {
           time: match.scheduledTime,
           matchesByPool: {},
           breaks: []
         })
       }
-      const slot = slots.get(match.scheduledTime)!
+      const slot = daySlots.get(match.scheduledTime)!
       slot.matchesByPool[match.poolId] = match
     })
 
-    // Add schedule breaks
-    scheduleBreaks.forEach(breakItem => {
-      if (!slots.has(breakItem.startTime)) {
-        slots.set(breakItem.startTime, {
-          time: breakItem.startTime,
-          matchesByPool: {},
-          breaks: []
-        })
-      }
-      const slot = slots.get(breakItem.startTime)!
-      slot.breaks.push(breakItem)
+    // Add schedule breaks to each day
+    // (Schedule breaks don't have dates, so they apply to all days)
+    dayMap.forEach((daySlots) => {
+      scheduleBreaks.forEach(breakItem => {
+        if (!daySlots.has(breakItem.startTime)) {
+          daySlots.set(breakItem.startTime, {
+            time: breakItem.startTime,
+            matchesByPool: {},
+            breaks: []
+          })
+        }
+        const slot = daySlots.get(breakItem.startTime)!
+        slot.breaks.push(breakItem)
+      })
     })
 
-    // Sort by time
-    return Array.from(slots.values()).sort((a, b) =>
-      a.time.localeCompare(b.time)
-    )
+    // Convert to array and sort
+    return Array.from(dayMap.entries())
+      .map(([date, slotsMap]) => ({
+        date,
+        timeSlots: Array.from(slotsMap.values()).sort((a, b) =>
+          a.time.localeCompare(b.time)
+        )
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date))
   }, [matches, scheduleBreaks])
 
   // Check if a drop would create conflicts
@@ -233,14 +252,37 @@ export default function ScheduleGrid({
         ))}
       </div>
 
-      {/* Time Slots */}
+      {/* Day Schedules */}
       <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-        {timeSlots.length === 0 ? (
+        {daySchedules.length === 0 ? (
           <div style={{ padding: '32px', textAlign: 'center', color: '#6b7280' }}>
             No matches scheduled. Schedule your first match to see it here.
           </div>
         ) : (
-          timeSlots.map((slot, index) => (
+          daySchedules.map((daySchedule) => (
+            <div key={daySchedule.date} style={{ marginBottom: '32px' }}>
+              {/* Date Header */}
+              <div style={{
+                padding: '12px 16px',
+                backgroundColor: '#1f2937',
+                color: 'white',
+                fontWeight: '600',
+                fontSize: '16px',
+                borderBottom: '2px solid #374151',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10
+              }}>
+                {new Date(daySchedule.date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </div>
+
+              {/* Time Slots for this day */}
+              {daySchedule.timeSlots.map((slot, index) => (
             <div
               key={slot.time}
               style={{
@@ -390,6 +432,8 @@ export default function ScheduleGrid({
                   </div>
                 )
               })}
+            </div>
+          ))}
             </div>
           ))
         )}

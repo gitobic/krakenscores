@@ -17,6 +17,7 @@ interface ParsedMatch {
   matchNum: number
   poolName: string
   divisionName: string
+  date: string
   time: string
   darkTeamName: string
   lightTeamName: string
@@ -26,6 +27,7 @@ interface ParsedMatch {
   division?: Division
   darkTeam?: Team
   lightTeam?: Team
+  scheduledDate?: string
   scheduledTime?: string
 }
 
@@ -120,13 +122,13 @@ export default function BulkImportModal({
       const parts = line.includes('\t') ? line.split('\t') : line.split(',')
       const cleaned = parts.map(p => p.trim()).filter(p => p)
 
-      // Expected format: MatchNum, Pool, Division, Time, Dark Team, Light Team
-      if (cleaned.length < 6) {
-        newErrors.push(`Line ${lineNum}: Not enough columns (need 6: match#, pool, division, time, dark team, light team). Found ${cleaned.length} columns`)
+      // Expected format: MatchNum, Pool, Division, Date, Time, Dark Team, Light Team
+      if (cleaned.length < 7) {
+        newErrors.push(`Line ${lineNum}: Not enough columns (need 7: match#, pool, division, date, time, dark team, light team). Found ${cleaned.length} columns`)
         continue
       }
 
-      const [matchNumStr, poolName, divisionName, time, darkTeamName, lightTeamName] = cleaned
+      const [matchNumStr, poolName, divisionName, dateStr, time, darkTeamName, lightTeamName] = cleaned
 
       // Parse match number
       let matchNum = parseInt(matchNumStr)
@@ -173,6 +175,38 @@ export default function BulkImportModal({
         newErrors.push(`Line ${lineNum}: Cannot have same team as both dark and light`)
       }
 
+      // Parse date (handle formats like "1/15/25", "01/15/2025", "2025-01-15", or "Jan 15")
+      let scheduledDate = ''
+      const tournament = tournaments.find(t => t.id === selectedTournamentId)
+      const tournamentYear = tournament?.startDate
+        ? new Date(tournament.startDate instanceof Date ? tournament.startDate : new Date(tournament.startDate)).getFullYear()
+        : new Date().getFullYear()
+
+      // Try to parse various date formats
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Already in YYYY-MM-DD format
+        scheduledDate = dateStr
+      } else if (dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/)) {
+        // MM/DD/YY or MM/DD/YYYY format
+        const [month, day, year] = dateStr.split('/')
+        const fullYear = year.length === 2 ? `20${year}` : year
+        scheduledDate = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+      } else if (dateStr.match(/^[A-Za-z]{3}\s+\d{1,2}$/)) {
+        // "Jan 15" format - use tournament year
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        const [monthStr, dayStr] = dateStr.split(/\s+/)
+        const monthIndex = monthNames.findIndex(m => m.toLowerCase() === monthStr.toLowerCase().substring(0, 3))
+        if (monthIndex >= 0) {
+          const month = (monthIndex + 1).toString().padStart(2, '0')
+          const day = dayStr.padStart(2, '0')
+          scheduledDate = `${tournamentYear}-${month}-${day}`
+        }
+      }
+
+      if (!scheduledDate) {
+        newErrors.push(`Line ${lineNum}: Invalid date format "${dateStr}". Use YYYY-MM-DD, MM/DD/YY, or "Jan 15"`)
+      }
+
       // Parse time (handle formats like "4:00 PM" or "16:00")
       let scheduledTime = time
       if (time.includes('PM') || time.includes('AM')) {
@@ -194,6 +228,7 @@ export default function BulkImportModal({
         matchNum,
         poolName,
         divisionName,
+        date: dateStr,
         time,
         darkTeamName,
         lightTeamName,
@@ -202,6 +237,7 @@ export default function BulkImportModal({
         division,
         darkTeam,
         lightTeam,
+        scheduledDate,
         scheduledTime
       })
     }
@@ -221,25 +257,18 @@ export default function BulkImportModal({
     const creationErrors: string[] = []
 
     for (const match of parsedMatches) {
-      if (!match.pool || !match.division || !match.darkTeam || !match.lightTeam || !match.scheduledTime) {
+      if (!match.pool || !match.division || !match.darkTeam || !match.lightTeam || !match.scheduledTime || !match.scheduledDate) {
         creationErrors.push(`Line ${match.lineNum}: Missing required data`)
         continue
       }
 
       try {
-        // Get tournament start date for default
-        const tournament = tournaments.find(t => t.id === selectedTournamentId)
-        const tournamentStartDate = tournament?.startDate
-        const defaultDate = tournamentStartDate
-          ? (tournamentStartDate instanceof Date ? tournamentStartDate : new Date(tournamentStartDate)).toISOString().split('T')[0]
-          : new Date().toISOString().split('T')[0]
-
         await createMatch({
           tournamentId: selectedTournamentId,
           poolId: match.pool.id,
           divisionId: match.division.id,
           matchNumber: match.matchNum,
-          scheduledDate: defaultDate, // Use tournament start date
+          scheduledDate: match.scheduledDate, // Use parsed date from import
           scheduledTime: match.scheduledTime,
           duration: 55,
           darkTeamId: match.darkTeam.id,
@@ -327,6 +356,7 @@ export default function BulkImportModal({
                     <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Match #</th>
                     <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Pool</th>
                     <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Division</th>
+                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Date</th>
                     <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Time</th>
                     <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Teams</th>
                   </tr>
@@ -337,6 +367,9 @@ export default function BulkImportModal({
                       <td style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>{match.matchNum}</td>
                       <td style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>{match.pool?.name || match.poolName}</td>
                       <td style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>{match.division?.name || match.divisionName}</td>
+                      <td style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>
+                        {match.scheduledDate ? new Date(match.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : match.date}
+                      </td>
                       <td style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>{match.time}</td>
                       <td style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>
                         <div style={{ fontSize: '12px' }}>
@@ -542,14 +575,14 @@ export default function BulkImportModal({
               color: '#374151',
               marginBottom: '8px'
             }}>
-              Required Format (6 columns, tab or comma separated):
+              Required Format (7 columns, tab or comma separated):
             </p>
             <p style={{
               fontSize: '12px',
               color: '#6b7280',
               marginBottom: '8px'
             }}>
-              Match# → Pool → Division → Time → Dark Team → Light Team
+              Match# → Pool → Division → Date → Time → Dark Team → Light Team
             </p>
             <pre style={{
               fontSize: '12px',
@@ -558,10 +591,17 @@ export default function BulkImportModal({
               margin: 0,
               whiteSpace: 'pre-wrap'
             }}>
-{`1	1	18u Boys	08:00	Orlando Black	Tampa Blue
-2	1	18u Boys	08:55	Seminole Gold	Patriots White
-3	2	16u Girls	08:00	Team Orlando	SJ Cariba`}
+{`1	1	18u Boys	1/15/25	08:00	Orlando Black	Tampa Blue
+2	1	18u Boys	1/15/25	08:55	Seminole Gold	Patriots White
+3	2	16u Girls	1/16/25	08:00	Team Orlando	SJ Cariba`}
             </pre>
+            <p style={{
+              fontSize: '11px',
+              color: '#9ca3af',
+              marginTop: '8px'
+            }}>
+              📅 Date formats: YYYY-MM-DD, MM/DD/YY, MM/DD/YYYY, or "Jan 15"
+            </p>
             <p style={{
               fontSize: '11px',
               color: '#9ca3af',
