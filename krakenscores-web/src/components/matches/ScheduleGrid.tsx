@@ -273,12 +273,17 @@ export default function ScheduleGrid({
                 top: 0,
                 zIndex: 10
               }}>
-                {new Date(daySchedule.date).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
+                {(() => {
+                  // Parse date as local to avoid timezone shift
+                  const [year, month, day] = daySchedule.date.split('-').map(Number)
+                  const localDate = new Date(year, month - 1, day)
+                  return localDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })
+                })()}
               </div>
 
               {/* Time Slots for this day */}

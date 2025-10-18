@@ -359,12 +359,19 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
     setSaving(true)
 
     try {
+      // Parse dates as local dates (not UTC) to avoid timezone shifts
+      // Input format: "2026-01-02" -> parse as Jan 2, 2026 in local timezone
+      const parseLocalDate = (dateString: string): Date => {
+        const [year, month, day] = dateString.split('-').map(Number)
+        return new Date(year, month - 1, day) // month is 0-indexed
+      }
+
       if (tournament) {
         // Update existing tournament
         await updateTournament(tournament.id, {
           name: formData.name,
-          startDate: new Date(formData.startDate),
-          endDate: new Date(formData.endDate),
+          startDate: parseLocalDate(formData.startDate),
+          endDate: parseLocalDate(formData.endDate),
           logoUrl: formData.logoUrl, // Pass empty string to delete, or URL to update
           isPublished: formData.isPublished
         })
@@ -372,8 +379,8 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
         // Create new tournament
         await createTournament({
           name: formData.name,
-          startDate: new Date(formData.startDate),
-          endDate: new Date(formData.endDate),
+          startDate: parseLocalDate(formData.startDate),
+          endDate: parseLocalDate(formData.endDate),
           logoUrl: formData.logoUrl || undefined,
           isPublished: formData.isPublished
         })
