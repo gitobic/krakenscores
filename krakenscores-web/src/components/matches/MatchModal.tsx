@@ -49,6 +49,13 @@ export default function MatchModal({
     return new Date().toISOString().split('T')[0]
   }
 
+  // Get default duration from tournament
+  const getDefaultDuration = () => {
+    if (match?.duration) return match.duration
+    const tournament = tournaments.find(t => t.id === (match?.tournamentId || defaultTournamentId))
+    return tournament?.defaultMatchDuration || 55
+  }
+
   const [formData, setFormData] = useState({
     tournamentId: match?.tournamentId || defaultTournamentId || '',
     poolId: match?.poolId || '',
@@ -56,7 +63,7 @@ export default function MatchModal({
     matchNumber: getNextMatchNumber(),
     scheduledDate: getDefaultDate(),
     scheduledTime: match?.scheduledTime || '08:00',
-    duration: match?.duration || 55,
+    duration: getDefaultDuration(),
     darkTeamId: match?.darkTeamId || '',
     lightTeamId: match?.lightTeamId || '',
     darkTeamScore: match?.darkTeamScore,

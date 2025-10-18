@@ -256,6 +256,10 @@ export default function BulkImportModal({
     setImporting(true)
     const creationErrors: string[] = []
 
+    // Get default duration from selected tournament
+    const tournament = tournaments.find(t => t.id === selectedTournamentId)
+    const defaultDuration = tournament?.defaultMatchDuration || 55
+
     for (const match of parsedMatches) {
       if (!match.pool || !match.division || !match.darkTeam || !match.lightTeam || !match.scheduledTime || !match.scheduledDate) {
         creationErrors.push(`Line ${match.lineNum}: Missing required data`)
@@ -270,7 +274,7 @@ export default function BulkImportModal({
           matchNumber: match.matchNum,
           scheduledDate: match.scheduledDate, // Use parsed date from import
           scheduledTime: match.scheduledTime,
-          duration: 55,
+          duration: defaultDuration, // Use tournament's default duration
           darkTeamId: match.darkTeam.id,
           lightTeamId: match.lightTeam.id,
           status: 'scheduled',

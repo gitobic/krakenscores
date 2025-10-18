@@ -6,6 +6,7 @@ export interface Tournament {
   startDate: Date;
   endDate: Date;
   logoUrl?: string;
+  defaultMatchDuration: number; // Default match duration in minutes (e.g., 55, 60)
   isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;

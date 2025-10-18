@@ -348,6 +348,7 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
       : '',
     endDate: tournament?.endDate ? format(tournament.endDate, 'yyyy-MM-dd') : '',
     logoUrl: tournament?.logoUrl || '',
+    defaultMatchDuration: tournament?.defaultMatchDuration || 55,
     isPublished: tournament?.isPublished || false
   })
   const [saving, setSaving] = useState(false)
@@ -373,6 +374,7 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
           startDate: parseLocalDate(formData.startDate),
           endDate: parseLocalDate(formData.endDate),
           logoUrl: formData.logoUrl, // Pass empty string to delete, or URL to update
+          defaultMatchDuration: formData.defaultMatchDuration,
           isPublished: formData.isPublished
         })
       } else {
@@ -382,6 +384,7 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
           startDate: parseLocalDate(formData.startDate),
           endDate: parseLocalDate(formData.endDate),
           logoUrl: formData.logoUrl || undefined,
+          defaultMatchDuration: formData.defaultMatchDuration,
           isPublished: formData.isPublished
         })
       }
@@ -489,6 +492,25 @@ function TournamentModal({ tournament, onClose, onSave }: TournamentModalProps) 
               style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
               placeholder="https://example.com/logo.png"
             />
+          </div>
+
+          <div style={{ marginBottom: '32px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+              Default Match Duration (minutes) *
+            </label>
+            <input
+              type="number"
+              required
+              min="10"
+              max="120"
+              value={formData.defaultMatchDuration}
+              onChange={(e) => setFormData({ ...formData, defaultMatchDuration: parseInt(e.target.value) })}
+              style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+              placeholder="55"
+            />
+            <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+              This will be the default duration for all matches in this tournament (typically 55 or 60 minutes)
+            </p>
           </div>
 
           <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center' }}>
