@@ -239,7 +239,12 @@ export default function MatchTable({
                   {match.isFinal && <span style={{ marginLeft: '8px', fontSize: '11px', color: '#ca8a04' }}>F</span>}
                 </td>
                 <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-                  {new Date(match.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {(() => {
+                    // Parse date as local to avoid timezone shift
+                    const [year, month, day] = match.scheduledDate.split('-').map(Number)
+                    const localDate = new Date(year, month - 1, day)
+                    return localDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  })()}
                 </td>
                 <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                   {match.scheduledTime}
