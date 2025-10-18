@@ -30,8 +30,8 @@ export async function getAllClubs(): Promise<Club[]> {
     const q = query(collection(db, COLLECTION_NAME), orderBy('name', 'asc'))
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...convertTimestamps(doc.data())
+      ...convertTimestamps(doc.data()),
+      id: doc.id
     }))
   } catch (error) {
     console.error('Error fetching clubs:', error)
@@ -46,8 +46,8 @@ export async function getClubById(id: string): Promise<Club | null> {
 
     if (docSnap.exists()) {
       return {
-        id: docSnap.id,
-        ...convertTimestamps(docSnap.data())
+        ...convertTimestamps(docSnap.data()),
+        id: docSnap.id
       }
     }
     return null

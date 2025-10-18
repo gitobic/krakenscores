@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { Team, Club, Division, Tournament } from '../../types'
+import type { Team, Club, Division } from '../../types'
 import {
   getAllTeams,
   createTeam,
@@ -8,18 +8,20 @@ import {
 } from '../../services/teams'
 import { getAllClubs } from '../../services/clubs'
 import { getAllDivisions } from '../../services/divisions'
-import { getAllTournaments } from '../../services/tournaments'
+
+type SortField = 'name' | 'club' | 'division'
+type SortDirection = 'asc' | 'desc'
 
 export default function Teams() {
   const [teams, setTeams] = useState<Team[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
   const [divisions, setDivisions] = useState<Division[]>([])
-  const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [error, setError] = useState('')
-  const [selectedTournamentId, setSelectedTournamentId] = useState<string>('')
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
   useEffect(() => {
     loadData()
@@ -28,21 +30,14 @@ export default function Teams() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [teamsData, clubsData, divisionsData, tournamentsData] = await Promise.all([
+      const [teamsData, clubsData, divisionsData] = await Promise.all([
         getAllTeams(),
         getAllClubs(),
-        getAllDivisions(),
-        getAllTournaments()
+        getAllDivisions()
       ])
       setTeams(teamsData)
       setClubs(clubsData)
       setDivisions(divisionsData)
-      setTournaments(tournamentsData)
-
-      // Auto-select the first tournament if none selected
-      if (!selectedTournamentId && tournamentsData.length > 0) {
-        setSelectedTournamentId(tournamentsData[0].id)
-      }
     } catch (err) {
       console.error('Error loading data:', err)
       setError('Failed to load teams')
@@ -88,15 +83,29 @@ export default function Teams() {
     return division?.colorHex || '#cccccc'
   }
 
-  const getTournamentName = (tournamentId: string) => {
-    const tournament = tournaments.find(t => t.id === tournamentId)
-    return tournament?.name || 'Unknown Tournament'
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
   }
 
-  // Filter teams by selected tournament
-  const filteredTeams = selectedTournamentId
-    ? teams.filter(team => team.tournamentId === selectedTournamentId)
-    : teams
+  // Sort all teams
+  const sortedTeams = [...teams].sort((a, b) => {
+    let comparison = 0
+
+    if (sortField === 'name') {
+      comparison = a.name.localeCompare(b.name)
+    } else if (sortField === 'club') {
+      comparison = getClubName(a.clubId).localeCompare(getClubName(b.clubId))
+    } else if (sortField === 'division') {
+      comparison = getDivisionName(a.divisionId).localeCompare(getDivisionName(b.divisionId))
+    }
+
+    return sortDirection === 'asc' ? comparison : -comparison
+  })
 
   if (loading) {
     return (
@@ -137,51 +146,30 @@ export default function Teams() {
           </a>
         </nav>
 
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Teams</h1>
-              <p className="text-gray-600 mt-1">Manage tournament teams by club and division</p>
-            </div>
-            <button
-              onClick={handleCreate}
-              style={{
-                padding: '10px 20px',
-                fontSize: '15px',
-                fontWeight: '600',
-                color: 'white',
-                backgroundColor: '#2563eb',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-            >
-              + Add Team
-            </button>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Teams</h1>
+            <p className="text-gray-600 mt-1">Manage teams by club and division</p>
           </div>
-
-          {/* Tournament Filter */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Tournament (filters table and sets default for new teams)
-            </label>
-            <select
-              value={selectedTournamentId}
-              onChange={(e) => setSelectedTournamentId(e.target.value)}
-              className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">All Tournaments</option>
-              {tournaments.map(tournament => (
-                <option key={tournament.id} value={tournament.id}>
-                  {tournament.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <button
+            onClick={handleCreate}
+            style={{
+              padding: '10px 20px',
+              fontSize: '15px',
+              fontWeight: '600',
+              color: 'white',
+              backgroundColor: '#2563eb',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+          >
+            + Add Team
+          </button>
         </div>
 
         {error && (
@@ -190,11 +178,9 @@ export default function Teams() {
           </div>
         )}
 
-        {filteredTeams.length === 0 ? (
+        {sortedTeams.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-500 text-lg mb-4">
-              {selectedTournamentId ? 'No teams for this tournament yet' : 'No teams yet'}
-            </p>
+            <p className="text-gray-500 text-lg mb-4">No teams yet</p>
             <button
               onClick={handleCreate}
               className="text-blue-600 hover:text-blue-700 font-medium"
@@ -207,36 +193,93 @@ export default function Teams() {
             <table className="min-w-full" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
-                    Team
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+                    <button
+                      onClick={() => handleSort('name')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'inherit',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      Team
+                      {sortField === 'name' && (
+                        <span style={{ fontSize: '10px' }}>
+                          {sortDirection === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </button>
                   </th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
-                    Club
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+                    <button
+                      onClick={() => handleSort('club')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'inherit',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      Club
+                      {sortField === 'club' && (
+                        <span style={{ fontSize: '10px' }}>
+                          {sortDirection === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </button>
                   </th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
-                    Division
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+                    <button
+                      onClick={() => handleSort('division')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'inherit',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      Division
+                      {sortField === 'division' && (
+                        <span style={{ fontSize: '10px' }}>
+                          {sortDirection === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </button>
                   </th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
-                    Tournament
-                  </th>
-                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
-                    Seed
-                  </th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#111827' }}>
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredTeams.map((team, index) => (
+                {sortedTeams.map((team, index) => (
                   <tr key={team.id} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '500', borderRight: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '500', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       {team.name}
                     </td>
-                    <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       {getClubName(team.clubId)}
                     </td>
-                    <td style={{ padding: '8px 12px', borderRight: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '8px 12px', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div
                           style={{ width: '16px', height: '16px', borderRadius: '2px', border: '1px solid #d1d5db', backgroundColor: getDivisionColor(team.divisionId) }}
@@ -244,22 +287,16 @@ export default function Teams() {
                         <span style={{ fontSize: '14px' }}>{getDivisionName(team.divisionId)}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb' }}>
-                      {getTournamentName(team.tournamentId)}
-                    </td>
-                    <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', textAlign: 'center', borderRight: '1px solid #e5e7eb' }}>
-                      {team.seedRank || '-'}
-                    </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       <button
                         onClick={() => handleEdit(team)}
-                        style={{ color: '#4f46e5', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                        style={{ color: '#4f46e5', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(team.id)}
-                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
                       >
                         Delete
                       </button>
@@ -277,8 +314,6 @@ export default function Teams() {
           team={editingTeam}
           clubs={clubs}
           divisions={divisions}
-          tournaments={tournaments}
-          defaultTournamentId={selectedTournamentId}
           onClose={() => setShowModal(false)}
           onSave={async () => {
             await loadData()
@@ -294,25 +329,18 @@ interface TeamModalProps {
   team: Team | null
   clubs: Club[]
   divisions: Division[]
-  tournaments: Tournament[]
-  defaultTournamentId: string
   onClose: () => void
   onSave: () => void
 }
 
-function TeamModal({ team, clubs, divisions, tournaments, defaultTournamentId, onClose, onSave }: TeamModalProps) {
+function TeamModal({ team, clubs, divisions, onClose, onSave }: TeamModalProps) {
   const [formData, setFormData] = useState({
-    tournamentId: team?.tournamentId || defaultTournamentId,
     clubId: team?.clubId || '',
     divisionId: team?.divisionId || '',
-    name: team?.name || '',
-    seedRank: team?.seedRank || undefined
+    name: team?.name || ''
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-
-  // All divisions are now global, no filtering needed
-  const availableDivisions = formData.tournamentId ? divisions : []
 
   // Auto-generate team name when division or club changes (only for new teams)
   useEffect(() => {
@@ -336,20 +364,16 @@ function TeamModal({ team, clubs, divisions, tournaments, defaultTournamentId, o
       if (team) {
         // Update existing team
         await updateTeam(team.id, {
-          tournamentId: formData.tournamentId,
           clubId: formData.clubId,
           divisionId: formData.divisionId,
-          name: formData.name,
-          seedRank: formData.seedRank
+          name: formData.name
         })
       } else {
         // Create new team
         await createTeam({
-          tournamentId: formData.tournamentId,
           clubId: formData.clubId,
           divisionId: formData.divisionId,
-          name: formData.name,
-          seedRank: formData.seedRank
+          name: formData.name
         })
       }
       onSave()
@@ -403,30 +427,6 @@ function TeamModal({ team, clubs, divisions, tournaments, defaultTournamentId, o
             </div>
           )}
           <form onSubmit={handleSubmit}>
-          {/* Tournament Selection */}
-          <div style={{ marginBottom: '32px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
-              Tournament *
-            </label>
-            <select
-              value={formData.tournamentId}
-              onChange={(e) => setFormData({
-                ...formData,
-                tournamentId: e.target.value,
-                divisionId: '' // Reset division when tournament changes
-              })}
-              required
-              style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
-            >
-              <option value="">Select a tournament</option>
-              {tournaments.map(tournament => (
-                <option key={tournament.id} value={tournament.id}>
-                  {tournament.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Two-column layout for Club and Division */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
             <div>
@@ -456,13 +456,10 @@ function TeamModal({ team, clubs, divisions, tournaments, defaultTournamentId, o
                 value={formData.divisionId}
                 onChange={(e) => setFormData({ ...formData, divisionId: e.target.value })}
                 required
-                disabled={!formData.tournamentId}
-                style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px', backgroundColor: !formData.tournamentId ? '#f3f4f6' : 'white' }}
+                style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
               >
-                <option value="">
-                  {formData.tournamentId ? 'Select a division' : 'Select tournament first'}
-                </option>
-                {availableDivisions.map(division => (
+                <option value="">Select a division</option>
+                {divisions.map(division => (
                   <option key={division.id} value={division.id}>
                     {division.name}
                   </option>
@@ -471,38 +468,22 @@ function TeamModal({ team, clubs, divisions, tournaments, defaultTournamentId, o
             </div>
           </div>
 
-          {/* Team Name and Seed Rank */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '40px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
-                Team Name *
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
-                placeholder="e.g., Orlando Black, Tampa Blue"
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
-                Seed Rank
-              </label>
-              <input
-                type="number"
-                value={formData.seedRank || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  seedRank: e.target.value ? parseInt(e.target.value) : undefined
-                })}
-                min="1"
-                style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
-                placeholder="Optional"
-              />
-            </div>
+          {/* Team Name */}
+          <div style={{ marginBottom: '40px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+              Team Name *
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              style={{ width: '100%', padding: '12px 16px', fontSize: '16px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+              placeholder="e.g., Orlando Black, Tampa Blue"
+            />
+            <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
+              Team name will auto-fill based on division and club selection
+            </p>
           </div>
 
           {/* Buttons inside form */}

@@ -7,6 +7,10 @@ import Tournaments from './pages/admin/Tournaments'
 import Clubs from './pages/admin/Clubs'
 import Divisions from './pages/admin/Divisions'
 import Teams from './pages/admin/Teams'
+import Pools from './pages/admin/Pools'
+import Matches from './pages/admin/Matches'
+import ScheduleBreaks from './pages/admin/ScheduleBreaks'
+import Standings from './pages/admin/Standings'
 
 function App() {
   return (
@@ -57,6 +61,38 @@ function App() {
             element={
               <ProtectedRoute>
                 <Teams />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/pools"
+            element={
+              <ProtectedRoute>
+                <Pools />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/matches"
+            element={
+              <ProtectedRoute>
+                <Matches />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/schedule-breaks"
+            element={
+              <ProtectedRoute>
+                <ScheduleBreaks />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/standings"
+            element={
+              <ProtectedRoute>
+                <Standings />
               </ProtectedRoute>
             }
           />

@@ -32,8 +32,8 @@ export async function getAllTournaments(): Promise<Tournament[]> {
     const q = query(collection(db, COLLECTION_NAME), orderBy('startDate', 'desc'))
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...convertTimestamps(doc.data())
+      ...convertTimestamps(doc.data()),
+      id: doc.id
     }))
   } catch (error) {
     console.error('Error fetching tournaments:', error)
@@ -48,8 +48,8 @@ export async function getTournamentById(id: string): Promise<Tournament | null> 
 
     if (docSnap.exists()) {
       return {
-        id: docSnap.id,
-        ...convertTimestamps(docSnap.data())
+        ...convertTimestamps(docSnap.data()),
+        id: docSnap.id
       }
     }
     return null

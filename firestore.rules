@@ -12,6 +12,11 @@
                exists(/databases/$(database)/documents/admins/$(request.auth.uid));
       }
 
+      function isStaff() {
+        return isSignedIn() &&
+               exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+      }
+
       // Public read for all tournament data (anyone can view scores)
       // Only admins can write
       match /tournaments/{tournamentId} {
@@ -39,9 +44,15 @@
         allow write: if isAdmin();
       }
 
-      match /games/{gameId} {
+      match /matches/{matchId} {
         allow read: if true;
-        allow write: if isAdmin();
+        // Staff can update scores and status only
+        allow update: if isStaff() &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['darkTeamScore', 'lightTeamScore', 'status', 'period', 'updatedAt']);
+        // Admins have full write access
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin();
       }
 
       match /scheduleBreaks/{breakId} {
@@ -62,6 +73,13 @@
       // Admin list - CRITICAL: Only admins can read this
       // Nobody can write (manual setup only via Firebase Console)
       match /admins/{userId} {
+        allow read: if isAdmin();
+        allow write: if false;  // Prevent any writes via app
+      }
+
+      // Staff list - Only admins can read this
+      // Nobody can write (manual setup only via Firebase Console)
+      match /staff/{userId} {
         allow read: if isAdmin();
         allow write: if false;  // Prevent any writes via app
       }

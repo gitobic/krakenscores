@@ -42,13 +42,36 @@ The application has two main components:
 ## Domain Model
 
 Key entities and their relationships:
-- **Tournament** → contains multiple Divisions
-- **Division** → contains multiple Teams, assigned a color for UI differentiation
+
+### Core Hierarchy
+- **Tournament** → held at a Venue, contains multiple Divisions
+- **Venue** → physical location of the tournament, has multiple Pools
+- **Division** → age/gender group (e.g., "12u CoEd"), contains multiple Teams, assigned a color for UI differentiation
 - **Team** → belongs to a Club and Division
-- **Club** → has multiple Teams across divisions
-- **Pool** → physical location where games are played
-- **Game** → scheduled match between two teams (dark caps vs light caps)
-- **Bracket** → playoff structure within a division
+- **Club** → water polo organization, has multiple Teams across divisions
+
+### Scheduling & Competition
+- **Pool** → physical swimming pool location within a venue where matches are held
+  - A venue can have 3+ pools (e.g., "Pool 1", "Pool 2", "Pool 3")
+  - Each pool can host matches from any division
+  - Time slots are critical: only one match per pool at a time
+  - Pool scheduling prevents double-booking of physical space
+
+- **Match** → scheduled water polo game between two teams (dark caps vs light caps)
+  - Assigned to a specific Pool at a specific Time
+  - Can be pool play, semi-final, final, or placement game
+  - Teams from various divisions compete in their assigned pool at their assigned time
+
+### Standings & Brackets
+- **Standing** → computed rankings within a division based on match results
+  - Wins, losses, draws, goals for/against, goal differential
+  - Tie-breakers: points → head-to-head → goal diff → goals for
+  - Recalculated when match scores are finalized
+
+- **Bracket** → playoff/tournament structure for a division
+  - Pool play → Semi-finals → Finals → Placement games
+  - Automatic progression based on standings
+  - Match feeds (e.g., "Winner of SF1 vs Winner of SF2")
 
 ## Design Requirements
 
@@ -135,18 +158,24 @@ Each division is assigned a color-blind safe color at setup, used consistently a
 | 27 | to-be-assigned | `#96AAC1` | Dusty steel blue-gray |
 
 
-### Game Scheduling
-- Default game slot: 55 minutes
+### Match Scheduling
+- Default match duration: 55 minutes (configurable per match)
 - Configurable starting times per pool
-- Support for breaks in schedule per pool
+- Support for schedule breaks per pool (lunch, ceremonies, etc.)
 - Visual highlighting for semi-finals and finals
-- Real-time conflict validation
-- Set defaults for all games, but ability to edit on a per-game basis
+- Real-time conflict validation:
+  - **Unique time slots**: No two matches can use the same pool at the same time
+  - **No team double-booking**: A team cannot play in overlapping matches
+  - **Division/pool constraints**: Only teams from appropriate divisions can be scheduled
+- Set defaults for all matches, with per-match override capability
 
 ### Score Entry and Updates
-- Scores automatically update standings and bracket progression
+- Scores entered when matches are finalized (not mid-game)
+- Score entry triggers automatic standings recalculation
+- Standings recalculation is efficient (~3 matches/hour complete)
 - Team rankings update dynamically as scores are entered
-- Bracket advancement determined by game outcomes
+- Bracket advancement determined by standings + match outcomes
+- Match feeds auto-populate (e.g., "1st place Pool A" → Semi-final slot)
 
 ## Reference Materials
 
@@ -353,6 +382,193 @@ firebase firestore:usage
 - `krakenscores-web/src/contexts/AuthContext.tsx` - Authentication state
 - `krakenscores-web/src/contexts/TournamentContext.tsx` - Active tournament state
 
+## Data Model Reference
+
+Complete TypeScript schemas for all Firestore collections. Use these exact schemas when creating or modifying types.
+
+### Tournament
+```typescript
+interface Tournament {
+  id: string
+  name: string
+  nickname?: string              // e.g., "NMI-2025", "Kraken Cup"
+  startDate: Date
+  endDate: Date
+  location?: string              // Venue name
+  logoUrl?: string
+  status: 'draft' | 'active' | 'archived'
+  published: boolean             // Controls public visibility
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Division
+```typescript
+interface Division {
+  id: string
+  name: string                   // "12u CoEd", "18u Boys"
+  colorHex: string               // Color-blind safe palette
+  sortOrder: number
+  tournamentId: string
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Club
+```typescript
+interface Club {
+  id: string
+  name: string
+  abbreviation: string           // <= 10 chars, uppercase
+  logoUrl?: string
+  website?: string
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Team
+```typescript
+interface Team {
+  id: string
+  name: string
+  clubId: string
+  divisionId: string
+  tournamentId: string
+  abbreviation?: string
+  seed?: number
+  coachName?: string
+  notes?: string
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Pool
+```typescript
+interface Pool {
+  id: string
+  name: string                   // "1", "2", "3" or "Pool A", "Pool B"
+  location: string               // Physical location description
+  tournamentId: string
+  defaultStartTime?: string      // Default time for matches (HH:MM format)
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Match (Renamed from Game)
+```typescript
+interface Match {
+  id: string
+  tournamentId: string
+  divisionId: string
+  poolId: string
+
+  // Scheduling
+  matchNumber: number            // Sequential, unique across tournament
+  scheduledTime: string          // HH:MM format (24-hour)
+  duration: number               // Minutes, default 55
+  venue?: string                 // Optional explicit venue name
+
+  // Teams
+  darkTeamId: string
+  lightTeamId: string
+
+  // Scoring (optional until match is finalized)
+  darkScore?: number
+  lightScore?: number
+  period?: number                // Current/final period (1-4 quarters)
+
+  // Status
+  status: 'scheduled' | 'in_progress' | 'final' | 'forfeit' | 'cancelled'
+
+  // Bracket/Playoff Support
+  roundType: 'pool' | 'semi' | 'final' | 'placement'
+  bracketRef?: string            // "SF1", "SF2", "F", "3rd", "5th"
+  feedsFrom?: {                  // For automatic bracket progression
+    darkFrom?: {
+      type: 'seed' | 'place' | 'winnerOf' | 'loserOf'
+      value: string | number     // e.g., "SF1", 1, "Pool A 1st"
+    }
+    lightFrom?: {
+      type: 'seed' | 'place' | 'winnerOf' | 'loserOf'
+      value: string | number
+    }
+  }
+
+  // Flags
+  isSemiFinal: boolean
+  isFinal: boolean
+
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Standing
+```typescript
+interface Standing {
+  divisionId: string             // Document ID
+  tournamentId: string
+  table: TeamStanding[]          // Sorted by rank
+  tiebreakerNotes?: string[]     // Explanation of tie-break decisions
+  updatedAt: Date
+}
+
+interface TeamStanding {
+  teamId: string
+  teamName: string               // Denormalized for quick display
+  games: number
+  wins: number
+  losses: number
+  draws: number
+  goalsFor: number
+  goalsAgainst: number
+  goalDiff: number               // goalsFor - goalsAgainst
+  points: number                 // 2 per win, 1 per draw (configurable)
+  rank: number                   // Final rank with tie-breaks applied
+}
+```
+
+**Tie-breaker Order (applied in sequence):**
+1. Points (win = 2, draw = 1, loss = 0)
+2. Head-to-head points among tied teams
+3. Head-to-head goal differential
+4. Total goal differential
+5. Total goals for
+6. Fewest goals against
+
+### Schedule Break
+```typescript
+interface ScheduleBreak {
+  id: string
+  tournamentId: string
+  poolId: string                 // Break applies to specific pool
+  startTime: string              // HH:MM format
+  endTime: string                // HH:MM format
+  reason: string                 // "Lunch", "Opening Ceremony", etc.
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Announcement
+```typescript
+interface Announcement {
+  id: string
+  tournamentId: string
+  title: string
+  message: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  expiresAt?: Date               // Auto-hide after this time
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
 ## Firebase Firestore Collections
 
 ```
@@ -361,17 +577,37 @@ firebase firestore:usage
 /divisions/{divisionId}
 /teams/{teamId}
 /pools/{poolId}
-/games/{gameId}
+/matches/{matchId}            # Renamed from /games
 /scheduleBreaks/{breakId}
 /announcements/{announcementId}
-/standings/{standingId}
+/standings/{divisionId}       # One standing document per division
 /admins/{userId}
+/staff/{userId}               # Scorekeeper role (future)
 ```
 
 **Security Model:**
-- All collections: Public read, admin write only
-- Admin check: User must exist in `/admins/{uid}` collection
-- Admins collection: Only readable by existing admins (manual setup required)
+- **Public (unauthenticated)**: Read-only access to:
+  - Tournaments (status = 'active' or 'published')
+  - Divisions, Pools, Teams (limited fields)
+  - Matches (status != 'cancelled')
+  - Standings (all)
+  - Announcements (all)
+
+- **Staff (authenticated, role = 'staff')**: Public read + limited write:
+  - Can update match scores (darkScore, lightScore fields only)
+  - Can update match status (scheduled → in_progress → final)
+  - Can update match period (1-4)
+  - Cannot create/delete matches or modify teams/schedules
+
+- **Admin (authenticated, role = 'admin')**: Full CRUD on all collections
+  - Tournament setup, team management, scheduling
+  - Score overrides and corrections
+  - User role management
+
+**Role Management:**
+- Admin check: User must exist in `/admins/{uid}` collection with role = 'admin'
+- Staff check: User must exist in `/staff/{uid}` collection with role = 'staff'
+- Admins collection: Only readable by existing admins (manual setup via Firebase Console)
 
 ## Implementation Phases
 
@@ -381,10 +617,20 @@ firebase firestore:usage
 - Tournament, club, division, and team management (CRUD)
 
 **Phase 2: Scheduling & Scoring** (Weeks 3-4)
-- Pool management with breaks
-- Game scheduling with conflict validation
-- Score entry with real-time updates
-- Automatic standings calculation
+- **Phase 2A: Refactoring** (Critical foundation work)
+  - Rename Game → Match across entire codebase
+  - Clarify Pool model (physical venue location)
+  - Expand Match schema (roundType, bracketRef, feedsFrom, period, venue)
+  - Create Standings collection and calculation logic
+  - Update Firestore security rules for staff role
+- **Phase 2B: Match Scheduling**
+  - Match scheduling grid with conflict validation
+  - Schedule breaks support
+  - Bulk import improvements
+- **Phase 2C: Scorekeeper & Standings**
+  - Score entry interface
+  - Automatic standings recalculation on score finalization
+  - Match status workflow (scheduled → in_progress → final)
 
 **Phase 3: Public Pages** (Weeks 5-6)
 - Master schedule view (mobile-first)
@@ -400,13 +646,13 @@ firebase firestore:usage
 
 ## Current Implementation Status
 
-**Project Phase:** Phase 1 - Complete ✅
+**Project Phase:** Phase 2A - Refactoring (In Progress) 🔄
 
-**Completed:**
+### ✅ Phase 1 Complete
 - ✅ Project planning and requirements
 - ✅ Technical specification (Firebase architecture)
 - ✅ Design mockups in ref_images/
-- ✅ Documentation (this file, TECHNICAL_SPEC_FIREBASE.md, FRESH_START_CHECKLIST.md)
+- ✅ Documentation (CLAUDE.md, TECHNICAL_SPEC_FIREBASE.md, FRESH_START_CHECKLIST.md)
 - ✅ Firebase project setup (krakenscores-prod)
 - ✅ React app with Vite + TypeScript + Tailwind CSS
 - ✅ Authentication system (AuthContext, Login page, Protected routes)
@@ -415,7 +661,39 @@ firebase firestore:usage
 - ✅ Club management (full CRUD with abbreviation support)
 - ✅ Division management (full CRUD with color-blind safe color picker)
 - ✅ Team management (full CRUD with club/division/tournament associations and tournament filtering)
+- ✅ Pool management (full CRUD for physical pool locations)
+- ✅ Game/Match management (full CRUD with bulk import - **terminology refactoring in progress**)
 - ✅ Consistent UI/UX design system across all admin pages
+
+### 🔄 Phase 2A: Refactoring (Current)
+**Goal**: Establish solid foundation before continuing development
+
+**Why Refactoring Now:**
+- ChatGPT external review identified architectural improvements
+- Early enough in development (no production data to migrate)
+- Prevents technical debt accumulation
+- Aligns codebase with domain model and long-term vision
+
+**Refactoring Tasks:**
+- [ ] **R1**: Update PRD and CLAUDE.md with refactoring plan ← IN PROGRESS
+- [ ] **R2**: Rename Game → Match throughout codebase
+  - Files: `games.ts` → `matches.ts`
+  - Types: `Game` → `Match`
+  - Collections: `/games` → `/matches`
+  - Variables: `game` → `match`, `gameNumber` → `matchNumber`
+  - UI: "Schedule Game" → "Schedule Match", etc.
+- [ ] **R3**: Clarify Pool model (physical venue location, not competition group)
+- [ ] **R4**: Expand Match schema with bracket/playoff fields
+  - Add `roundType: 'pool' | 'semi' | 'final' | 'placement'`
+  - Add `bracketRef?: string` (e.g., "SF1", "F", "3rdPlace")
+  - Add `feedsFrom` for automatic bracket progression
+  - Add `period?: number` for live scoring (1-4 quarters)
+  - Add `venue?: string` for explicit venue name
+- [ ] **R5**: Create Standings infrastructure
+  - Add `/standings/{divisionId}` collection
+  - Implement tie-breaker calculation logic
+  - Trigger recalculation on match score finalization
+- [ ] **R6**: Test all existing functionality after refactoring
 
 **Phase 1 UI Design Patterns Established:**
 - **Modal Pattern**: 672px-800px width, scrollable content area, inline styles for consistency
@@ -424,17 +702,15 @@ firebase firestore:usage
 - **Card Layout**: Square aspect ratio tiles for dashboard and divisions (compact, space-efficient)
 - **Form Layout**: Two-column grids for related fields, generous spacing, clear labels
 - **Color System**: Tailwind-based grays, blues for primary actions, greens for success states
-- **Smart Filtering**: Tournament selector on Teams page filters table and pre-fills new team form
+- **Smart Filtering**: Tournament selector filters table and pre-fills forms
+- **Bulk Import**: Two-step validation with preview/confirmation screen
 
-**Ready for Phase 2:**
-- All foundational admin CRUD operations complete
-- Consistent UI patterns established for future pages
-- Database schema validated through real data entry
-
-**Next Steps:**
-1. Begin Phase 2: Pool and Game scheduling
-2. Implement score entry and standings calculation
-3. Build public-facing pages
+### ⏭️ After Refactoring: Phase 2B & 2C
+1. Match scheduling grid with conflict validation
+2. Schedule breaks support
+3. Scorekeeper interface (score entry + status transitions)
+4. Automatic standings recalculation
+5. Build public-facing pages
 
 ## Future Enhancements / Backlog
 
@@ -445,12 +721,13 @@ firebase firestore:usage
   - Benefits: Better performance, no external dependencies, embedded in database
 
 **Phase 2+ Features:**
-- [ ] Pool management with breaks
-- [ ] Game scheduling with drag-and-drop
-- [ ] Score entry interface
-- [ ] Real-time standings updates
-- [ ] Public-facing pages (master schedule, scores, standings)
-- [ ] Bracket management
-- [ ] Statistics pages
-- [ ] Archive and export functionality
+- [ ] Schedule breaks per pool (lunch, ceremonies)
+- [ ] Drag-and-drop match rescheduling
+- [ ] Advanced conflict detection (team double-booking, overlapping times)
+- [ ] Match feeds auto-population for brackets
+- [ ] Public-facing pages (master schedule, live scores, standings)
+- [ ] Bracket visualization (tournament tree)
+- [ ] Statistics pages (fun stats, historical data)
+- [ ] CSV export for matches and standings
+- [ ] Archive functionality (past tournaments)
 

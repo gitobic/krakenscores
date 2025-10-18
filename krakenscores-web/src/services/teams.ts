@@ -30,8 +30,8 @@ export async function getAllTeams(): Promise<Team[]> {
     const q = query(collection(db, COLLECTION_NAME), orderBy('name', 'asc'))
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...convertTimestamps(doc.data())
+      ...convertTimestamps(doc.data()),
+      id: doc.id
     }))
   } catch (error) {
     console.error('Error fetching teams:', error)
@@ -48,8 +48,8 @@ export async function getTeamsByTournament(tournamentId: string): Promise<Team[]
     )
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...convertTimestamps(doc.data())
+      ...convertTimestamps(doc.data()),
+      id: doc.id
     }))
   } catch (error) {
     console.error('Error fetching teams for tournament:', error)
@@ -66,8 +66,8 @@ export async function getTeamsByClub(clubId: string): Promise<Team[]> {
     )
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...convertTimestamps(doc.data())
+      ...convertTimestamps(doc.data()),
+      id: doc.id
     }))
   } catch (error) {
     console.error('Error fetching teams for club:', error)
@@ -84,8 +84,8 @@ export async function getTeamsByDivision(divisionId: string): Promise<Team[]> {
     )
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...convertTimestamps(doc.data())
+      ...convertTimestamps(doc.data()),
+      id: doc.id
     }))
   } catch (error) {
     console.error('Error fetching teams for division:', error)
@@ -100,8 +100,8 @@ export async function getTeamById(id: string): Promise<Team | null> {
 
     if (docSnap.exists()) {
       return {
-        id: docSnap.id,
-        ...convertTimestamps(docSnap.data())
+        ...convertTimestamps(docSnap.data()),
+        id: docSnap.id
       }
     }
     return null
@@ -117,7 +117,6 @@ export async function createTeam(
   try {
     const now = Timestamp.now()
     const teamData: any = {
-      tournamentId: data.tournamentId,
       clubId: data.clubId,
       divisionId: data.divisionId,
       name: data.name,
@@ -125,7 +124,10 @@ export async function createTeam(
       updatedAt: now
     }
 
-    // Only add seedRank if it's defined
+    // Only add optional fields if they're defined
+    if (data.tournamentId !== undefined) {
+      teamData.tournamentId = data.tournamentId
+    }
     if (data.seedRank !== undefined) {
       teamData.seedRank = data.seedRank
     }

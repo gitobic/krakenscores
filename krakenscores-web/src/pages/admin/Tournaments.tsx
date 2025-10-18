@@ -9,12 +9,17 @@ import {
 } from '../../services/tournaments'
 import { format } from 'date-fns'
 
+type SortField = 'name' | 'startDate' | 'status'
+type SortDirection = 'asc' | 'desc'
+
 export default function Tournaments() {
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null)
   const [error, setError] = useState('')
+  const [sortField, setSortField] = useState<SortField>('startDate')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
   useEffect(() => {
     loadTournaments()
@@ -64,6 +69,32 @@ export default function Tournaments() {
       alert('Failed to update publish status')
     }
   }
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if clicking the same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      // New field, default to ascending
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const sortedTournaments = [...tournaments].sort((a, b) => {
+    let comparison = 0
+
+    if (sortField === 'name') {
+      comparison = a.name.localeCompare(b.name)
+    } else if (sortField === 'startDate') {
+      comparison = new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+    } else if (sortField === 'status') {
+      // Sort by published status (published first when ascending)
+      comparison = (b.isPublished ? 1 : 0) - (a.isPublished ? 1 : 0)
+    }
+
+    return sortDirection === 'asc' ? comparison : -comparison
+  })
 
   if (loading) {
     return (
@@ -151,24 +182,88 @@ export default function Tournaments() {
             <table className="min-w-full" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
-                    Tournament
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+                    <button
+                      onClick={() => handleSort('name')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'inherit',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      Tournament
+                      {sortField === 'name' && (
+                        <span style={{ fontSize: '10px' }}>
+                          {sortDirection === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </button>
                   </th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
-                    Dates
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+                    <button
+                      onClick={() => handleSort('startDate')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'inherit',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      Dates
+                      {sortField === 'startDate' && (
+                        <span style={{ fontSize: '10px' }}>
+                          {sortDirection === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </button>
                   </th>
-                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
-                    Status
+                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+                    <button
+                      onClick={() => handleSort('status')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'inherit',
+                        fontFamily: 'inherit',
+                        margin: '0 auto'
+                      }}
+                    >
+                      Status
+                      {sortField === 'status' && (
+                        <span style={{ fontSize: '10px' }}>
+                          {sortDirection === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </button>
                   </th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#111827' }}>
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {tournaments.map((tournament, index) => (
+                {sortedTournaments.map((tournament, index) => (
                   <tr key={tournament.id} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '8px 12px', borderRight: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '8px 12px', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {tournament.logoUrl && (
                           <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -182,10 +277,10 @@ export default function Tournaments() {
                         <div style={{ fontSize: '14px', fontWeight: '500' }}>{tournament.name}</div>
                       </div>
                     </td>
-                    <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       {format(tournament.startDate, 'MMM d, yyyy')} - {format(tournament.endDate, 'MMM d, yyyy')}
                     </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'center', borderRight: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '8px 12px', textAlign: 'center', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       <span style={{
                         padding: '4px 8px',
                         fontSize: '12px',
@@ -197,22 +292,22 @@ export default function Tournaments() {
                         {tournament.isPublished ? 'Published' : 'Draft'}
                       </span>
                     </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       <button
                         onClick={() => handleTogglePublish(tournament.id, tournament.isPublished)}
-                        style={{ color: '#2563eb', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                        style={{ color: '#2563eb', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
                       >
                         {tournament.isPublished ? 'Unpublish' : 'Publish'}
                       </button>
                       <button
                         onClick={() => handleEdit(tournament)}
-                        style={{ color: '#4f46e5', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                        style={{ color: '#4f46e5', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(tournament.id)}
-                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
                       >
                         Delete
                       </button>

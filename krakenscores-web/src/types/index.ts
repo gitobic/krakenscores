@@ -30,68 +30,112 @@ export interface Club {
 
 export interface Team {
   id: string;
-  tournamentId: string;
+  tournamentId?: string; // Optional - teams can be created without tournament assignment
   clubId: string;
   divisionId: string;
   name: string; // e.g., "Orlando Black", "Tampa Blue"
-  seedRank?: number; // Initial seeding
+  seedRank?: number; // Initial seeding (assigned when team is added to tournament)
   createdAt: Date;
   updatedAt: Date;
 }
 
+// Pool represents a physical swimming pool venue where matches are played.
+// A tournament venue can have multiple pools (e.g., Pool 1, Pool 2, Pool 3).
+// Teams from various divisions can compete in any pool at their assigned time.
+// Only one match can be scheduled per pool at any given time.
 export interface Pool {
   id: string;
-  tournamentId: string;
-  name: string; // e.g., "Pool A", "Championship Pool"
-  location: string; // Physical location
-  defaultStartTime: string; // Default start time for games in this pool
+  tournamentId?: string; // Optional - pools can be created without tournament assignment
+  name: string; // e.g., "Pool A", "1", "Championship Pool"
+  location: string; // Physical location description (e.g., "North End", "Main Competition Pool")
+  defaultStartTime: string; // Default start time for matches in HH:MM format (e.g., "08:00")
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface ScheduleBreak {
   id: string;
+  tournamentId: string;
   poolId: string;
-  startTime: string;
-  endTime: string;
+  startTime: string; // HH:MM format (24-hour)
+  endTime: string; // HH:MM format (24-hour)
   reason: string; // e.g., "Lunch Break", "Awards Ceremony"
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface Game {
+// Match represents a scheduled water polo game between two teams.
+// Matches can be pool play, semi-finals, finals, or placement games.
+export interface Match {
   id: string;
   tournamentId: string;
   divisionId: string;
   poolId: string;
-  gameNumber: number;
-  scheduledTime: string;
+
+  // Scheduling
+  matchNumber: number;
+  scheduledTime: string; // HH:MM format (24-hour)
   duration: number; // Duration in minutes (default 55)
+  venue?: string; // Optional explicit venue name
+
+  // Teams
   darkTeamId: string;
   lightTeamId: string;
+
+  // Scoring (optional until match is finalized)
   darkTeamScore?: number;
   lightTeamScore?: number;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  period?: number; // Current/final period (1-4 quarters)
+
+  // Status
+  status: 'scheduled' | 'in_progress' | 'final' | 'forfeit' | 'cancelled';
+
+  // Bracket/Playoff Support
+  roundType: 'pool' | 'semi' | 'final' | 'placement';
+  bracketRef?: string; // "SF1", "SF2", "F", "3rd", "5th"
+  feedsFrom?: {
+    // For automatic bracket progression
+    darkFrom?: {
+      type: 'seed' | 'place' | 'winnerOf' | 'loserOf';
+      value: string | number; // e.g., "SF1", 1, "Pool A 1st"
+    };
+    lightFrom?: {
+      type: 'seed' | 'place' | 'winnerOf' | 'loserOf';
+      value: string | number;
+    };
+  };
+
+  // Flags (deprecated - use roundType instead, kept for backward compatibility)
   isSemiFinal: boolean;
   isFinal: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
 
+// Standing represents the complete standings table for a division
+// Stored as a single document per division: /standings/{divisionId}
 export interface Standing {
-  id: string;
+  divisionId: string; // Document ID
   tournamentId: string;
-  divisionId: string;
+  table: TeamStanding[]; // Sorted by rank
+  tiebreakerNotes?: string[]; // Explanation of tie-break decisions
+  updatedAt: Date;
+}
+
+// TeamStanding represents one team's record within a division's standings
+export interface TeamStanding {
   teamId: string;
+  teamName: string; // Denormalized for quick display
+  games: number;
   wins: number;
   losses: number;
-  ties: number;
+  draws: number; // Changed from "ties" to match CLAUDE.md
   goalsFor: number;
   goalsAgainst: number;
-  goalDifference: number;
-  points: number; // Calculated: wins * 3 + ties * 1
-  rank: number;
-  updatedAt: Date;
+  goalDiff: number; // goalsFor - goalsAgainst
+  points: number; // 2 per win, 1 per draw (configurable)
+  rank: number; // Final rank with tie-breaks applied
 }
 
 export interface Announcement {
@@ -120,13 +164,17 @@ export interface TeamWithDetails extends Team {
   division: Division;
 }
 
-export interface GameWithDetails extends Game {
+export interface MatchWithDetails extends Match {
   division: Division;
   pool: Pool;
   darkTeam: TeamWithDetails;
   lightTeam: TeamWithDetails;
 }
 
-export interface StandingWithDetails extends Standing {
+export interface TeamStandingWithDetails extends TeamStanding {
   team: TeamWithDetails;
+}
+
+export interface StandingWithDetails extends Standing {
+  tableWithDetails: TeamStandingWithDetails[];
 }

@@ -7,12 +7,17 @@ import {
   deleteClub
 } from '../../services/clubs'
 
+type SortField = 'name' | 'abbreviation'
+type SortDirection = 'asc' | 'desc'
+
 export default function Clubs() {
   const [clubs, setClubs] = useState<Club[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingClub, setEditingClub] = useState<Club | null>(null)
   const [error, setError] = useState('')
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
   useEffect(() => {
     loadClubs()
@@ -52,6 +57,27 @@ export default function Clubs() {
       alert('Failed to delete club')
     }
   }
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const sortedClubs = [...clubs].sort((a, b) => {
+    let comparison = 0
+
+    if (sortField === 'name') {
+      comparison = a.name.localeCompare(b.name)
+    } else if (sortField === 'abbreviation') {
+      comparison = a.abbreviation.localeCompare(b.abbreviation)
+    }
+
+    return sortDirection === 'asc' ? comparison : -comparison
+  })
 
   if (loading) {
     return (
@@ -139,18 +165,39 @@ export default function Clubs() {
             <table className="min-w-full" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb' }}>
-                    Club
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+                    <button
+                      onClick={() => handleSort('name')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'inherit',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      Club
+                      {sortField === 'name' && (
+                        <span style={{ fontSize: '10px' }}>
+                          {sortDirection === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </button>
                   </th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600' }}>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#111827' }}>
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {clubs.map((club, index) => (
+                {sortedClubs.map((club, index) => (
                   <tr key={club.id} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '8px 12px', borderRight: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '8px 12px', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {club.logoUrl && (
                           <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -167,16 +214,16 @@ export default function Clubs() {
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       <button
                         onClick={() => handleEdit(club)}
-                        style={{ color: '#4f46e5', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                        style={{ color: '#4f46e5', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(club.id)}
-                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
+                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
                       >
                         Delete
                       </button>

@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
 export default function Dashboard() {
-  const { user, admin, signOut } = useAuth()
+  const { admin, signOut } = useAuth()
   const navigate = useNavigate()
 
   const handleSignOut = async () => {
@@ -116,7 +116,7 @@ export default function Dashboard() {
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
           gap: '16px',
-          maxWidth: '700px'
+          maxWidth: '1100px'
         }}>
           <QuickActionCard
             title="Tournaments"
@@ -141,6 +141,30 @@ export default function Dashboard() {
             description="Add and organize teams"
             icon="👥"
             onClick={() => navigate('/admin/teams')}
+          />
+          <QuickActionCard
+            title="Pools"
+            description="Manage pool locations"
+            icon="🏊‍♂️"
+            onClick={() => navigate('/admin/pools')}
+          />
+          <QuickActionCard
+            title="Matches"
+            description="Schedule matches"
+            icon="⏱️"
+            onClick={() => navigate('/admin/matches')}
+          />
+          <QuickActionCard
+            title="Schedule Breaks"
+            description="Manage breaks and ceremonies"
+            icon="☕"
+            onClick={() => navigate('/admin/schedule-breaks')}
+          />
+          <QuickActionCard
+            title="Standings"
+            description="View team standings"
+            icon="📈"
+            onClick={() => navigate('/admin/standings')}
           />
         </div>
 
@@ -179,7 +203,7 @@ interface QuickActionCardProps {
   onClick: () => void
 }
 
-function QuickActionCard({ title, description, icon, onClick }: QuickActionCardProps) {
+function QuickActionCard({ title, icon, onClick }: QuickActionCardProps) {
   const [isHovered, setIsHovered] = useState(false)
 
   return (
