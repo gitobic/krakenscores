@@ -88,9 +88,9 @@ export default function BulkImportModal({
     }
 
     const findTeam = (teamName: string, divisionId: string) => {
+      // Teams are global resources - filter by division only
       // Try exact match first
       let team = teams.find(t =>
-        t.tournamentId === selectedTournamentId &&
         t.divisionId === divisionId &&
         t.name.toLowerCase() === teamName.toLowerCase()
       )
@@ -98,7 +98,6 @@ export default function BulkImportModal({
       // If no exact match, try partial match
       if (!team) {
         team = teams.find(t =>
-          t.tournamentId === selectedTournamentId &&
           t.divisionId === divisionId &&
           t.name.toLowerCase().includes(teamName.toLowerCase())
         )
@@ -163,11 +162,11 @@ export default function BulkImportModal({
         newErrors.push(`Line ${lineNum}: Division "${divisionName}" not found`)
       }
       if (division && !darkTeam) {
-        const availableTeams = teams.filter(t => t.tournamentId === selectedTournamentId && t.divisionId === division.id)
+        const availableTeams = teams.filter(t => t.divisionId === division.id)
         newErrors.push(`Line ${lineNum}: Dark team "${darkTeamName}" not found in ${divisionName}. Available: ${availableTeams.map(t => t.name).join(', ')}`)
       }
       if (division && !lightTeam) {
-        const availableTeams = teams.filter(t => t.tournamentId === selectedTournamentId && t.divisionId === division.id)
+        const availableTeams = teams.filter(t => t.divisionId === division.id)
         newErrors.push(`Line ${lineNum}: Light team "${lightTeamName}" not found in ${divisionName}. Available: ${availableTeams.map(t => t.name).join(', ')}`)
       }
       if (darkTeam && lightTeam && darkTeam.id === lightTeam.id) {
@@ -228,11 +227,19 @@ export default function BulkImportModal({
       }
 
       try {
+        // Get tournament start date for default
+        const tournament = tournaments.find(t => t.id === selectedTournamentId)
+        const tournamentStartDate = tournament?.startDate
+        const defaultDate = tournamentStartDate
+          ? (tournamentStartDate instanceof Date ? tournamentStartDate : new Date(tournamentStartDate)).toISOString().split('T')[0]
+          : new Date().toISOString().split('T')[0]
+
         await createMatch({
           tournamentId: selectedTournamentId,
           poolId: match.pool.id,
           divisionId: match.division.id,
           matchNumber: match.matchNum,
+          scheduledDate: defaultDate, // Use tournament start date
           scheduledTime: match.scheduledTime,
           duration: 55,
           darkTeamId: match.darkTeam.id,

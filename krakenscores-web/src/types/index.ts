@@ -74,6 +74,7 @@ export interface Match {
 
   // Scheduling
   matchNumber: number;
+  scheduledDate: string; // YYYY-MM-DD format (e.g., "2025-01-15")
   scheduledTime: string; // HH:MM format (24-hour)
   duration: number; // Duration in minutes (default 55)
   venue?: string; // Optional explicit venue name

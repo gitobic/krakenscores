@@ -36,11 +36,25 @@ export default function MatchModal({
     return maxMatchNumber + 1
   }
 
+  // Get tournament start date for default
+  const getDefaultDate = () => {
+    if (match?.scheduledDate) return match.scheduledDate
+
+    const tournament = tournaments.find(t => t.id === (match?.tournamentId || defaultTournamentId))
+    if (tournament?.startDate) {
+      const date = tournament.startDate instanceof Date ? tournament.startDate : new Date(tournament.startDate)
+      return date.toISOString().split('T')[0]
+    }
+
+    return new Date().toISOString().split('T')[0]
+  }
+
   const [formData, setFormData] = useState({
     tournamentId: match?.tournamentId || defaultTournamentId || '',
     poolId: match?.poolId || '',
     divisionId: match?.divisionId || '',
     matchNumber: getNextMatchNumber(),
+    scheduledDate: getDefaultDate(),
     scheduledTime: match?.scheduledTime || '08:00',
     duration: match?.duration || 55,
     darkTeamId: match?.darkTeamId || '',
@@ -54,12 +68,16 @@ export default function MatchModal({
   })
   const [saving, setSaving] = useState(false)
 
-  // Filter pools and teams by selected tournament
+  // Filter pools by selected tournament
   const availablePools = pools.filter(p => p.tournamentId === formData.tournamentId)
-  const availableTeams = teams.filter(t =>
-    t.tournamentId === formData.tournamentId &&
-    t.divisionId === formData.divisionId
+
+  // Get divisions that have teams
+  const availableDivisions = divisions.filter(division =>
+    teams.some(team => team.divisionId === division.id)
   )
+
+  // Filter teams by selected division only (teams are global resources)
+  const availableTeams = teams.filter(t => t.divisionId === formData.divisionId)
 
   // Filter teams to prevent selecting the same team twice
   const availableDarkTeams = availableTeams.filter(t => t.id !== formData.lightTeamId)
@@ -237,18 +255,24 @@ export default function MatchModal({
                   border: '1px solid #d1d5db',
                   borderRadius: '6px'
                 }}
+                disabled={!formData.tournamentId}
               >
                 <option value="">Select division</option>
-                {divisions.map(division => (
+                {availableDivisions.map(division => (
                   <option key={division.id} value={division.id}>
                     {division.name}
                   </option>
                 ))}
               </select>
+              {formData.tournamentId && availableDivisions.length === 0 && (
+                <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                  No divisions with teams found for this tournament. Please add teams first.
+                </p>
+              )}
             </div>
 
-            {/* Match Number, Time, Duration */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+            {/* Match Number, Date, Time, Duration */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '24px', marginBottom: '32px' }}>
               <div>
                 <label style={{
                   display: 'block',
@@ -257,7 +281,7 @@ export default function MatchModal({
                   color: '#374151',
                   marginBottom: '8px'
                 }}>
-                  Match Number *
+                  Match # *
                 </label>
                 <input
                   type="number"
@@ -283,7 +307,32 @@ export default function MatchModal({
                   color: '#374151',
                   marginBottom: '8px'
                 }}>
-                  Scheduled Time *
+                  Date *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.scheduledDate}
+                  onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: '16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Time *
                 </label>
                 <input
                   type="time"

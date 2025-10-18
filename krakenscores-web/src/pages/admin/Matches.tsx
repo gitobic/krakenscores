@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import type { Match } from '../../types/index'
-import { deleteMatch } from '../../services/matches'
+import { deleteMatch, updateMatch } from '../../services/matches'
 import { useMatchData } from '../../hooks/useMatchData'
 import MatchModal from '../../components/matches/MatchModal'
 import BulkImportModal from '../../components/matches/BulkImportModal'
 import MatchTable from '../../components/matches/MatchTable'
+import ScheduleGrid from '../../components/matches/ScheduleGrid'
+
+type ViewMode = 'table' | 'grid'
 
 export default function Matches() {
   const {
@@ -23,6 +26,7 @@ export default function Matches() {
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingMatch, setEditingMatch] = useState<Match | null>(null)
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>('')
+  const [viewMode, setViewMode] = useState<ViewMode>('table')
 
   // Auto-select first tournament
   useEffect(() => {
@@ -52,6 +56,22 @@ export default function Matches() {
     } catch (error) {
       console.error('Error deleting match:', error)
       alert('Failed to delete match. Please try again.')
+    }
+  }
+
+  const handleMatchDrop = async (matchId: string, newPoolId: string, newTime: string) => {
+    try {
+      const match = matches.find(m => m.id === matchId)
+      if (!match) return
+
+      await updateMatch(matchId, {
+        poolId: newPoolId,
+        scheduledTime: newTime
+      })
+      await loadData()
+    } catch (error) {
+      console.error('Error moving match:', error)
+      alert('Failed to move match. Please try again.')
     }
   }
 
@@ -238,37 +258,112 @@ export default function Matches() {
           </div>
         </div>
 
-        {/* Tournament Filter */}
-        {tournaments.length > 0 && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Filter by Tournament
-            </label>
-            <select
-              value={selectedTournamentId}
-              onChange={(e) => setSelectedTournamentId(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">All Tournaments</option>
-              {tournaments.map(tournament => (
-                <option key={tournament.id} value={tournament.id}>
-                  {tournament.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        {/* Tournament Filter and View Toggle */}
+        <div className="mb-6 flex justify-between items-end">
+          {tournaments.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filter by Tournament
+              </label>
+              <select
+                value={selectedTournamentId}
+                onChange={(e) => setSelectedTournamentId(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All Tournaments</option>
+                {tournaments.map(tournament => (
+                  <option key={tournament.id} value={tournament.id}>
+                    {tournament.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-        {/* Matches Table */}
-        <MatchTable
-          matches={filteredMatches}
-          pools={pools}
-          divisions={divisions}
-          teams={teams}
-          clubs={clubs}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+          {/* View Toggle */}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280', marginRight: '8px' }}>
+              View:
+            </span>
+            <button
+              onClick={() => setViewMode('table')}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: viewMode === 'table' ? 'white' : '#374151',
+                backgroundColor: viewMode === 'table' ? '#2563eb' : 'white',
+                border: `1px solid ${viewMode === 'table' ? '#2563eb' : '#d1d5db'}`,
+                borderRadius: '6px 0 0 6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                if (viewMode !== 'table') {
+                  e.currentTarget.style.backgroundColor = '#f9fafb'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (viewMode !== 'table') {
+                  e.currentTarget.style.backgroundColor = 'white'
+                }
+              }}
+            >
+              📋 Table
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: viewMode === 'grid' ? 'white' : '#374151',
+                backgroundColor: viewMode === 'grid' ? '#2563eb' : 'white',
+                border: `1px solid ${viewMode === 'grid' ? '#2563eb' : '#d1d5db'}`,
+                borderRadius: '0 6px 6px 0',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                marginLeft: '-1px'
+              }}
+              onMouseEnter={(e) => {
+                if (viewMode !== 'grid') {
+                  e.currentTarget.style.backgroundColor = '#f9fafb'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (viewMode !== 'grid') {
+                  e.currentTarget.style.backgroundColor = 'white'
+                }
+              }}
+            >
+              📅 Calendar
+            </button>
+          </div>
+        </div>
+
+        {/* Matches View */}
+        {viewMode === 'table' ? (
+          <MatchTable
+            matches={filteredMatches}
+            pools={pools}
+            divisions={divisions}
+            teams={teams}
+            clubs={clubs}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        ) : (
+          <ScheduleGrid
+            matches={filteredMatches}
+            pools={pools.filter(p => !selectedTournamentId || p.tournamentId === selectedTournamentId)}
+            divisions={divisions}
+            teams={teams}
+            clubs={clubs}
+            scheduleBreaks={scheduleBreaks.filter(b => !selectedTournamentId || b.tournamentId === selectedTournamentId)}
+            onEdit={handleEdit}
+            onMatchDrop={handleMatchDrop}
+          />
+        )}
       </div>
 
       {/* Modals */}

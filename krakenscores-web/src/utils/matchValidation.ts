@@ -32,10 +32,11 @@ export function checkDuplicateMatchNumber(
 }
 
 /**
- * Check for pool/time conflicts (overlapping time windows)
+ * Check for pool/date/time conflicts (overlapping time windows on the same date)
  */
 export function checkPoolTimeConflict(
   poolId: string,
+  scheduledDate: string,
   scheduledTime: string,
   duration: number,
   matches: Match[],
@@ -47,6 +48,7 @@ export function checkPoolTimeConflict(
   const conflict = matches.find(m => {
     if (m.id === excludeMatchId) return false
     if (m.poolId !== poolId) return false
+    if (m.scheduledDate !== scheduledDate) return false // Must be same date
 
     const existingStart = timeToMinutes(m.scheduledTime)
     const existingEnd = existingStart + m.duration
@@ -59,17 +61,19 @@ export function checkPoolTimeConflict(
 }
 
 /**
- * Check for team conflicts (team playing in two matches at same time)
+ * Check for team conflicts (team playing in two matches at same date/time)
  */
 export function checkTeamConflict(
   darkTeamId: string,
   lightTeamId: string,
+  scheduledDate: string,
   scheduledTime: string,
   matches: Match[],
   excludeMatchId?: string
 ): { conflict: Match; teamId: string } | null {
   const conflict = matches.find(m => {
     if (m.id === excludeMatchId) return false
+    if (m.scheduledDate !== scheduledDate) return false // Must be same date
     if (m.scheduledTime !== scheduledTime) return false
 
     const conflictTeams = [m.darkTeamId, m.lightTeamId]
@@ -87,7 +91,7 @@ export function checkTeamConflict(
 }
 
 /**
- * Check for schedule break conflicts
+ * Check for schedule break conflicts (schedule breaks don't have dates - they apply to all days)
  */
 export function checkScheduleBreakConflict(
   poolId: string,
@@ -121,6 +125,7 @@ export function validateMatch(
   formData: {
     matchNumber: number
     poolId: string
+    scheduledDate: string
     scheduledTime: string
     duration: number
     darkTeamId: string
@@ -147,9 +152,10 @@ export function validateMatch(
     return `Match number ${formData.matchNumber} is already assigned. Please use a different match number.`
   }
 
-  // Check pool/time conflicts
+  // Check pool/date/time conflicts
   const poolTimeConflict = checkPoolTimeConflict(
     formData.poolId,
+    formData.scheduledDate,
     formData.scheduledTime,
     formData.duration,
     matches,
@@ -161,20 +167,21 @@ export function validateMatch(
     const existingEnd = minutesToTime(
       timeToMinutes(existingStart) + poolTimeConflict.duration
     )
-    return `Pool "${conflictPool?.name}" is occupied from ${existingStart} to ${existingEnd} (Match #${poolTimeConflict.matchNumber}, ${poolTimeConflict.duration} min). Your match time (${formData.scheduledTime}, ${formData.duration} min) overlaps with this. Please choose a different time or pool.`
+    return `Pool "${conflictPool?.name}" is occupied on ${formData.scheduledDate} from ${existingStart} to ${existingEnd} (Match #${poolTimeConflict.matchNumber}). Your match overlaps with this. Please choose a different time, date, or pool.`
   }
 
   // Check team conflicts
   const teamConflict = checkTeamConflict(
     formData.darkTeamId,
     formData.lightTeamId,
+    formData.scheduledDate,
     formData.scheduledTime,
     matches,
     excludeMatchId
   )
   if (teamConflict) {
     const conflictTeamName = teams.find(t => t.id === teamConflict.teamId)?.name
-    return `Team "${conflictTeamName}" is already scheduled to play at ${formData.scheduledTime} in Match #${teamConflict.conflict.matchNumber}. A team cannot play in two matches at the same time.`
+    return `Team "${conflictTeamName}" is already scheduled to play on ${formData.scheduledDate} at ${formData.scheduledTime} in Match #${teamConflict.conflict.matchNumber}. A team cannot play in two matches at the same time.`
   }
 
   // Check schedule break conflicts

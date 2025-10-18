@@ -3,7 +3,7 @@ import type { Match } from '../../types/index'
 import { useMatchHelpers } from '../../hooks/useMatchHelpers'
 import type { Pool, Division, Team, Club } from '../../types/index'
 
-type SortField = 'matchNumber' | 'time' | 'pool' | 'division' | 'status'
+type SortField = 'matchNumber' | 'date' | 'time' | 'pool' | 'division' | 'status'
 type SortDirection = 'asc' | 'desc'
 
 interface MatchTableProps {
@@ -45,6 +45,8 @@ export default function MatchTable({
 
     if (sortField === 'matchNumber') {
       comparison = a.matchNumber - b.matchNumber
+    } else if (sortField === 'date') {
+      comparison = a.scheduledDate.localeCompare(b.scheduledDate)
     } else if (sortField === 'time') {
       comparison = a.scheduledTime.localeCompare(b.scheduledTime)
     } else if (sortField === 'pool') {
@@ -81,6 +83,30 @@ export default function MatchTable({
               >
                 Match #
                 {sortField === 'matchNumber' && (
+                  <span style={{ fontSize: '10px' }}>
+                    {sortDirection === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+              </button>
+            </th>
+            <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+              <button
+                onClick={() => handleSort('date')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: 'inherit',
+                  fontFamily: 'inherit'
+                }}
+              >
+                Date
+                {sortField === 'date' && (
                   <span style={{ fontSize: '10px' }}>
                     {sortDirection === 'asc' ? '▲' : '▼'}
                   </span>
@@ -200,7 +226,7 @@ export default function MatchTable({
         <tbody>
           {sortedMatches.length === 0 ? (
             <tr>
-              <td colSpan={9} style={{ padding: '32px', textAlign: 'center', color: '#6b7280', fontSize: '14px', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+              <td colSpan={10} style={{ padding: '32px', textAlign: 'center', color: '#6b7280', fontSize: '14px', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                 No matches scheduled. Click "Schedule Match" to create one.
               </td>
             </tr>
@@ -211,6 +237,9 @@ export default function MatchTable({
                   {match.matchNumber}
                   {match.isSemiFinal && <span style={{ marginLeft: '8px', fontSize: '11px', color: '#2563eb' }}>SF</span>}
                   {match.isFinal && <span style={{ marginLeft: '8px', fontSize: '11px', color: '#ca8a04' }}>F</span>}
+                </td>
+                <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                  {new Date(match.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </td>
                 <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                   {match.scheduledTime}
