@@ -166,6 +166,12 @@ export default function Dashboard() {
             icon="📈"
             onClick={() => navigate('/admin/standings')}
           />
+          <QuickActionCard
+            title="Scorekeeper"
+            description="Enter scores during tournament"
+            icon="🎯"
+            onClick={() => navigate('/admin/scorekeeper')}
+          />
         </div>
 
         {/* Status Section */}

@@ -68,6 +68,7 @@ export async function createTournament(
       name: data.name,
       startDate: Timestamp.fromDate(new Date(data.startDate)),
       endDate: Timestamp.fromDate(new Date(data.endDate)),
+      defaultMatchDuration: data.defaultMatchDuration || 55,
       isPublished: data.isPublished,
       createdAt: now,
       updatedAt: now
@@ -99,6 +100,7 @@ export async function updateTournament(
     // Only add fields that are defined
     if (data.name !== undefined) updateData.name = data.name
     if (data.isPublished !== undefined) updateData.isPublished = data.isPublished
+    if (data.defaultMatchDuration !== undefined) updateData.defaultMatchDuration = data.defaultMatchDuration
 
     // Handle logoUrl - delete if empty, update if has value
     if (data.logoUrl !== undefined) {

@@ -106,65 +106,6 @@ export default function Matches() {
     }
   }
 
-  const handleExportTemplate = () => {
-    if (!selectedTournamentId) {
-      alert('Please select a tournament first')
-      return
-    }
-
-    const tournament = tournaments.find(t => t.id === selectedTournamentId)
-    if (!tournament) return
-
-    // Build CSV content with all teams organized by division
-    let csvContent = '# Tournament: ' + tournament.name + '\n'
-    csvContent += '# Format: Match#\tPool\tDivision\tTime\tDark Team\tLight Team\n'
-    csvContent += '# Time format: Use 24-hour (16:00) or 12-hour with AM/PM (4:00 PM)\n'
-    csvContent += '# Teams: Use full team names exactly as shown below\n'
-    csvContent += '# \n'
-    csvContent += '# Available Pools:\n'
-
-    // Add available pools
-    const tournamentPools = pools.filter(p => p.tournamentId === selectedTournamentId)
-    tournamentPools.forEach(pool => {
-      csvContent += `#   ${pool.name} - ${pool.location}\n`
-    })
-
-    csvContent += '# \n'
-    csvContent += '# Available Teams by Division:\n'
-
-    // Group teams by division
-    const tournamentTeams = teams.filter(t => t.tournamentId === selectedTournamentId)
-    const teamsByDivision = divisions.reduce((acc, division) => {
-      const divTeams = tournamentTeams.filter(t => t.divisionId === division.id)
-      if (divTeams.length > 0) {
-        acc[division.name] = divTeams.map(t => t.name)
-      }
-      return acc
-    }, {} as Record<string, string[]>)
-
-    Object.entries(teamsByDivision).forEach(([divName, teamNames]) => {
-      csvContent += `#   ${divName}: ${teamNames.join(', ')}\n`
-    })
-
-    csvContent += '# \n'
-    csvContent += '# Example rows:\n'
-    csvContent += '# 1\t1\t18u Boys\t08:00\tOrlando Black\tTampa Blue\n'
-    csvContent += '# 2\t1\t18u Boys\t08:55\tSeminole Gold\tPatriots White\n'
-    csvContent += '# 3\t2\t16u Girls\t08:00\tTeam Orlando\tSJ Cariba\n'
-    csvContent += '# \n'
-    csvContent += 'Match#\tPool\tDivision\tTime\tDark Team\tLight Team\n'
-
-    // Create blob and download
-    const blob = new Blob([csvContent], { type: 'text/tab-separated-values' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${tournament.name.replace(/\s+/g, '_')}_import_template.tsv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
 
   // Filter matches by tournament
   const filteredMatches = selectedTournamentId
@@ -216,130 +157,48 @@ export default function Matches() {
             <h1 className="text-3xl font-bold text-gray-900">Matches</h1>
             <p className="text-gray-600 mt-1">Manage match schedules and scores</p>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button
-              onClick={handleExportTemplate}
-              style={{
-                padding: '10px 20px',
-                fontSize: '15px',
-                fontWeight: '600',
-                color: '#374151',
-                backgroundColor: 'white',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9fafb'
-                e.currentTarget.style.borderColor = '#9ca3af'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'white'
-                e.currentTarget.style.borderColor = '#d1d5db'
-              }}
-            >
-              📥 Export Template
-            </button>
-            <button
-              onClick={() => setShowBulkImport(true)}
-              style={{
-                padding: '10px 20px',
-                fontSize: '15px',
-                fontWeight: '600',
-                color: '#374151',
-                backgroundColor: 'white',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9fafb'
-                e.currentTarget.style.borderColor = '#9ca3af'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'white'
-                e.currentTarget.style.borderColor = '#d1d5db'
-              }}
-            >
-              📋 Bulk Import
-            </button>
-            <button
-              onClick={handleCreate}
-              style={{
-                padding: '10px 20px',
-                fontSize: '15px',
-                fontWeight: '600',
-                color: 'white',
-                backgroundColor: '#2563eb',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-            >
-              + Schedule Match
-            </button>
-          </div>
+          <button
+            onClick={handleCreate}
+            style={{
+              padding: '10px 20px',
+              fontSize: '15px',
+              fontWeight: '600',
+              color: 'white',
+              backgroundColor: '#2563eb',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+          >
+            + Schedule Match
+          </button>
         </div>
 
         {/* Tournament Filter and View Toggle */}
         <div className="mb-6 flex justify-between items-end">
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-            {tournaments.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter by Tournament
-                </label>
-                <select
-                  value={selectedTournamentId}
-                  onChange={(e) => setSelectedTournamentId(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">All Tournaments</option>
-                  {tournaments.map(tournament => (
-                    <option key={tournament.id} value={tournament.id}>
-                      {tournament.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Delete All Button */}
-            {filteredMatches.length > 0 && (
-              <button
-                onClick={handleDeleteAll}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#dc2626',
-                  backgroundColor: 'white',
-                  border: '1px solid #dc2626',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  height: '42px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#fef2f2'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'white'
-                }}
-                title={`Delete all ${filteredMatches.length} match${filteredMatches.length === 1 ? '' : 'es'}`}
+          {tournaments.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filter by Tournament
+              </label>
+              <select
+                value={selectedTournamentId}
+                onChange={(e) => setSelectedTournamentId(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
-                🗑️ Delete All ({filteredMatches.length})
-              </button>
-            )}
-          </div>
+                <option value="">All Tournaments</option>
+                {tournaments.map(tournament => (
+                  <option key={tournament.id} value={tournament.id}>
+                    {tournament.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* View Toggle */}
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -424,6 +283,55 @@ export default function Matches() {
             onEdit={handleEdit}
             onMatchDrop={handleMatchDrop}
           />
+        )}
+
+        {/* Bulk Action Buttons - Below Table */}
+        {filteredMatches.length > 0 && (
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
+            <button
+              onClick={() => setShowBulkImport(true)}
+              style={{
+                padding: '10px 20px',
+                fontSize: '15px',
+                fontWeight: '600',
+                color: 'white',
+                backgroundColor: '#16a34a',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
+            >
+              📋 Bulk Import
+            </button>
+            <button
+              onClick={handleDeleteAll}
+              style={{
+                padding: '10px 20px',
+                fontSize: '15px',
+                fontWeight: '600',
+                color: 'white',
+                backgroundColor: '#dc2626',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#b91c1c'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#dc2626'
+              }}
+              title={`Delete all ${filteredMatches.length} match${filteredMatches.length === 1 ? '' : 'es'}`}
+            >
+              🗑️ Delete All ({filteredMatches.length})
+            </button>
+          </div>
         )}
       </div>
 

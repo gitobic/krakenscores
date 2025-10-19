@@ -227,9 +227,6 @@ export default function Standings() {
                           L
                         </th>
                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          D
-                        </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                           GF
                         </th>
                         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -246,7 +243,7 @@ export default function Standings() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {standing.table.length === 0 ? (
                         <tr>
-                          <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
+                          <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                             No teams in this division have completed matches yet.
                           </td>
                         </tr>
@@ -267,9 +264,6 @@ export default function Standings() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
                               {teamStanding.losses}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
-                              {teamStanding.draws}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
                               {teamStanding.goalsFor}
@@ -315,20 +309,19 @@ export default function Standings() {
         {/* Legend */}
         <div className="mt-8 bg-white rounded-lg shadow p-6">
           <h3 className="text-sm font-semibold text-gray-900 mb-3">Legend</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs text-gray-600">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-gray-600">
             <div><span className="font-medium">GP:</span> Games Played</div>
             <div><span className="font-medium">W:</span> Wins</div>
             <div><span className="font-medium">L:</span> Losses</div>
-            <div><span className="font-medium">D:</span> Draws</div>
             <div><span className="font-medium">GF:</span> Goals For</div>
             <div><span className="font-medium">GA:</span> Goals Against</div>
             <div><span className="font-medium">GD:</span> Goal Difference</div>
-            <div><span className="font-medium">Pts:</span> Points (2 per win, 1 per draw)</div>
+            <div><span className="font-medium">Pts:</span> Points (2 per win)</div>
           </div>
           <div className="mt-4 text-xs text-gray-500">
             <p className="font-medium mb-1">Tiebreaker Order:</p>
             <ol className="list-decimal list-inside space-y-1">
-              <li>Total points</li>
+              <li>Total points (2 per win)</li>
               <li>Head-to-head record (future implementation)</li>
               <li>Goal difference</li>
               <li>Goals for</li>

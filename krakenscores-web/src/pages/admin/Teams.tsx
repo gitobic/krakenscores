@@ -8,6 +8,7 @@ import {
 } from '../../services/teams'
 import { getAllClubs } from '../../services/clubs'
 import { getAllDivisions } from '../../services/divisions'
+import BulkImportTeamsModal from '../../components/teams/BulkImportTeamsModal'
 
 type SortField = 'name' | 'club' | 'division'
 type SortDirection = 'asc' | 'desc'
@@ -18,6 +19,7 @@ export default function Teams() {
   const [divisions, setDivisions] = useState<Division[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false)
   const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [error, setError] = useState('')
   const [sortField, setSortField] = useState<SortField>('name')
@@ -66,6 +68,37 @@ export default function Teams() {
       console.error('Error deleting team:', err)
       alert('Failed to delete team')
     }
+  }
+
+  const handleDeleteAll = async () => {
+    if (teams.length === 0) {
+      alert('No teams to delete')
+      return
+    }
+
+    // First confirmation
+    if (!confirm(`⚠️ WARNING: This will delete all ${teams.length} team${teams.length === 1 ? '' : 's'}.\n\nThis action CANNOT be undone and may affect associated matches.\n\nAre you absolutely sure?`)) {
+      return
+    }
+
+    // Double confirmation for safety
+    if (!confirm(`Final confirmation: Delete ${teams.length} team${teams.length === 1 ? '' : 's'}?`)) {
+      return
+    }
+
+    try {
+      // Delete all teams in parallel
+      await Promise.all(teams.map(team => deleteTeam(team.id)))
+      await loadData()
+      alert(`Successfully deleted ${teams.length} team${teams.length === 1 ? '' : 's'}`)
+    } catch (error) {
+      console.error('Error deleting teams:', error)
+      alert('Failed to delete all teams. Some teams may have been deleted. Please refresh and try again.')
+    }
+  }
+
+  const handleBulkImport = () => {
+    setShowBulkImportModal(true)
   }
 
   const getClubName = (clubId: string) => {
@@ -307,6 +340,55 @@ export default function Teams() {
             </table>
           </div>
         )}
+
+        {/* Bulk Action Buttons - Below Table */}
+        {sortedTeams.length > 0 && (
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
+            <button
+              onClick={handleBulkImport}
+              style={{
+                padding: '10px 20px',
+                fontSize: '15px',
+                fontWeight: '600',
+                color: 'white',
+                backgroundColor: '#16a34a',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
+            >
+              📋 Bulk Import
+            </button>
+            <button
+              onClick={handleDeleteAll}
+              style={{
+                padding: '10px 20px',
+                fontSize: '15px',
+                fontWeight: '600',
+                color: 'white',
+                backgroundColor: '#dc2626',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#b91c1c'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#dc2626'
+              }}
+              title={`Delete all ${teams.length} team${teams.length === 1 ? '' : 's'}`}
+            >
+              🗑️ Delete All ({teams.length})
+            </button>
+          </div>
+        )}
       </div>
 
       {showModal && (
@@ -318,6 +400,18 @@ export default function Teams() {
           onSave={async () => {
             await loadData()
             setShowModal(false)
+          }}
+        />
+      )}
+
+      {showBulkImportModal && (
+        <BulkImportTeamsModal
+          clubs={clubs}
+          divisions={divisions}
+          onClose={() => setShowBulkImportModal(false)}
+          onImportComplete={async () => {
+            await loadData()
+            setShowBulkImportModal(false)
           }}
         />
       )}

@@ -530,22 +530,22 @@ interface TeamStanding {
   games: number
   wins: number
   losses: number
-  draws: number
-  goalsFor: number
-  goalsAgainst: number
-  goalDiff: number               // goalsFor - goalsAgainst
-  points: number                 // 2 per win, 1 per draw (configurable)
+  draws: number                  // Always 0 - water polo has no draws (shootouts decide winner)
+  goalsFor: number               // Supports decimals for shootout notation (e.g., 4.5)
+  goalsAgainst: number           // Supports decimals for shootout notation (e.g., 4.6)
+  goalDiff: number               // goalsFor - goalsAgainst (rounded to 2 decimals)
+  points: number                 // 2 per win (no draws in water polo)
   rank: number                   // Final rank with tie-breaks applied
 }
 ```
 
 **Tie-breaker Order (applied in sequence):**
-1. Points (win = 2, draw = 1, loss = 0)
-2. Head-to-head points among tied teams
-3. Head-to-head goal differential
-4. Total goal differential
-5. Total goals for
-6. Fewest goals against
+1. Points (win = 2, no draws in water polo)
+2. Head-to-head points among tied teams (future implementation)
+3. Total goal differential
+4. Total goals for
+5. Fewest goals against
+6. Alphabetical by team name
 
 ### Schedule Break
 ```typescript
@@ -729,7 +729,7 @@ Utilities:
 
 ## Current Implementation Status
 
-**Project Phase:** Phase 2B - Match Scheduling 🔄
+**Project Phase:** Phase 2C Complete - Ready for Phase 3 🎉
 
 ### ✅ Phase 1 Complete
 - ✅ Project planning and requirements
@@ -796,19 +796,75 @@ Utilities:
 - **Smart Filtering**: Tournament selector filters table and pre-fills forms
 - **Bulk Import**: Two-step validation with preview/confirmation screen
 
-### 🔄 Phase 2B: Match Scheduling (In Progress)
+### ✅ Phase 2B Complete: Match Scheduling
 - ✅ Schedule breaks support (full CRUD)
 - ✅ Schedule break conflict detection integrated into match scheduling
 - ✅ Component architecture refactoring for better maintainability
-- [ ] Match scheduling grid/calendar view with drag-and-drop
-- [ ] Visual conflict indicators in schedule view
-- [ ] Match bulk operations (copy, move, delete multiple)
+- ⏭️ Match scheduling grid/calendar view with drag-and-drop (deferred to Phase 4)
+- ⏭️ Visual conflict indicators in schedule view (deferred to Phase 4)
+- ⏭️ Match bulk operations (copy, move, delete multiple) (deferred to Phase 4)
 
-### ⏭️ Phase 2C: Scorekeeper & Standings (Next)
-1. Scorekeeper interface (score entry + status transitions)
-2. Automatic standings recalculation on score finalization
-3. Real-time standings display
-4. Match status workflow implementation
+### ✅ Phase 2C Complete: Scorekeeper & Standings
+**Goal**: Enable score entry and automatic standings calculation
+
+**Completed Features:**
+- ✅ **Scorekeeper Interface** (`/admin/scorekeeper`)
+  - Full table layout with inline score entry (one row per match)
+  - Tournament filter with day-based date grouping
+  - Sortable columns (Match #, Pool, Division, Time, Teams, Scores, Status)
+  - Compact "cozy" design for viewing many matches on mobile
+  - Score entry supports decimal notation for shootouts (e.g., 4.5 = 4 regular + 5 shootout)
+  - Team abbreviation display with toggle for full club names
+  - Status workflow: scheduled → in_progress → final → forfeit/cancelled
+  - Automatic standings recalculation on status change to 'final'
+  - Split date/time columns for better mobile readability
+  - Centered text alignment with system-ui font family
+  - Mobile-first responsive design
+
+- ✅ **Automatic Standings Recalculation**
+  - Triggers when match status changes to 'final'
+  - Integrated into Scorekeeper save operation
+  - Uses existing `recalculateStandingsForDivision()` service
+  - Immediate standings update after score finalization
+  - Handles decimal scores correctly (shootout notation)
+
+- ✅ **Standings Display Page** (`/admin/standings`)
+  - Division-by-division standings tables
+  - Tournament filtering
+  - Manual recalculate button per division
+  - Comprehensive stats: GP, W, L, GF, GA, GD, Pts (no draws column - water polo specific)
+  - Tie-breaker notes display
+  - Color-coded division headers
+  - Legend with tie-breaker order explanation
+  - Floating-point precision fix (rounds to 2 decimals)
+
+- ✅ **Standings Calculation Service**
+  - Pure function for testability
+  - Water polo specific: No draws, all matches decided (shootouts if tied)
+  - Points calculation: 2 per win (no draw points)
+  - Tie-breaker logic (points → goal diff → goals for → goals against → alphabetical)
+  - Head-to-head calculation function (reserved for future enhancement)
+  - Automatic rank assignment with tie detection
+  - Floating-point precision handling (rounds goals and differentials to 2 decimals)
+
+- ✅ **Mobile UX Improvements**
+  - Moved bulk action buttons (Delete All, Bulk Import) below tables on Teams and Matches pages
+  - Prevents accidental clicks near "Back to Dashboard" button
+  - Removed Export Template button from Matches (instructions included in import modal)
+  - Vite dev server configured to listen on LAN (host: '0.0.0.0') for mobile testing
+
+- ✅ **Security & Permissions**
+  - Staff role can update: darkTeamScore, lightTeamScore, status
+  - Staff cannot create/delete/modify teams or schedules
+  - Admin has full access
+  - Public read access to standings
+
+- ✅ **Dashboard Integration**
+  - New "Scorekeeper" quick action card (🎯 icon)
+  - Existing "Standings" quick action card
+  - Routes configured in App.tsx
+
+- ✅ **Build Success**: Tested on mobile device over LAN, all features working
 
 ### ⏭️ Phase 3: Public Pages
 1. Master schedule view (mobile-first)

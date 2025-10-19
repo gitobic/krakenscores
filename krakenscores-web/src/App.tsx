@@ -11,6 +11,7 @@ import Pools from './pages/admin/Pools'
 import Matches from './pages/admin/Matches'
 import ScheduleBreaks from './pages/admin/ScheduleBreaks'
 import Standings from './pages/admin/Standings'
+import Scorekeeper from './pages/admin/Scorekeeper'
 
 function App() {
   return (
@@ -93,6 +94,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Standings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/scorekeeper"
+            element={
+              <ProtectedRoute>
+                <Scorekeeper />
               </ProtectedRoute>
             }
           />

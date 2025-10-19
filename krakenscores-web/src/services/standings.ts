@@ -72,6 +72,7 @@ export async function recalculateStandingsForDivision(divisionId: string): Promi
   } as Team))
 
   if (teams.length === 0) {
+    console.warn(`No teams found for division ${divisionId}`)
     return // No teams in division
   }
 
@@ -97,10 +98,21 @@ export async function recalculateStandingsForDivision(divisionId: string): Promi
   // 3. Calculate standings
   const standing = calculateStandings(teams, matches)
 
-  // 4. Save to Firestore
+  // 4. Get tournamentId from the first match (all matches in division should have same tournament)
+  // If no matches yet, get from first team
+  const tournamentId = matches.length > 0
+    ? matches[0].tournamentId
+    : teams[0].tournamentId
+
+  if (!tournamentId) {
+    console.error(`Cannot determine tournamentId for division ${divisionId}`)
+    throw new Error('Tournament ID is required to save standings')
+  }
+
+  // 5. Save to Firestore
   const docRef = doc(db, COLLECTION, divisionId)
   await setDoc(docRef, {
-    tournamentId: teams[0].tournamentId,
+    tournamentId: tournamentId,
     table: standing.table,
     tiebreakerNotes: standing.tiebreakerNotes,
     updatedAt: serverTimestamp(),
@@ -122,7 +134,7 @@ export function calculateStandings(teams: Team[], matches: Match[]): Omit<Standi
       games: 0,
       wins: 0,
       losses: 0,
-      draws: 0,
+      draws: 0, // Always 0 - no draws in water polo (shootouts determine winner)
       goalsFor: 0,
       goalsAgainst: 0,
       goalDiff: 0,
@@ -154,26 +166,26 @@ export function calculateStandings(teams: Team[], matches: Match[]): Omit<Standi
     lightStats.goalsFor += match.lightTeamScore
     lightStats.goalsAgainst += match.darkTeamScore
 
-    // Update wins/losses/draws
+    // Update wins/losses (no draws - shootouts determine winner)
     if (match.darkTeamScore > match.lightTeamScore) {
-      // Dark team wins
+      // Dark team wins (including shootout wins like 4.5 > 4.4)
       darkStats.wins++
       lightStats.losses++
     } else if (match.lightTeamScore > match.darkTeamScore) {
-      // Light team wins
+      // Light team wins (including shootout wins)
       lightStats.wins++
       darkStats.losses++
-    } else {
-      // Draw
-      darkStats.draws++
-      lightStats.draws++
     }
+    // Note: No else case for draws - all matches go to shootout if tied
   })
 
   // Calculate derived stats
   teamStats.forEach(stats => {
-    stats.goalDiff = stats.goalsFor - stats.goalsAgainst
-    stats.points = stats.wins * 2 + stats.draws * 1 // 2 points per win, 1 per draw
+    // Round to 2 decimal places to avoid floating-point precision errors
+    stats.goalsFor = Math.round(stats.goalsFor * 100) / 100
+    stats.goalsAgainst = Math.round(stats.goalsAgainst * 100) / 100
+    stats.goalDiff = Math.round((stats.goalsFor - stats.goalsAgainst) * 100) / 100
+    stats.points = stats.wins * 2 // 2 points per win (no draws in water polo)
   })
 
   // Convert to array and sort with tie-breakers
