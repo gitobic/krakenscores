@@ -397,13 +397,11 @@ Complete TypeScript schemas for all Firestore collections. Use these exact schem
 interface Tournament {
   id: string
   name: string
-  nickname?: string              // e.g., "NMI-2025", "Kraken Cup"
   startDate: Date
   endDate: Date
-  location?: string              // Venue name
   logoUrl?: string
-  status: 'draft' | 'active' | 'archived'
-  published: boolean             // Controls public visibility
+  defaultMatchDuration: number   // Default match duration in minutes (e.g., 55, 60)
+  isPublished: boolean           // Controls public visibility
   createdAt: Date
   updatedAt: Date
 }
@@ -475,6 +473,7 @@ interface Match {
 
   // Scheduling
   matchNumber: number            // Sequential, unique across tournament
+  scheduledDate: string          // YYYY-MM-DD format (e.g., "2025-01-15")
   scheduledTime: string          // HH:MM format (24-hour)
   duration: number               // Minutes, default 55
   venue?: string                 // Optional explicit venue name
@@ -484,8 +483,8 @@ interface Match {
   lightTeamId: string
 
   // Scoring (optional until match is finalized)
-  darkScore?: number
-  lightScore?: number
+  darkTeamScore?: number         // Supports decimals for shootout notation (e.g., 4.5)
+  lightTeamScore?: number        // Supports decimals for shootout notation (e.g., 4.6)
   period?: number                // Current/final period (1-4 quarters)
 
   // Status
@@ -505,7 +504,7 @@ interface Match {
     }
   }
 
-  // Flags
+  // Flags (deprecated - use roundType instead, kept for backward compatibility)
   isSemiFinal: boolean
   isFinal: boolean
 
@@ -729,7 +728,7 @@ Utilities:
 
 ## Current Implementation Status
 
-**Project Phase:** Phase 2C Complete - Ready for Phase 3 🎉
+**Project Phase:** Phase 3 In Progress - Master Schedule Complete 🚀
 
 ### ✅ Phase 1 Complete
 - ✅ Project planning and requirements
@@ -866,11 +865,55 @@ Utilities:
 
 - ✅ **Build Success**: Tested on mobile device over LAN, all features working
 
-### ⏭️ Phase 3: Public Pages
-1. Master schedule view (mobile-first)
-2. Live scores & standings with search/filter
-3. Pocket schedule (by club/team)
-4. Announcements display
+### ✅ Phase 3A Complete: Master Schedule Public Page
+**Goal**: Create mobile-first public schedule view for tournament attendees
+
+**Completed Features:**
+- ✅ **Master Schedule Page** (`/` and `/schedule`)
+  - Public route (no authentication required)
+  - Mobile-first responsive design with compact "cozy" layout
+  - Tournament logo display in header (left-aligned with title)
+  - Auto-selects first published tournament on load
+  - Day-based grouping with formatted headers (e.g., "FRIDAY - OCT 4")
+  - Real-time data loading from Firestore (published tournaments only)
+  - Filters out cancelled matches automatically
+
+- ✅ **Advanced Filtering & Sorting**
+  - Division filter dropdown (All Divisions + specific division filtering)
+  - Sortable column headers with visual indicators (⇅ ↑ ↓)
+  - Click to sort by: Match #, Division, Time
+  - Toggle sort direction (ascending/descending)
+  - Filters persist across sorting operations
+
+- ✅ **Display Features**
+  - Match details: Number, Division (color-coded badge), Time, Teams, Winner
+  - Division badges with color-blind safe colors from tournament configuration
+  - Final scores displayed when match status is 'final'
+  - Winner column shows winning club (green text)
+  - Checkbox to toggle between club abbreviations and full club names
+  - Full club name applies to both team matchups AND winner column
+  - Compact row spacing (6px padding) to maximize visible matches per screen
+
+- ✅ **Mobile Optimization**
+  - Cozy table layout with reduced padding and font sizes
+  - Header: 11px font, 6px padding
+  - Rows: 12-13px font, 6px padding
+  - Division badges: 10px font, 2px vertical padding
+  - Optimized for viewing many matches on small screens
+  - Touch-friendly controls and filters
+
+- ✅ **Technical Implementation**
+  - Fixed Firestore compound index issue (filtering in JavaScript instead of query)
+  - Memoized filtering and sorting for performance
+  - Proper TypeScript types throughout
+  - Clean component structure following established patterns
+  - Build size: ~902KB (223KB gzipped)
+
+### ⏭️ Phase 3B-D: Remaining Public Pages
+1. ✅ Master schedule view (mobile-first) - **COMPLETE**
+2. ⏭️ Live scores & standings with search/filter
+3. ⏭️ Pocket schedule (by club/team)
+4. ⏭️ Announcements display
 
 ## Future Enhancements / Backlog
 
@@ -888,12 +931,15 @@ Utilities:
 - [ ] Drag-and-drop match rescheduling in calendar view
 - [ ] Visual timeline/gantt chart for match schedules per pool
 
-**Phase 2+ Features:**
+**Phase 3+ Features:**
 - ✅ Schedule breaks per pool (lunch, ceremonies)
 - ✅ Schedule break conflict detection
+- ✅ Master schedule public page (mobile-first with filtering and sorting)
 - [ ] Advanced conflict detection UI with visual indicators
 - [ ] Match feeds auto-population for brackets
-- [ ] Public-facing pages (master schedule, live scores, standings)
+- [ ] Public scores & standings page with search/filter
+- [ ] Pocket schedule (by club/team)
+- [ ] Announcements display
 - [ ] Bracket visualization (tournament tree)
 - [ ] Statistics pages (fun stats, historical data)
 - [ ] CSV export for matches and standings

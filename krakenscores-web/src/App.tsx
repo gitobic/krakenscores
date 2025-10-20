@@ -12,16 +12,16 @@ import Matches from './pages/admin/Matches'
 import ScheduleBreaks from './pages/admin/ScheduleBreaks'
 import Standings from './pages/admin/Standings'
 import Scorekeeper from './pages/admin/Scorekeeper'
+import MasterSchedule from './pages/public/MasterSchedule'
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Redirect root to admin dashboard */}
-          <Route path="/" element={<Navigate to="/admin" replace />} />
-
           {/* Public routes */}
+          <Route path="/" element={<MasterSchedule />} />
+          <Route path="/schedule" element={<MasterSchedule />} />
           <Route path="/login" element={<Login />} />
 
           {/* Protected admin routes */}
