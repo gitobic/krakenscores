@@ -266,13 +266,16 @@ export default function Standings() {
                               {teamStanding.losses}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
-                              {teamStanding.goalsFor}
+                              {Math.round(teamStanding.goalsFor * 100) / 100}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
-                              {teamStanding.goalsAgainst}
+                              {Math.round(teamStanding.goalsAgainst * 100) / 100}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-medium text-gray-900">
-                              {teamStanding.goalDiff > 0 ? '+' : ''}{teamStanding.goalDiff}
+                              {(() => {
+                                const rounded = Math.round(teamStanding.goalDiff * 100) / 100
+                                return rounded > 0 ? `+${rounded}` : rounded
+                              })()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-blue-600">
                               {teamStanding.points}

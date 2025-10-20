@@ -178,6 +178,12 @@ export default function Dashboard() {
             icon="📅"
             onClick={() => window.open('/schedule', '_blank')}
           />
+          <QuickActionCard
+            title="Public Standings"
+            description="View public standings"
+            icon="📊"
+            onClick={() => window.open('/standings', '_blank')}
+          />
         </div>
 
         {/* Status Section */}

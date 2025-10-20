@@ -728,7 +728,7 @@ Utilities:
 
 ## Current Implementation Status
 
-**Project Phase:** Phase 3 In Progress - Master Schedule Complete 🚀
+**Project Phase:** Phase 3B Complete - Public Pages Foundation Established 🎯
 
 ### ✅ Phase 1 Complete
 - ✅ Project planning and requirements
@@ -909,9 +909,58 @@ Utilities:
   - Clean component structure following established patterns
   - Build size: ~902KB (223KB gzipped)
 
-### ⏭️ Phase 3B-D: Remaining Public Pages
+### ✅ Phase 3B Complete: Public Standings Page
+**Goal**: Create public standings view with recent results
+
+**Completed Features:**
+- ✅ **Public Standings Page** (`/standings` and `/scores`)
+  - Public route (no authentication required)
+  - Mobile-first responsive design with compact layout
+  - Tournament logo display in header
+  - Auto-selects first published tournament on load
+  - Real-time data loading from Firestore (published tournaments only)
+
+- ✅ **Standings Display**
+  - Division-by-division standings tables with color-coded headers
+  - Club names only (no redundant division prefix)
+  - Comprehensive stats: Rank, Team, GP, W, L, GF, GA, GD, Pts
+  - Color-coded wins (green) and losses (red)
+  - Fixed column widths for perfect alignment across all divisions
+  - Floating-point precision fix (rounds to 2 decimals)
+
+- ✅ **Recent Results Section**
+  - Shows most recent 20 final matches
+  - Division badge with color coding
+  - Winner highlighted with bold text and green score
+  - Match number reference
+  - Compact mobile-friendly layout
+
+- ✅ **Advanced Filtering**
+  - Division filter dropdown (All Divisions + specific divisions)
+  - Search by team or club name
+  - Real-time filtering across both standings and results
+  - Filters persist and work together seamlessly
+
+- ✅ **Mobile Optimization**
+  - Cozy table layout with minimal padding (8px)
+  - Fixed table layout with explicit column widths
+  - Touch-friendly controls and filters
+  - Optimized for viewing on small screens
+
+- ✅ **Technical Implementation**
+  - Enriches standings data with club information
+  - Loads teams and clubs to display proper names
+  - Memoized filtering for performance
+  - Proper TypeScript types throughout
+  - Build size: ~917KB (226KB gzipped)
+
+- ✅ **Dashboard Integration**
+  - Added "Public Standings" quick action card to admin dashboard
+  - Opens in new tab to preserve admin session
+
+### ⏭️ Phase 3C-D: Remaining Public Pages
 1. ✅ Master schedule view (mobile-first) - **COMPLETE**
-2. ⏭️ Live scores & standings with search/filter
+2. ✅ Public standings with search/filter - **COMPLETE**
 3. ⏭️ Pocket schedule (by club/team)
 4. ⏭️ Announcements display
 
@@ -935,9 +984,9 @@ Utilities:
 - ✅ Schedule breaks per pool (lunch, ceremonies)
 - ✅ Schedule break conflict detection
 - ✅ Master schedule public page (mobile-first with filtering and sorting)
+- ✅ Public standings page with search/filter and recent results
 - [ ] Advanced conflict detection UI with visual indicators
 - [ ] Match feeds auto-population for brackets
-- [ ] Public scores & standings page with search/filter
 - [ ] Pocket schedule (by club/team)
 - [ ] Announcements display
 - [ ] Bracket visualization (tournament tree)

@@ -13,6 +13,7 @@ import ScheduleBreaks from './pages/admin/ScheduleBreaks'
 import Standings from './pages/admin/Standings'
 import Scorekeeper from './pages/admin/Scorekeeper'
 import MasterSchedule from './pages/public/MasterSchedule'
+import PublicStandings from './pages/public/PublicStandings'
 
 function App() {
   return (
@@ -22,6 +23,8 @@ function App() {
           {/* Public routes */}
           <Route path="/" element={<MasterSchedule />} />
           <Route path="/schedule" element={<MasterSchedule />} />
+          <Route path="/standings" element={<PublicStandings />} />
+          <Route path="/scores" element={<PublicStandings />} />
           <Route path="/login" element={<Login />} />
 
           {/* Protected admin routes */}
