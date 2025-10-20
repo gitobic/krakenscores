@@ -172,6 +172,12 @@ export default function Dashboard() {
             icon="🎯"
             onClick={() => navigate('/admin/scorekeeper')}
           />
+          <QuickActionCard
+            title="Public Schedule"
+            description="View public master schedule"
+            icon="📅"
+            onClick={() => window.open('/schedule', '_blank')}
+          />
         </div>
 
         {/* Status Section */}

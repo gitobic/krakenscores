@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Pool } from '../../types/index'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 
 interface MatchWithDetails {
   match: Match
@@ -431,7 +431,7 @@ export default function MasterSchedule() {
                 borderRadius: '6px 6px 0 0',
                 textTransform: 'uppercase'
               }}>
-                {format(new Date(day), 'EEEE - MMM d')}
+                {format(parseISO(day), 'EEEE - MMM d')}
               </div>
 
               {/* Matches Table */}
