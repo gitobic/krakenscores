@@ -58,6 +58,7 @@ export interface ScheduleBreak {
   id: string;
   tournamentId: string;
   poolId: string;
+  scheduledDate: string; // YYYY-MM-DD format (e.g., "2025-01-15")
   startTime: string; // HH:MM format (24-hour)
   endTime: string; // HH:MM format (24-hour)
   reason: string; // e.g., "Lunch Break", "Awards Ceremony"

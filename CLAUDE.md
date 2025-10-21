@@ -1,4 +1,6 @@
+# GEMINI.md
 # CLAUDE.md
+
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -784,6 +786,10 @@ Utilities:
   - **Benefits**: Better maintainability, reusability, testability
 - ✅ **R7**: Updated Firestore security rules for staff role
 - ✅ **R8**: Tested all functionality - build succeeds (856KB bundle)
+- ✅ **Match Card UI Refinement**
+  - Reformatted match blocks in the calendar view (`ScheduleGrid.tsx`) to match the provided screenshot: match number in upper left, division in upper right, larger and centered team names.
+  - Adjusted card `borderRadius`, `minHeight`, and `padding` for a more compact, less rounded pill-like shape.
+  - Adjusted absolute positioning of match number and division text to prevent cutoff.
 
 **Phase 1 UI Design Patterns Established:**
 - **Modal Pattern**: 672px-800px width, scrollable content area, inline styles for consistency
@@ -799,6 +805,11 @@ Utilities:
 - ✅ Schedule breaks support (full CRUD)
 - ✅ Schedule break conflict detection integrated into match scheduling
 - ✅ Component architecture refactoring for better maintainability
+- ✅ **Date-Aware Schedule Breaks**
+  - Added `scheduledDate: string` to the `ScheduleBreak` interface (`types/index.ts`).
+  - Updated `ScheduleBreaks.tsx` to include a date input in the modal and display the date in the table.
+  - Modified `checkScheduleBreakConflict` in `matchValidation.ts` to consider `scheduledDate` for conflict detection.
+  - Ensured `ScheduleGrid.tsx` passes `scheduledDate` to `checkScheduleBreakConflict`.
 - ⏭️ Match scheduling grid/calendar view with drag-and-drop (deferred to Phase 4)
 - ⏭️ Visual conflict indicators in schedule view (deferred to Phase 4)
 - ⏭️ Match bulk operations (copy, move, delete multiple) (deferred to Phase 4)
@@ -966,6 +977,14 @@ Utilities:
    - URL: `/team-schedule` (legacy: `/pocket-schedule`, `/pocket`)
    - Filter by club or individual team
    - Sortable table with day grouping
+
+### ✅ Bug Fixes / Improvements
+- ✅ **Time Slot Sorting**
+  - Corrected time slot sorting in `ScheduleGrid.tsx` by ensuring consistent `HH:MM` formatting with leading zeros for all time strings used in `dayMap` and `TimeSlot` objects, using `minutesToTime(timeToMinutes(timeString))`. This resolves issues with AM/PM game ordering.
+
+### ✅ Bug Fixes / Improvements
+- ✅ **Time Slot Sorting**
+  - Corrected time slot sorting in `ScheduleGrid.tsx` by ensuring consistent `HH:MM` formatting with leading zeros for all time strings used in `dayMap` and `TimeSlot` objects, using `minutesToTime(timeToMinutes(timeString))`. This resolves issues with AM/PM game ordering.
 
 ### ⏭️ Phase 3D: Remaining Public Pages
 4. ⏭️ Announcements display

@@ -254,10 +254,11 @@ As a tournament administrator, I want to schedule games by assigning teams to ti
 As a tournament administrator, I want to add breaks to the schedule (lunch, pool maintenance), so that they appear in the master schedule.
 
 **Acceptance Criteria:**
-- [ ] Can add break with time, duration, and description
+- [ ] Can add break with date, time, duration, and description
 - [ ] Must assign break to specific pool
 - [ ] Breaks display in master schedule
 - [ ] Can edit or delete breaks
+- [ ] Breaks are date-aware and only apply to their scheduled date
 
 ---
 
@@ -319,7 +320,7 @@ As a tournament administrator, I want to automatically generate semi-final and f
 As a spectator, I want to view the complete tournament schedule on my phone, so that I know when and where games are happening.
 
 **Acceptance Criteria:**
-- [ ] Displays all games in chronological order
+- [ ] Displays all games in chronological order (with correct time sorting for AM/PM games)
 - [ ] Shows: game #, division (with color), teams (dark vs light), pool, time, score
 - [ ] Mobile-responsive layout (primary view)
 - [ ] Can filter by:
@@ -447,7 +448,7 @@ As a tournament administrator, I want to export tournament data, so that I can s
 | Team CRUD | Must Have | Low | 1 |
 | Pool CRUD | Must Have | Low | 2 |
 | Game scheduling | Must Have | High | 2 |
-| Schedule conflict validation | Must Have | High | 2 |
+| ✅ Schedule conflict validation | Must Have | High | 2 |
 | Score entry | Must Have | Medium | 2 |
 | Automatic standings calculation | Must Have | High | 2 |
 | Master schedule (public) | Must Have | Medium | 3 |

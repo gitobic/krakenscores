@@ -91,24 +91,39 @@ export function checkTeamConflict(
 }
 
 /**
- * Check for schedule break conflicts (schedule breaks don't have dates - they apply to all days)
+ * Check for schedule break conflicts for a specific pool and date
+ * @param poolId - The pool to check
+ * @param scheduledDate - The date to check in YYYY-MM-DD format
+ * @param startTime - Start time in HH:MM format
+ * @param duration - Duration in minutes
+ * @param breaks - Array of schedule breaks to check against
+ * @returns The conflicting break if found, null otherwise
  */
 export function checkScheduleBreakConflict(
   poolId: string,
+  scheduledDate: string,
   startTime: string,
   duration: number,
   breaks: ScheduleBreak[]
 ): ScheduleBreak | null {
+  // Convert time string to minutes since midnight
+  const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number)
+    return hours * 60 + minutes
+  }
+
   const matchStart = timeToMinutes(startTime)
   const matchEnd = matchStart + duration
 
+  // Check each break for this pool and date
   for (const scheduleBreak of breaks) {
-    if (scheduleBreak.poolId !== poolId) continue
+    if (scheduleBreak.poolId !== poolId || scheduleBreak.scheduledDate !== scheduledDate) continue
 
     const breakStart = timeToMinutes(scheduleBreak.startTime)
     const breakEnd = timeToMinutes(scheduleBreak.endTime)
 
     // Check if time windows overlap
+    // Overlap occurs if: matchStart < breakEnd AND matchEnd > breakStart
     if (matchStart < breakEnd && matchEnd > breakStart) {
       return scheduleBreak
     }
@@ -187,6 +202,7 @@ export function validateMatch(
   // Check schedule break conflicts
   const breakConflict = checkScheduleBreakConflict(
     formData.poolId,
+    formData.scheduledDate, // Pass scheduledDate
     formData.scheduledTime,
     formData.duration,
     scheduleBreaks

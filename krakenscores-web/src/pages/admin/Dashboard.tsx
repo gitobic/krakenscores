@@ -111,79 +111,75 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Quick Actions Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: '16px',
-          maxWidth: '1100px'
-        }}>
-          <QuickActionCard
-            title="Tournaments"
-            description="Create and manage tournaments"
-            icon="🏆"
-            onClick={() => navigate('/admin/tournaments')}
-          />
-          <QuickActionCard
-            title="Clubs"
-            description="Manage participating clubs"
-            icon="🏊"
-            onClick={() => navigate('/admin/clubs')}
-          />
-          <QuickActionCard
-            title="Divisions"
-            description="Set up age divisions"
-            icon="📊"
-            onClick={() => navigate('/admin/divisions')}
-          />
-          <QuickActionCard
-            title="Teams"
-            description="Add and organize teams"
-            icon="👥"
-            onClick={() => navigate('/admin/teams')}
-          />
-          <QuickActionCard
-            title="Pools"
-            description="Manage pool locations"
-            icon="🏊‍♂️"
-            onClick={() => navigate('/admin/pools')}
-          />
-          <QuickActionCard
-            title="Matches"
-            description="Schedule matches"
-            icon="⏱️"
-            onClick={() => navigate('/admin/matches')}
-          />
-          <QuickActionCard
-            title="Schedule Breaks"
-            description="Manage breaks and ceremonies"
-            icon="☕"
-            onClick={() => navigate('/admin/schedule-breaks')}
-          />
-          <QuickActionCard
-            title="Scorekeeper"
-            description="Enter scores during tournament"
-            icon="🎯"
-            onClick={() => navigate('/admin/scorekeeper')}
-          />
-          <QuickActionCard
-            title="Public Schedule"
-            description="View public master schedule"
-            icon="📅"
-            onClick={() => window.open('/schedule', '_blank')}
-          />
-          <QuickActionCard
-            title="Public Standings"
-            description="View public standings"
-            icon="📊"
-            onClick={() => window.open('/standings', '_blank')}
-          />
-          <QuickActionCard
-            title="Team Schedule"
-            description="Team/club specific schedule"
-            icon="📱"
-            onClick={() => window.open('/team-schedule', '_blank')}
-          />
+        <div className="grid grid-cols-1 gap-10">
+          <ActionCardGroup title="Admin Functions">
+            <QuickActionCard
+              title="Tournaments"
+              icon="🏆"
+              onClick={() => navigate('/admin/tournaments')}
+            />
+            <QuickActionCard
+              title="Clubs"
+              icon="🏊"
+              onClick={() => navigate('/admin/clubs')}
+            />
+            <QuickActionCard
+              title="Divisions"
+              icon="📊"
+              onClick={() => navigate('/admin/divisions')}
+            />
+            <QuickActionCard
+              title="Teams"
+              icon="👥"
+              onClick={() => navigate('/admin/teams')}
+            />
+            <QuickActionCard
+              title="Pools"
+              icon="🏊‍♂️"
+              onClick={() => navigate('/admin/pools')}
+            />
+            <QuickActionCard
+              title="Matches"
+              icon="⏱️"
+              onClick={() => navigate('/admin/matches')}
+            />
+            <QuickActionCard
+              title="Schedule Breaks"
+              icon="☕"
+              onClick={() => navigate('/admin/schedule-breaks')}
+            />
+          </ActionCardGroup>
+
+          <ActionCardGroup title="Scorekeeper & Live Data">
+            <QuickActionCard
+              title="Scorekeeper"
+              icon="🎯"
+              onClick={() => navigate('/admin/scorekeeper')}
+            />
+            <QuickActionCard
+              title="Standings"
+              icon="📈"
+              onClick={() => navigate('/admin/standings')}
+            />
+          </ActionCardGroup>
+
+          <ActionCardGroup title="Public-Facing Pages">
+            <QuickActionCard
+              title="Public Schedule"
+              icon="📅"
+              onClick={() => window.open('/schedule', '_blank')}
+            />
+            <QuickActionCard
+              title="Public Standings"
+              icon="📊"
+              onClick={() => window.open('/standings', '_blank')}
+            />
+            <QuickActionCard
+              title="Team Schedule"
+              icon="📱"
+              onClick={() => window.open('/team-schedule', '_blank')}
+            />
+          </ActionCardGroup>
         </div>
 
         {/* Status Section */}
@@ -216,7 +212,6 @@ export default function Dashboard() {
 
 interface QuickActionCardProps {
   title: string
-  description: string
   icon: string
   onClick: () => void
 }
@@ -320,6 +315,28 @@ function StatusItem({ label, status, color }: StatusItemProps) {
       }}>
         {status}
       </span>
+    </div>
+  )
+}
+
+function ActionCardGroup({ title, children }: { title: string, children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 style={{
+        fontSize: '20px',
+        fontWeight: '600',
+        color: '#111827',
+        marginBottom: '16px'
+      }}>
+        {title}
+      </h3>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: '16px',
+      }}>
+        {children}
+      </div>
     </div>
   )
 }

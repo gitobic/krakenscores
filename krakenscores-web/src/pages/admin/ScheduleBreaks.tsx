@@ -183,6 +183,9 @@ export default function ScheduleBreaks() {
                   Pool
                 </th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+                  Date
+                </th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
                   Start Time
                 </th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
@@ -199,7 +202,7 @@ export default function ScheduleBreaks() {
             <tbody>
               {filteredBreaks.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: '#6b7280', fontSize: '14px' }}>
+                  <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: '#6b7280', fontSize: '14px' }}>
                     No schedule breaks. Click "Add Schedule Break" to create one.
                   </td>
                 </tr>
@@ -211,6 +214,9 @@ export default function ScheduleBreaks() {
                     </td>
                     <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '500', borderRight: '1px solid #e5e7eb' }}>
                       {getPoolName(scheduleBreak.poolId)}
+                    </td>
+                    <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb' }}>
+                      {scheduleBreak.scheduledDate}
                     </td>
                     <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb' }}>
                       {scheduleBreak.startTime}
@@ -270,6 +276,7 @@ function ScheduleBreakModal({ scheduleBreak, tournaments, pools, defaultTourname
   const [formData, setFormData] = useState({
     tournamentId: scheduleBreak?.tournamentId || defaultTournamentId || '',
     poolId: scheduleBreak?.poolId || '',
+    scheduledDate: scheduleBreak?.scheduledDate || new Date().toISOString().split('T')[0], // Default to today
     startTime: scheduleBreak?.startTime || '12:00',
     endTime: scheduleBreak?.endTime || '13:00',
     reason: scheduleBreak?.reason || '',
@@ -415,6 +422,32 @@ function ScheduleBreakModal({ scheduleBreak, tournaments, pools, defaultTourname
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Date */}
+            <div style={{ marginBottom: '32px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '8px'
+              }}>
+                Date *
+              </label>
+              <input
+                type="date"
+                required
+                value={formData.scheduledDate}
+                onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  fontSize: '16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px'
+                }}
+              />
             </div>
 
             {/* Time Range */}

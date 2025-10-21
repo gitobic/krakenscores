@@ -4,7 +4,9 @@ import { useMatchHelpers } from '../../hooks/useMatchHelpers'
 import {
   checkPoolTimeConflict,
   checkTeamConflict,
-  checkScheduleBreakConflict
+  checkScheduleBreakConflict,
+  timeToMinutes,
+  minutesToTime
 } from '../../utils/matchValidation'
 
 interface ScheduleGridProps {
@@ -57,29 +59,32 @@ export default function ScheduleGrid({
       }
       const daySlots = dayMap.get(date)!
 
-      if (!daySlots.has(match.scheduledTime)) {
-        daySlots.set(match.scheduledTime, {
-          time: match.scheduledTime,
+      const normalizedMatchTime = minutesToTime(timeToMinutes(match.scheduledTime))
+
+      if (!daySlots.has(normalizedMatchTime)) {
+        daySlots.set(normalizedMatchTime, {
+          time: normalizedMatchTime,
           matchesByPool: {},
           breaks: []
         })
       }
-      const slot = daySlots.get(match.scheduledTime)!
+      const slot = daySlots.get(normalizedMatchTime)!
       slot.matchesByPool[match.poolId] = match
     })
 
-    // Add schedule breaks to each day
-    // (Schedule breaks don't have dates, so they apply to all days)
-    dayMap.forEach((daySlots) => {
-      scheduleBreaks.forEach(breakItem => {
-        if (!daySlots.has(breakItem.startTime)) {
-          daySlots.set(breakItem.startTime, {
-            time: breakItem.startTime,
+    // Add schedule breaks to each day, filtered by date
+    dayMap.forEach((daySlots, date) => {
+      scheduleBreaks.filter(breakItem => breakItem.scheduledDate === date).forEach(breakItem => {
+        const normalizedBreakTime = minutesToTime(timeToMinutes(breakItem.startTime))
+
+        if (!daySlots.has(normalizedBreakTime)) {
+          daySlots.set(normalizedBreakTime, {
+            time: normalizedBreakTime,
             matchesByPool: {},
             breaks: []
           })
         }
-        const slot = daySlots.get(breakItem.startTime)!
+        const slot = daySlots.get(normalizedBreakTime)!
         slot.breaks.push(breakItem)
       })
     })
@@ -89,7 +94,7 @@ export default function ScheduleGrid({
       .map(([date, slotsMap]) => ({
         date,
         timeSlots: Array.from(slotsMap.values()).sort((a, b) =>
-          a.time.localeCompare(b.time)
+          timeToMinutes(a.time) - timeToMinutes(b.time) // Use timeToMinutes for sorting
         )
       }))
       .sort((a, b) => a.date.localeCompare(b.date))
@@ -127,6 +132,7 @@ export default function ScheduleGrid({
     // Check schedule break conflict
     const breakConflict = checkScheduleBreakConflict(
       newPoolId,
+      match.scheduledDate, // Pass scheduledDate
       newTime,
       match.duration,
       scheduleBreaks
@@ -207,6 +213,7 @@ export default function ScheduleGrid({
     // Check schedule break conflict
     const breakConflict = checkScheduleBreakConflict(
       match.poolId,
+      match.scheduledDate, // Pass scheduledDate
       match.scheduledTime,
       match.duration,
       scheduleBreaks
@@ -361,13 +368,19 @@ export default function ScheduleGrid({
                         onDragStart={() => handleDragStart(match)}
                         onClick={() => onEdit(match)}
                         style={{
-                          padding: '8px',
+                          padding: '4px 8px',
                           backgroundColor: getDivisionColor(match.divisionId),
                           border: hasConflict ? '2px solid #dc2626' : '1px solid #d1d5db',
-                          borderRadius: '4px',
+                          borderRadius: '16px', // Less rounded
                           cursor: onMatchDrop ? 'grab' : 'pointer',
                           transition: 'all 0.2s',
-                          boxShadow: hasConflict ? '0 0 0 3px rgba(220, 38, 38, 0.1)' : undefined
+                          boxShadow: hasConflict ? '0 0 0 3px rgba(220, 38, 38, 0.1)' : undefined,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          minHeight: '48px', // Shorter height
+                          position: 'relative', // For absolute positioning of match number and division
                         }}
                         onMouseEnter={(e) => {
                           if (!hasConflict) {
@@ -380,21 +393,20 @@ export default function ScheduleGrid({
                           e.currentTarget.style.transform = 'translateY(0)'
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '600', color: '#111827' }}>
-                            Match #{match.matchNumber}
-                          </span>
-                          <span style={{ fontSize: '11px', color: '#374151' }}>
-                            {getDivisionName(match.divisionId)}
-                          </span>
+                        {/* Match Number (upper left) */}
+                        <span style={{ position: 'absolute', top: '4px', left: '8px', fontSize: '10px', fontWeight: '600', color: '#111827' }}>
+                          #{match.matchNumber}
+                        </span>
+                        {/* Division (upper right) */}
+                        <span style={{ position: 'absolute', top: '4px', right: '8px', fontSize: '10px', color: '#374151' }}>
+                          {getDivisionName(match.divisionId)}
+                        </span>
+
+                        {/* Team Names (larger and centered) */}
+                        <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827', textAlign: 'center', lineHeight: '1.2' }}>
+                          {getTeamAbbreviation(match.darkTeamId)} vs {getTeamAbbreviation(match.lightTeamId)}
                         </div>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
-                          {getTeamAbbreviation(match.darkTeamId)}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '2px' }}>vs</div>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>
-                          {getTeamAbbreviation(match.lightTeamId)}
-                        </div>
+
                         {(match.isSemiFinal || match.isFinal) && (
                           <div style={{ marginTop: '4px', fontSize: '10px', fontWeight: '600', color: match.isFinal ? '#ca8a04' : '#2563eb' }}>
                             {match.isFinal ? '🏆 FINAL' : '🎯 SEMI-FINAL'}
