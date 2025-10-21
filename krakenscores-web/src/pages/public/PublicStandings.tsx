@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Standing } from '../../types/index'
+import PublicNav from '../../components/layout/PublicNav'
+import SortableStandingsTable from '../../components/SortableStandingsTable'
 
 interface MatchWithDetails {
   match: Match
@@ -263,6 +265,9 @@ export default function PublicStandings() {
       backgroundColor: '#f9fafb',
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
+      {/* Public Navigation Menu */}
+      <PublicNav />
+
       {/* Header */}
       <div style={{
         backgroundColor: '#2563eb',
@@ -449,78 +454,7 @@ export default function PublicStandings() {
                   border: '1px solid #e5e7eb',
                   borderTop: 'none'
                 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-                    <colgroup>
-                      <col style={{ width: '50px' }} />
-                      <col style={{ width: 'auto' }} />
-                      <col style={{ width: '45px' }} />
-                      <col style={{ width: '40px' }} />
-                      <col style={{ width: '40px' }} />
-                      <col style={{ width: '50px' }} />
-                      <col style={{ width: '50px' }} />
-                      <col style={{ width: '55px' }} />
-                      <col style={{ width: '50px' }} />
-                    </colgroup>
-                    <thead>
-                      <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #e5e7eb' }}>
-                        <th style={{ padding: '8px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>Rank</th>
-                        <th style={{ padding: '8px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'left', color: '#374151' }}>Team</th>
-                        <th style={{ padding: '8px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>GP</th>
-                        <th style={{ padding: '8px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>W</th>
-                        <th style={{ padding: '8px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>L</th>
-                        <th style={{ padding: '8px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>GF</th>
-                        <th style={{ padding: '8px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>GA</th>
-                        <th style={{ padding: '8px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>GD</th>
-                        <th style={{ padding: '8px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>Pts</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {standing.tableWithClubs.map((item, idx) => {
-                        const { teamStanding, clubName } = item
-                        const isEven = idx % 2 === 0
-                        return (
-                          <tr
-                            key={teamStanding.teamId}
-                            style={{
-                              backgroundColor: isEven ? '#ffffff' : '#f9fafb',
-                              borderBottom: '1px solid #e5e7eb'
-                            }}
-                          >
-                            <td style={{ padding: '8px 4px', fontSize: '13px', textAlign: 'center', fontWeight: '600', color: '#111827' }}>
-                              {teamStanding.rank}
-                            </td>
-                            <td style={{ padding: '8px 4px', fontSize: '13px', textAlign: 'left', fontWeight: '500', color: '#111827' }}>
-                              {clubName}
-                            </td>
-                            <td style={{ padding: '8px 4px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
-                              {teamStanding.games}
-                            </td>
-                            <td style={{ padding: '8px 4px', fontSize: '12px', textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>
-                              {teamStanding.wins}
-                            </td>
-                            <td style={{ padding: '8px 4px', fontSize: '12px', textAlign: 'center', color: '#dc2626', fontWeight: '600' }}>
-                              {teamStanding.losses}
-                            </td>
-                            <td style={{ padding: '8px 4px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
-                              {Math.round(teamStanding.goalsFor * 100) / 100}
-                            </td>
-                            <td style={{ padding: '8px 4px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
-                              {Math.round(teamStanding.goalsAgainst * 100) / 100}
-                            </td>
-                            <td style={{ padding: '8px 4px', fontSize: '12px', textAlign: 'center', color: '#374151', fontWeight: '600' }}>
-                              {(() => {
-                                const rounded = Math.round(teamStanding.goalDiff * 100) / 100
-                                return rounded > 0 ? `+${rounded}` : rounded
-                              })()}
-                            </td>
-                            <td style={{ padding: '8px 4px', fontSize: '13px', textAlign: 'center', fontWeight: '700', color: '#2563eb' }}>
-                              {teamStanding.points}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                  <SortableStandingsTable standings={standing.tableWithClubs} />
                 </div>
               </div>
             ))
@@ -621,6 +555,63 @@ export default function PublicStandings() {
               })}
             </div>
           )}
+        </div>
+
+        {/* Legend / Notes Section */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          border: '1px solid #e5e7eb',
+          padding: '20px',
+          marginTop: '32px'
+        }}>
+          <h3 style={{
+            fontSize: '16px',
+            fontWeight: '600',
+            color: '#111827',
+            marginBottom: '12px'
+          }}>
+            Legend
+          </h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '12px',
+            fontSize: '13px',
+            color: '#6b7280',
+            marginBottom: '16px'
+          }}>
+            <div><span style={{ fontWeight: '500' }}>GP:</span> Games Played</div>
+            <div><span style={{ fontWeight: '500' }}>W:</span> Wins</div>
+            <div><span style={{ fontWeight: '500' }}>L:</span> Losses</div>
+            <div><span style={{ fontWeight: '500' }}>GF:</span> Goals For</div>
+            <div><span style={{ fontWeight: '500' }}>GA:</span> Goals Against</div>
+            <div><span style={{ fontWeight: '500' }}>GD:</span> Goal Difference</div>
+            <div style={{ gridColumn: 'span 2' }}>
+              <span style={{ fontWeight: '500' }}>Pts:</span> Points (2 per win)
+            </div>
+          </div>
+          <div style={{
+            fontSize: '12px',
+            color: '#6b7280',
+            paddingTop: '12px',
+            borderTop: '1px solid #e5e7eb'
+          }}>
+            <p style={{ fontWeight: '500', marginBottom: '8px' }}>Tiebreaker Order:</p>
+            <ol style={{
+              paddingLeft: '20px',
+              listStyleType: 'decimal',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}>
+              <li>Total points (2 per win)</li>
+              <li>Head-to-head record</li>
+              <li>Goal difference</li>
+              <li>Goals for</li>
+              <li>Fewest goals against</li>
+            </ol>
+          </div>
         </div>
       </div>
 

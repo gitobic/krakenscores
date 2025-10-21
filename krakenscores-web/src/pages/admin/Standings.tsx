@@ -92,7 +92,7 @@ export default function Standings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation */}
         <nav className="mb-6">
@@ -119,31 +119,65 @@ export default function Standings() {
           </a>
         </nav>
 
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Standings</h1>
-            <p className="text-gray-600 mt-1">View team standings by division</p>
-          </div>
+        {/* Header */}
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{
+            fontSize: '30px',
+            fontWeight: 'bold',
+            color: '#111827',
+            margin: 0
+          }}>
+            Standings
+          </h1>
+          <p style={{
+            fontSize: '16px',
+            color: '#6b7280',
+            marginTop: '8px'
+          }}>
+            View team standings by division
+          </p>
         </div>
 
         {/* Tournament Filter */}
         {tournaments.length > 0 && (
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Filter by Tournament
-            </label>
-            <select
-              value={selectedTournamentId}
-              onChange={(e) => setSelectedTournamentId(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select Tournament</option>
-              {tournaments.map(tournament => (
-                <option key={tournament.id} value={tournament.id}>
-                  {tournament.name}
-                </option>
-              ))}
-            </select>
+          <div style={{
+            marginBottom: '24px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '16px',
+            border: '1px solid #e5e7eb'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                whiteSpace: 'nowrap'
+              }}>
+                Tournament:
+              </label>
+              <select
+                value={selectedTournamentId}
+                onChange={(e) => setSelectedTournamentId(e.target.value)}
+                style={{
+                  flex: 1,
+                  maxWidth: '400px',
+                  padding: '8px 12px',
+                  fontSize: '14px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  backgroundColor: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="">Select Tournament</option>
+                {tournaments.map(tournament => (
+                  <option key={tournament.id} value={tournament.id}>
+                    {tournament.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 
@@ -163,44 +197,56 @@ export default function Standings() {
 
               return (
                 <div key={standing.divisionId} className="bg-white rounded-lg shadow overflow-hidden">
-                  {/* Division Header */}
+                  {/* Division Header - Single Line */}
                   <div
                     style={{
                       backgroundColor: getDivisionColor(standing.divisionId),
-                      padding: '16px 24px',
+                      padding: '12px 20px',
                       display: 'flex',
                       justifyContent: 'space-between',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      gap: '16px'
                     }}
                   >
-                    <div>
-                      <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
-                        {getDivisionName(standing.divisionId)}
-                      </h2>
-                      <p style={{ fontSize: '13px', color: '#6b7280' }}>
-                        Last updated: {new Date(standing.updatedAt).toLocaleString()}
-                      </p>
-                    </div>
+                    <h2 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      margin: 0,
+                      flex: 1
+                    }}>
+                      {getDivisionName(standing.divisionId)}
+                      <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '12px', fontWeight: '400' }}>
+                        Updated: {new Date(standing.updatedAt).toLocaleString()}
+                      </span>
+                    </h2>
                     <button
                       onClick={() => handleRecalculate(standing.divisionId)}
                       disabled={isRecalculating}
                       style={{
-                        padding: '8px 16px',
-                        fontSize: '14px',
+                        padding: '6px 14px',
+                        fontSize: '13px',
                         fontWeight: '600',
-                        color: 'white',
-                        backgroundColor: isRecalculating ? '#9ca3af' : '#16a34a',
-                        border: 'none',
+                        color: isRecalculating ? '#6b7280' : '#16a34a',
+                        backgroundColor: 'white',
+                        border: isRecalculating ? '2px solid #9ca3af' : '2px solid #16a34a',
                         borderRadius: '6px',
                         cursor: isRecalculating ? 'not-allowed' : 'pointer',
                         transition: 'all 0.2s',
-                        opacity: isRecalculating ? 0.7 : 1
+                        opacity: isRecalculating ? 0.6 : 1,
+                        whiteSpace: 'nowrap'
                       }}
                       onMouseEnter={(e) => {
-                        if (!isRecalculating) e.currentTarget.style.backgroundColor = '#15803d'
+                        if (!isRecalculating) {
+                          e.currentTarget.style.backgroundColor = '#16a34a'
+                          e.currentTarget.style.color = 'white'
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        if (!isRecalculating) e.currentTarget.style.backgroundColor = '#16a34a'
+                        if (!isRecalculating) {
+                          e.currentTarget.style.backgroundColor = 'white'
+                          e.currentTarget.style.color = '#16a34a'
+                        }
                       }}
                     >
                       {isRecalculating ? '⟳ Recalculating...' : '⟳ Recalculate'}
@@ -208,34 +254,34 @@ export default function Standings() {
                   </div>
 
                   {/* Standings Table */}
-                  <table className="min-w-full divide-y divide-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
                           Rank
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
                           Team
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
                           GP
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
                           W
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
                           L
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
                           GF
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
                           GA
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
                           GD
                         </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
                           Pts
                         </th>
                       </tr>
@@ -243,41 +289,41 @@ export default function Standings() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {standing.table.length === 0 ? (
                         <tr>
-                          <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                          <td colSpan={9} style={{ padding: '24px 12px', textAlign: 'center', fontSize: '14px', color: '#6b7280' }}>
                             No teams in this division have completed matches yet.
                           </td>
                         </tr>
                       ) : (
                         standing.table.map((teamStanding, index) => (
                           <tr key={teamStanding.teamId} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: '700', color: '#111827' }}>
                               {teamStanding.rank}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: '500', color: '#111827' }}>
                               {teamStanding.teamName}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
                               {teamStanding.games}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>
                               {teamStanding.wins}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#dc2626', fontWeight: '600' }}>
                               {teamStanding.losses}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
                               {Math.round(teamStanding.goalsFor * 100) / 100}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-600">
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
                               {Math.round(teamStanding.goalsAgainst * 100) / 100}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-medium text-gray-900">
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', fontWeight: '600', color: '#374151' }}>
                               {(() => {
                                 const rounded = Math.round(teamStanding.goalDiff * 100) / 100
                                 return rounded > 0 ? `+${rounded}` : rounded
                               })()}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-blue-600">
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '13px', textAlign: 'center', fontWeight: '700', color: '#2563eb' }}>
                               {teamStanding.points}
                             </td>
                           </tr>

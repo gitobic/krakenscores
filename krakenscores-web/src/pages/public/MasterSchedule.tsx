@@ -3,6 +3,8 @@ import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Pool } from '../../types/index'
 import { format, parseISO } from 'date-fns'
+import PublicNav from '../../components/layout/PublicNav'
+import SortableMatchTable from '../../components/SortableMatchTable'
 
 interface MatchWithDetails {
   match: Match
@@ -18,9 +20,6 @@ interface GroupedMatches {
   [day: string]: MatchWithDetails[]
 }
 
-type SortField = 'matchNumber' | 'division' | 'time'
-type SortDirection = 'asc' | 'desc'
-
 export default function MasterSchedule() {
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [tournaments, setTournaments] = useState<Tournament[]>([])
@@ -29,8 +28,6 @@ export default function MasterSchedule() {
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>('')
   const [selectedDivisionId, setSelectedDivisionId] = useState<string>('all')
   const [showFullClubNames, setShowFullClubNames] = useState<boolean>(false)
-  const [sortField, setSortField] = useState<SortField>('matchNumber')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
   useEffect(() => {
     loadData()
@@ -170,36 +167,14 @@ export default function MasterSchedule() {
     }
   }
 
-  // Filter and sort matches
-  const filteredAndSortedMatches = useMemo(() => {
-    let filtered = matches
-
+  // Filter matches (sorting is handled by SortableMatchTable component)
+  const filteredMatches = useMemo(() => {
     // Filter by division
     if (selectedDivisionId !== 'all') {
-      filtered = filtered.filter(m => m.division.id === selectedDivisionId)
+      return matches.filter(m => m.division.id === selectedDivisionId)
     }
-
-    // Sort matches
-    const sorted = [...filtered].sort((a, b) => {
-      let comparison = 0
-
-      switch (sortField) {
-        case 'matchNumber':
-          comparison = a.match.matchNumber - b.match.matchNumber
-          break
-        case 'division':
-          comparison = a.division.name.localeCompare(b.division.name)
-          break
-        case 'time':
-          comparison = a.match.scheduledTime.localeCompare(b.match.scheduledTime)
-          break
-      }
-
-      return sortDirection === 'asc' ? comparison : -comparison
-    })
-
-    return sorted
-  }, [matches, selectedDivisionId, sortField, sortDirection])
+    return matches
+  }, [matches, selectedDivisionId])
 
   // Group matches by day
   const groupedMatches = useMemo(() => {
@@ -208,7 +183,7 @@ export default function MasterSchedule() {
 
     const groups: GroupedMatches = {}
 
-    filteredAndSortedMatches.forEach(m => {
+    filteredMatches.forEach(m => {
       const day = m.match.scheduledDate || format(selectedTournament.startDate, 'yyyy-MM-dd')
       if (!groups[day]) {
         groups[day] = []
@@ -217,7 +192,7 @@ export default function MasterSchedule() {
     })
 
     return groups
-  }, [filteredAndSortedMatches, selectedTournamentId, tournaments])
+  }, [filteredMatches, selectedTournamentId, tournaments])
 
   // Get sorted days
   const sortedDays = useMemo(() => {
@@ -225,24 +200,6 @@ export default function MasterSchedule() {
   }, [groupedMatches])
 
   const selectedTournament = tournaments.find(t => t.id === selectedTournamentId)
-
-  // Handle column header click for sorting
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      // Toggle direction if same field
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      // Set new field with ascending direction
-      setSortField(field)
-      setSortDirection('asc')
-    }
-  }
-
-  // Render sort indicator
-  const getSortIndicator = (field: SortField) => {
-    if (sortField !== field) return ' ⇅'
-    return sortDirection === 'asc' ? ' ↑' : ' ↓'
-  }
 
   if (loading) {
     return (
@@ -267,6 +224,9 @@ export default function MasterSchedule() {
       backgroundColor: '#f9fafb',
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
+      {/* Public Navigation Menu */}
+      <PublicNav />
+
       {/* Header */}
       <div style={{
         backgroundColor: '#2563eb',
@@ -442,156 +402,10 @@ export default function MasterSchedule() {
                 border: '1px solid #e5e7eb',
                 borderTop: 'none'
               }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #e5e7eb' }}>
-                      <th
-                        onClick={() => handleSort('matchNumber')}
-                        style={{
-                          padding: '6px 4px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          textAlign: 'center',
-                          color: '#374151',
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        #{getSortIndicator('matchNumber')}
-                      </th>
-                      <th
-                        onClick={() => handleSort('division')}
-                        style={{
-                          padding: '6px 4px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          textAlign: 'center',
-                          color: '#374151',
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        Div{getSortIndicator('division')}
-                      </th>
-                      <th
-                        onClick={() => handleSort('time')}
-                        style={{
-                          padding: '6px 4px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          textAlign: 'center',
-                          color: '#374151',
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        Time{getSortIndicator('time')}
-                      </th>
-                      <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'left', color: '#374151' }}>Dark vs Light</th>
-                      <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>Winner</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {groupedMatches[day].map((item, idx) => {
-                      const { match, division, darkTeamClub, lightTeamClub } = item
-                      const isEven = idx % 2 === 0
-
-                      // Determine winner
-                      let winnerText = ''
-                      if (match.status === 'final' && match.darkTeamScore !== undefined && match.lightTeamScore !== undefined) {
-                        if (match.darkTeamScore > match.lightTeamScore) {
-                          winnerText = showFullClubNames ? darkTeamClub.name : darkTeamClub.abbreviation
-                        } else if (match.lightTeamScore > match.darkTeamScore) {
-                          winnerText = showFullClubNames ? lightTeamClub.name : lightTeamClub.abbreviation
-                        } else {
-                          winnerText = 'Tie'
-                        }
-                      }
-
-                      return (
-                        <tr
-                          key={match.id}
-                          style={{
-                            backgroundColor: isEven ? '#ffffff' : '#f9fafb',
-                            borderBottom: '1px solid #e5e7eb'
-                          }}
-                        >
-                          {/* Match Number */}
-                          <td style={{
-                            padding: '6px 4px',
-                            fontSize: '13px',
-                            textAlign: 'center',
-                            fontWeight: '600',
-                            color: '#111827'
-                          }}>
-                            {match.matchNumber}
-                          </td>
-
-                          {/* Division (colored badge) */}
-                          <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                            <div style={{
-                              backgroundColor: division.colorHex,
-                              color: '#000000',
-                              padding: '2px 6px',
-                              borderRadius: '3px',
-                              fontSize: '10px',
-                              fontWeight: '600',
-                              display: 'inline-block',
-                              whiteSpace: 'nowrap'
-                            }}>
-                              {division.name}
-                            </div>
-                          </td>
-
-                          {/* Time */}
-                          <td style={{
-                            padding: '6px 4px',
-                            fontSize: '12px',
-                            textAlign: 'center',
-                            color: '#374151',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {match.scheduledTime}
-                          </td>
-
-                          {/* Teams */}
-                          <td style={{ padding: '6px 4px', fontSize: '12px', color: '#111827' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                              <div>
-                                <span style={{ fontWeight: '600' }}>
-                                  {showFullClubNames ? darkTeamClub.name : darkTeamClub.abbreviation}
-                                </span>
-                                {' vs '}
-                                <span style={{ fontWeight: '600' }}>
-                                  {showFullClubNames ? lightTeamClub.name : lightTeamClub.abbreviation}
-                                </span>
-                              </div>
-                              {match.status === 'final' && match.darkTeamScore !== undefined && match.lightTeamScore !== undefined && (
-                                <div style={{ fontSize: '11px', color: '#6b7280' }}>
-                                  ({match.darkTeamScore} - {match.lightTeamScore})
-                                </div>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Winner */}
-                          <td style={{
-                            padding: '6px 4px',
-                            fontSize: '12px',
-                            textAlign: 'center',
-                            fontWeight: '600',
-                            color: winnerText ? '#16a34a' : '#9ca3af'
-                          }}>
-                            {winnerText || '-'}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+                <SortableMatchTable
+                  matches={groupedMatches[day]}
+                  showFullClubNames={showFullClubNames}
+                />
               </div>
             </div>
           ))

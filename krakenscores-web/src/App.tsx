@@ -10,10 +10,10 @@ import Teams from './pages/admin/Teams'
 import Pools from './pages/admin/Pools'
 import Matches from './pages/admin/Matches'
 import ScheduleBreaks from './pages/admin/ScheduleBreaks'
-import Standings from './pages/admin/Standings'
 import Scorekeeper from './pages/admin/Scorekeeper'
 import MasterSchedule from './pages/public/MasterSchedule'
 import PublicStandings from './pages/public/PublicStandings'
+import TeamSchedule from './pages/public/TeamSchedule'
 
 function App() {
   return (
@@ -25,6 +25,9 @@ function App() {
           <Route path="/schedule" element={<MasterSchedule />} />
           <Route path="/standings" element={<PublicStandings />} />
           <Route path="/scores" element={<PublicStandings />} />
+          <Route path="/team-schedule" element={<TeamSchedule />} />
+          <Route path="/pocket-schedule" element={<TeamSchedule />} /> {/* Legacy route */}
+          <Route path="/pocket" element={<TeamSchedule />} /> {/* Legacy route */}
           <Route path="/login" element={<Login />} />
 
           {/* Protected admin routes */}
@@ -89,14 +92,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <ScheduleBreaks />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/standings"
-            element={
-              <ProtectedRoute>
-                <Standings />
               </ProtectedRoute>
             }
           />

@@ -161,12 +161,6 @@ export default function Dashboard() {
             onClick={() => navigate('/admin/schedule-breaks')}
           />
           <QuickActionCard
-            title="Standings"
-            description="View team standings"
-            icon="📈"
-            onClick={() => navigate('/admin/standings')}
-          />
-          <QuickActionCard
             title="Scorekeeper"
             description="Enter scores during tournament"
             icon="🎯"
@@ -183,6 +177,12 @@ export default function Dashboard() {
             description="View public standings"
             icon="📊"
             onClick={() => window.open('/standings', '_blank')}
+          />
+          <QuickActionCard
+            title="Team Schedule"
+            description="Team/club specific schedule"
+            icon="📱"
+            onClick={() => window.open('/team-schedule', '_blank')}
           />
         </div>
 

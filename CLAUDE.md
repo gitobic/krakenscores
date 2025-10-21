@@ -33,7 +33,7 @@ The application has two main components:
 - Master schedule view (game number, division, pool, time, teams with cap colors, scores)
 - Scores and standings with real-time updates
 - Search and filter (by club, team, division)
-- "Pocket schedule" feature (schedules by club or team)
+- Team schedule feature (schedules by club or team)
 - Announcements area for game changes and schedule status
 - Information area (facility info, merchandise links)
 - Fun Stats page (total/average points by division, pool, club)
@@ -185,7 +185,7 @@ The `ref_images/` directory contains design mockups and current system examples:
 - `03-Bracket_Status` [.pdf | .png] - Bracket standings view
 - `04-FunStats` [.pdf | .png] - Statistics page design
 - `05-Master` [.pdf | .png] - Master schedule layout
-- `06-PocketSchedule` [.pdf | .png] - Pocket schedule feature
+- `06-PocketSchedule` [.pdf | .png] - Team schedule feature (originally "pocket schedule")
 - `ref_2025-NOID-schedule-GoogleSheet.xlsx` - Current Google Sheets system
 - `ref_PRD.md` - prior attempt at this app using streamlit and python. reference only
 
@@ -640,7 +640,7 @@ interface Announcement {
 **Phase 3: Public Pages** (Weeks 5-6)
 - Master schedule view (mobile-first)
 - Scores & standings with search/filter
-- Pocket schedule (search by club/team)
+- Team schedule (search by club/team)
 - Announcements display
 
 **Phase 4: Advanced Features** (Weeks 7-8)
@@ -958,10 +958,16 @@ Utilities:
   - Added "Public Standings" quick action card to admin dashboard
   - Opens in new tab to preserve admin session
 
-### ⏭️ Phase 3C-D: Remaining Public Pages
+### ✅ Phase 3C: Team Schedule Page - **COMPLETE**
 1. ✅ Master schedule view (mobile-first) - **COMPLETE**
 2. ✅ Public standings with search/filter - **COMPLETE**
-3. ⏭️ Pocket schedule (by club/team)
+3. ✅ Team schedule (by club/team) - **COMPLETE**
+   - Renamed from "Pocket Schedule" to "Team Schedule"
+   - URL: `/team-schedule` (legacy: `/pocket-schedule`, `/pocket`)
+   - Filter by club or individual team
+   - Sortable table with day grouping
+
+### ⏭️ Phase 3D: Remaining Public Pages
 4. ⏭️ Announcements display
 
 ## Future Enhancements / Backlog
@@ -985,9 +991,9 @@ Utilities:
 - ✅ Schedule break conflict detection
 - ✅ Master schedule public page (mobile-first with filtering and sorting)
 - ✅ Public standings page with search/filter and recent results
+- ✅ Team schedule (by club/team) - Renamed from "Pocket Schedule"
 - [ ] Advanced conflict detection UI with visual indicators
 - [ ] Match feeds auto-population for brackets
-- [ ] Pocket schedule (by club/team)
 - [ ] Announcements display
 - [ ] Bracket visualization (tournament tree)
 - [ ] Statistics pages (fun stats, historical data)

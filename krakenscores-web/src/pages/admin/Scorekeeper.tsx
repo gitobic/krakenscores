@@ -391,21 +391,50 @@ export default function Scorekeeper() {
         </nav>
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Scorekeeper</h1>
-            <p className="text-gray-600 mt-1">Enter scores and finalize matches</p>
-          </div>
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{
+            fontSize: '30px',
+            fontWeight: 'bold',
+            color: '#111827',
+            margin: 0
+          }}>
+            Scorekeeper
+          </h1>
+          <p style={{
+            fontSize: '16px',
+            color: '#6b7280',
+            marginTop: '8px'
+          }}>
+            Enter scores and finalize matches
+          </p>
         </div>
 
         {/* Filters */}
-        <div className="mb-6 bg-white rounded-lg shadow p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div style={{
+          marginBottom: '24px',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '16px',
+          border: '1px solid #e5e7eb'
+        }}>
+          {/* First Line: Tournament and Day Filters */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '16px',
+            alignItems: 'center',
+            marginBottom: '12px'
+          }}>
             {/* Tournament Filter */}
             {tournaments.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tournament
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 300px' }}>
+                <label style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  whiteSpace: 'nowrap'
+                }}>
+                  Tournament:
                 </label>
                 <select
                   value={selectedTournamentId}
@@ -413,7 +442,15 @@ export default function Scorekeeper() {
                     setSelectedTournamentId(e.target.value)
                     setSelectedDay('all')
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    fontSize: '14px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    backgroundColor: 'white',
+                    cursor: 'pointer'
+                  }}
                 >
                   {tournaments.map(tournament => (
                     <option key={tournament.id} value={tournament.id}>
@@ -426,14 +463,27 @@ export default function Scorekeeper() {
 
             {/* Day Filter */}
             {availableDays.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter by Day
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 300px' }}>
+                <label style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  whiteSpace: 'nowrap'
+                }}>
+                  Filter by Day:
                 </label>
                 <select
                   value={selectedDay}
                   onChange={(e) => setSelectedDay(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    fontSize: '14px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    backgroundColor: 'white',
+                    cursor: 'pointer'
+                  }}
                 >
                   <option value="all">All Days ({matches.length} matches)</option>
                   {availableDays.map(day => {
@@ -447,26 +497,29 @@ export default function Scorekeeper() {
                 </select>
               </div>
             )}
+          </div>
 
-            {/* Team Display Toggle */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Team Display
-              </label>
-              <div className="flex items-center h-[42px]">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showTeamNames}
-                    onChange={(e) => setShowTeamNames(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">
-                    Show full club names
-                  </span>
-                </label>
-              </div>
-            </div>
+          {/* Second Line: Checkbox */}
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={showTeamNames}
+                onChange={(e) => setShowTeamNames(e.target.checked)}
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  cursor: 'pointer'
+                }}
+              />
+              <span style={{
+                marginLeft: '8px',
+                fontSize: '14px',
+                color: '#374151'
+              }}>
+                Show full club names
+              </span>
+            </label>
           </div>
         </div>
 
