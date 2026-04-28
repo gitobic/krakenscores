@@ -101,6 +101,23 @@ export default function Teams() {
     setShowBulkImportModal(true)
   }
 
+  const handleExportCSV = () => {
+    const header = 'Club Abbreviation,Division Name,Bracket'
+    const rows = sortedTeams.map(team => {
+      const club = clubs.find(c => c.id === team.clubId)
+      const division = divisions.find(d => d.id === team.divisionId)
+      return `${club?.abbreviation || ''},${division?.name || ''},${team.bracket || ''}`
+    })
+    const csv = [header, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'teams.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const getClubName = (clubId: string) => {
     const club = clubs.find(c => c.id === clubId)
     return club?.name || 'Unknown Club'
@@ -388,6 +405,25 @@ export default function Teams() {
         {/* Bulk Action Buttons - Below Table */}
         {sortedTeams.length > 0 && (
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
+            <button
+              onClick={handleExportCSV}
+              style={{
+                padding: '10px 20px',
+                fontSize: '15px',
+                fontWeight: '600',
+                color: 'white',
+                backgroundColor: '#0369a1',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#075985'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0369a1'}
+            >
+              ⬇ Export CSV
+            </button>
             <button
               onClick={handleBulkImport}
               style={{

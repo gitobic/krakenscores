@@ -180,7 +180,6 @@ export default function BulkImportTeamsModal({
                   Paste CSV data with 2-3 columns:
                 </p>
                 <code style={{ display: 'block', padding: '12px', backgroundColor: 'white', border: '1px solid #bfdbfe', borderRadius: '4px', fontSize: '13px', fontFamily: 'monospace', marginBottom: '12px' }}>
-                  Club Abbreviation, Division Name[, Bracket]<br/>
                   TOWPC, 12u CoEd, A<br/>
                   ORL, 14u CoEd, B<br/>
                   TOWPC, 16u Boys
