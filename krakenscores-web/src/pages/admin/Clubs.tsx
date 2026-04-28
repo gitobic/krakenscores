@@ -58,6 +58,19 @@ export default function Clubs() {
     }
   }
 
+  const handleExportCSV = () => {
+    const header = 'Club Name,Abbreviation,Logo URL'
+    const rows = sortedClubs.map(c => `${c.name},${c.abbreviation},${c.logoUrl || ''}`)
+    const csv = [header, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'clubs.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
@@ -261,6 +274,30 @@ export default function Clubs() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {clubs.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
+            <button
+              onClick={handleExportCSV}
+              style={{
+                padding: '10px 20px',
+                fontSize: '15px',
+                fontWeight: '600',
+                color: 'white',
+                backgroundColor: '#0369a1',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#075985'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0369a1'}
+            >
+              ⬇ Export CSV
+            </button>
           </div>
         )}
       </div>
