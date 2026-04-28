@@ -23,25 +23,23 @@ const STANDARD_DIVISIONS = [
   { name: 'Womens Open', hex: '#EE95A8' },// Pink
 ]
 
-// Available colors for custom divisions
+// Available colors — standard divisions first, then placement colors
 const AVAILABLE_COLORS = [
+  { hex: '#F0E442', name: '10u CoEd' },
+  { hex: '#8DD3C7', name: '12u CoEd' },
+  { hex: '#FDB462', name: '13u CoEd' },
+  { hex: '#E69F00', name: '14u CoEd' },
+  { hex: '#6A3D9A', name: '15u Boys' },
+  { hex: '#56B4E9', name: '16u Boys' },
+  { hex: '#CC79A7', name: '16u Girls' },
+  { hex: '#D55E00', name: '18u Boys' },
+  { hex: '#009E73', name: '18u Girls' },
+  { hex: '#0072B2', name: 'Masters' },
+  { hex: '#B3DE69', name: 'Mens Open' },
+  { hex: '#EE95A8', name: 'Womens Open' },
   { hex: '#FFD700', name: '1st Place' },
   { hex: '#C0C0C0', name: '2nd Place' },
   { hex: '#CD7F32', name: '3rd Place' },
-  { hex: '#E69F00', name: 'Final/Championship' },
-  { hex: '#0072B2', name: 'Semi-Final' },
-  { hex: '#FCCE5C', name: 'Sunflower Yellow' },
-  { hex: '#C1E6E5', name: 'Light Aqua' },
-  { hex: '#E6B081', name: 'Warm Beige' },
-  { hex: '#B8B58D', name: 'Olive Gray' },
-  { hex: '#56B4E9', name: 'Vibrant Blue' },
-  { hex: '#D55E00', name: 'Burnt Orange' },
-  { hex: '#CC79A7', name: 'Magenta' },
-  { hex: '#33A02C', name: 'Forest Green' },
-  { hex: '#E31A1C', name: 'Bold Red' },
-  { hex: '#FF7F00', name: 'Bright Orange' },
-  { hex: '#57A559', name: 'Mint Green' },
-  { hex: '#96AAC1', name: 'Steel Blue' },
 ]
 
 export default function Divisions() {
@@ -51,6 +49,7 @@ export default function Divisions() {
   const [editingDivision, setEditingDivision] = useState<Division | null>(null)
   const [error, setError] = useState('')
   const [initializing, setInitializing] = useState(false)
+  const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
     loadDivisions()
@@ -87,6 +86,28 @@ export default function Divisions() {
       alert('Failed to initialize divisions')
     } finally {
       setInitializing(false)
+    }
+  }
+
+  const syncStandardColors = async () => {
+    if (!confirm('This will update the color of any division whose name matches a standard division. Continue?')) return
+    try {
+      setSyncing(true)
+      let updated = 0
+      for (const division of divisions) {
+        const standard = STANDARD_DIVISIONS.find(s => s.name === division.name)
+        if (standard && standard.hex !== division.colorHex) {
+          await updateDivision(division.id, { colorHex: standard.hex })
+          updated++
+        }
+      }
+      await loadDivisions()
+      alert(`Updated ${updated} division${updated !== 1 ? 's' : ''}.`)
+    } catch (err) {
+      console.error('Error syncing colors:', err)
+      alert('Failed to sync colors')
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -192,6 +213,33 @@ export default function Divisions() {
                 }}
               >
                 {initializing ? 'Initializing...' : 'Initialize Standard Divisions'}
+              </button>
+            )}
+            {divisions.length > 0 && (
+              <button
+                onClick={syncStandardColors}
+                disabled={syncing}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  color: 'white',
+                  backgroundColor: syncing ? '#9ca3af' : '#7c3aed',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: syncing ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  opacity: syncing ? 0.5 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!syncing) e.currentTarget.style.backgroundColor = '#6d28d9'
+                }}
+                onMouseLeave={(e) => {
+                  if (!syncing) e.currentTarget.style.backgroundColor = '#7c3aed'
+                }}
+              >
+                {syncing ? 'Syncing...' : 'Sync Standard Colors'}
               </button>
             )}
             <button
