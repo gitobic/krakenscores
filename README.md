@@ -2,82 +2,93 @@
 
 A water polo tournament scoring and tracking application for Team Orlando Water Polo Club.
 
+## Live App
+
+**https://krakenscores-prod.web.app**
+
 ## Overview
 
-KrakenScores replaces a manual Google Sheets-based system with a dedicated web application for managing tournaments, scores, schedules, and team information. The application provides real-time score updates, mobile-first design, and automated standings calculations.
+KrakenScores replaces a manual Google Sheets-based system with a dedicated web application for managing tournaments, scores, schedules, and team information. It provides real-time score updates, a mobile-first public interface, and an admin backend for tournament staff.
 
-## Key Features
+## Features
 
-- **Admin Backend** - Tournament setup, scheduling, score entry, and bracket management
-- **Public Frontend** - Real-time scores, mobile-optimized schedules, standings, and statistics
-- **Real-time Updates** - Scores update across all devices instantly
-- **Mobile-First Design** - Optimized for viewing at poolside on smartphones
-- **Automated Calculations** - Standings, rankings, and bracket progression calculated automatically
+- **Admin Backend** — Tournament setup, club/team/pool management, match scheduling with conflict detection, score entry, standings, and announcements
+- **Public Frontend** — Mobile-optimized schedule, live scores, standings, team schedule, announcements, and bracket views
+- **Real-time Updates** — Firestore listeners push score and schedule changes instantly to all viewers
+- **Automated Standings** — Win/loss points, goal differential, and multi-level tie-breakers calculated automatically
 
 ## Technology Stack
 
-- **Backend & Hosting:** Firebase (Firestore, Auth, Hosting, Functions)
+- **Backend & Hosting:** Firebase (Firestore, Auth, Hosting)
 - **Frontend:** Vite + React 18 + TypeScript
-- **UI/Styling:** Tailwind CSS + shadcn/ui + Radix UI
-- **State Management:** React Context + Firebase Hooks
+- **Styling:** Tailwind CSS + inline styles
+- **State:** React Context + react-firebase-hooks
 
 ## Project Status
 
-**Current Phase:** Pre-implementation / Planning
+**Current Phase: Phase 3D Complete**
 
-The project is currently in the planning phase with comprehensive documentation completed:
-- ✅ Product Requirements Document (PRD)
-- ✅ Technical Specification
-- ✅ Setup Instructions
-- ✅ Design Mockups
+- ✅ Full admin CRUD (tournaments, clubs, divisions, teams, pools, matches, schedule breaks, standings, announcements)
+- ✅ Public pages (schedule, standings, team schedule, announcements, brackets)
+- ✅ Admin sidebar layout
+- ✅ Match conflict validation
+- ✅ Deployed to Firebase Hosting
 
-**Next Steps:** Initial Firebase setup and Phase 1 implementation (Tournament & Team Management)
+**Up Next (Phase 4):** Bracket visualization, fun stats, drag-and-drop scheduling, CSV export
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 18+
+- Firebase CLI: `npm install -g firebase-tools`
+
+### Setup
+
+1. **Clone the repo**
+   ```bash
+   git clone git@github.com:gitobic/krakenscores.git
+   cd krakenscores
+   ```
+
+2. **Create Firebase config file** — this file is gitignored and must be created manually:
+   ```bash
+   # krakenscores-web/.env.local
+   VITE_FIREBASE_API_KEY=...
+   VITE_FIREBASE_AUTH_DOMAIN=...
+   VITE_FIREBASE_PROJECT_ID=...
+   VITE_FIREBASE_STORAGE_BUCKET=...
+   VITE_FIREBASE_MESSAGING_SENDER_ID=...
+   VITE_FIREBASE_APP_ID=...
+   VITE_FIREBASE_MEASUREMENT_ID=...
+   ```
+   Get these values from the [Firebase Console](https://console.firebase.google.com) under Project Settings → Your Apps.
+
+3. **Install dependencies and start dev server**
+   ```bash
+   cd krakenscores-web
+   npm install
+   npm run dev
+   ```
+   App runs at http://localhost:5173
+
+### Deploy
+
+```bash
+# Re-authenticate if needed
+firebase login --reauth
+
+# Build and deploy
+cd krakenscores-web && npm run build
+cd .. && firebase deploy --only hosting
+```
 
 ## Documentation
 
-- **[PRD.md](PRD.md)** - Complete product requirements with user stories
-- **[TECHNICAL_SPEC_FIREBASE.md](TECHNICAL_SPEC_FIREBASE.md)** - Technical architecture and implementation details
-- **[CLAUDE.md](CLAUDE.md)** - Developer onboarding and commands
-- **[FRESH_START_CHECKLIST.md](FRESH_START_CHECKLIST.md)** - Step-by-step setup guide
-- **[ref_images/](ref_images/)** - Design mockups and reference materials
-
-## Development
-
-This project uses Firebase's free tier (Spark Plan) to keep costs at zero while supporting tournaments with <100 concurrent users.
-
-### Quick Start
-
-```bash
-# Install Firebase CLI
-npm install -g firebase-tools
-
-# Login to Firebase
-firebase login
-
-# Initialize Firebase
-firebase init
-
-# Create React app
-npm create vite@latest krakenscores-web -- --template react-ts
-
-# Install dependencies
-cd krakenscores-web
-npm install
-
-# Start development server
-npm run dev
-```
-
-See [FRESH_START_CHECKLIST.md](FRESH_START_CHECKLIST.md) for detailed setup instructions.
-
-## Contributing
-
-This is a volunteer-maintained project for Team Orlando Water Polo Club. For questions or contributions, please open an issue.
+- **[CLAUDE.md](CLAUDE.md)** — Full developer guide: architecture, design system, data model, commands
+- **[PRD.md](PRD.md)** — Product requirements and user stories
+- **[TECHNICAL_SPEC_FIREBASE.md](TECHNICAL_SPEC_FIREBASE.md)** — Technical architecture details
 
 ## License
 
 Private project for Team Orlando Water Polo Club.
-
----
-
-**Repository:** https://github.com/gitobic/krakenscores

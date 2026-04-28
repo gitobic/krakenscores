@@ -67,6 +67,3 @@ coverage/
 # Mac specific
 **/.DS_Store
 
-# Reference materials (local planning/design files)
-ref_gpt_review/
-ref_images/
