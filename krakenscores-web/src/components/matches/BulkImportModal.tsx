@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Match, Tournament, Pool, Division, Team } from '../../types/index'
+import type { Match, Tournament, Pool, Division, Team, Club } from '../../types/index'
 import { createMatch } from '../../services/matches'
 
 interface BulkImportModalProps {
@@ -8,6 +8,7 @@ interface BulkImportModalProps {
   pools: Pool[]
   divisions: Division[]
   teams: Team[]
+  clubs: Club[]
   defaultTournamentId: string
   onClose: () => void
   onSave: () => void
@@ -37,6 +38,7 @@ export default function BulkImportModal({
   pools,
   divisions,
   teams,
+  clubs,
   defaultTournamentId,
   onClose,
   onSave
@@ -92,19 +94,25 @@ export default function BulkImportModal({
       )
     }
 
-    const findTeam = (teamName: string, divisionId: string) => {
-      // Teams are global resources - filter by division only
-      // Try exact match first
+    const findTeam = (identifier: string, divisionId: string) => {
+      // Try club abbreviation first (preferred format)
+      const club = clubs.find(c => c.abbreviation.toLowerCase() === identifier.toLowerCase())
+      if (club) {
+        const team = teams.find(t => t.divisionId === divisionId && t.clubId === club.id)
+        if (team) return team
+      }
+
+      // Fall back to exact team name match
       let team = teams.find(t =>
         t.divisionId === divisionId &&
-        t.name.toLowerCase() === teamName.toLowerCase()
+        t.name.toLowerCase() === identifier.toLowerCase()
       )
 
-      // If no exact match, try partial match
+      // Last resort: partial team name match
       if (!team) {
         team = teams.find(t =>
           t.divisionId === divisionId &&
-          t.name.toLowerCase().includes(teamName.toLowerCase())
+          t.name.toLowerCase().includes(identifier.toLowerCase())
         )
       }
 
@@ -167,12 +175,16 @@ export default function BulkImportModal({
         newErrors.push(`Line ${lineNum}: Division "${divisionName}" not found`)
       }
       if (division && !darkTeam) {
-        const availableTeams = teams.filter(t => t.divisionId === division.id)
-        newErrors.push(`Line ${lineNum}: Dark team "${darkTeamName}" not found in ${divisionName}. Available: ${availableTeams.map(t => t.name).join(', ')}`)
+        const availableClubs = teams
+          .filter(t => t.divisionId === division.id)
+          .map(t => clubs.find(c => c.id === t.clubId)?.abbreviation || t.name)
+        newErrors.push(`Line ${lineNum}: Dark team "${darkTeamName}" not found in ${divisionName}. Available club abbreviations: ${availableClubs.join(', ')}`)
       }
       if (division && !lightTeam) {
-        const availableTeams = teams.filter(t => t.divisionId === division.id)
-        newErrors.push(`Line ${lineNum}: Light team "${lightTeamName}" not found in ${divisionName}. Available: ${availableTeams.map(t => t.name).join(', ')}`)
+        const availableClubs = teams
+          .filter(t => t.divisionId === division.id)
+          .map(t => clubs.find(c => c.id === t.clubId)?.abbreviation || t.name)
+        newErrors.push(`Line ${lineNum}: Light team "${lightTeamName}" not found in ${divisionName}. Available club abbreviations: ${availableClubs.join(', ')}`)
       }
       if (darkTeam && lightTeam && darkTeam.id === lightTeam.id) {
         newErrors.push(`Line ${lineNum}: Cannot have same team as both dark and light`)
@@ -590,7 +602,7 @@ export default function BulkImportModal({
               color: '#6b7280',
               marginBottom: '8px'
             }}>
-              Match# → Pool → Division → Date → Time → Dark Team → Light Team
+              Match# → Pool → Division → Date → Time → Dark Club Abbrev → Light Club Abbrev
             </p>
             <pre style={{
               fontSize: '12px',
@@ -599,23 +611,18 @@ export default function BulkImportModal({
               margin: 0,
               whiteSpace: 'pre-wrap'
             }}>
-{`1	1	18u Boys	1/15/25	08:00	Orlando Black	Tampa Blue
-2	1	18u Boys	1/15/25	08:55	Seminole Gold	Patriots White
-3	2	16u Girls	1/16/25	08:00	Team Orlando	SJ Cariba`}
+{`1,Pool 1,18u Boys,1/15/25,08:00,TOWPC,ORL
+2,Pool 1,18u Boys,1/15/25,08:55,SEM,PAT
+3,Pool 2,16u Girls,1/16/25,08:00,TOWPC,SJC`}
             </pre>
-            <p style={{
-              fontSize: '11px',
-              color: '#9ca3af',
-              marginTop: '8px'
-            }}>
+            <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '8px' }}>
               📅 Date formats: YYYY-MM-DD, MM/DD/YY, MM/DD/YYYY, or "Jan 15"
             </p>
-            <p style={{
-              fontSize: '11px',
-              color: '#9ca3af',
-              marginTop: '8px'
-            }}>
-              💡 Tip: Click "Export Template" to get a file with all available pools and teams pre-filled
+            <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
+              💡 Use club abbreviations (same as Teams page). Full team names also accepted as fallback.
+            </p>
+            <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
+              ⬇ Use "Export CSV" on this page to get existing matches as a re-importable template.
             </p>
           </div>
 

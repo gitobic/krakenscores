@@ -90,6 +90,28 @@ export default function Matches() {
     }
   }
 
+  const handleExportCSV = () => {
+    const header = 'Match#,Pool,Division,Date,Time,Dark Club,Light Club'
+    const rows = filteredMatches
+      .slice()
+      .sort((a, b) => a.matchNumber - b.matchNumber)
+      .map(match => {
+        const pool = pools.find(p => p.id === match.poolId)
+        const division = divisions.find(d => d.id === match.divisionId)
+        const darkClub = clubs.find(c => c.id === teams.find(t => t.id === match.darkTeamId)?.clubId)
+        const lightClub = clubs.find(c => c.id === teams.find(t => t.id === match.lightTeamId)?.clubId)
+        return `${match.matchNumber},${pool?.name || ''},${division?.name || ''},${match.scheduledDate},${match.scheduledTime},${darkClub?.abbreviation || ''},${lightClub?.abbreviation || ''}`
+      })
+    const csv = [header, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'matches.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const handleMatchDrop = async (matchId: string, newPoolId: string, newTime: string) => {
     try {
       const match = matches.find(m => m.id === matchId)
@@ -289,6 +311,25 @@ export default function Matches() {
         {filteredMatches.length > 0 && (
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
             <button
+              onClick={handleExportCSV}
+              style={{
+                padding: '10px 20px',
+                fontSize: '15px',
+                fontWeight: '600',
+                color: 'white',
+                backgroundColor: '#0369a1',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#075985'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0369a1'}
+            >
+              ⬇ Export CSV
+            </button>
+            <button
               onClick={() => setShowBulkImport(true)}
               style={{
                 padding: '10px 20px',
@@ -358,6 +399,7 @@ export default function Matches() {
           pools={pools}
           divisions={divisions}
           teams={teams}
+          clubs={clubs}
           defaultTournamentId={selectedTournamentId}
           onClose={() => setShowBulkImport(false)}
           onSave={loadData}
