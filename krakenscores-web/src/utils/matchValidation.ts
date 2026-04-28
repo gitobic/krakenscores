@@ -18,15 +18,16 @@ export function minutesToTime(totalMinutes: number): string {
 }
 
 /**
- * Check if a match number is already in use
+ * Check if a match number is already in use within a tournament
  */
 export function checkDuplicateMatchNumber(
   matchNumber: number,
+  tournamentId: string,
   matches: Match[],
   excludeMatchId?: string
 ): Match | null {
   const duplicate = matches.find(
-    m => m.matchNumber === matchNumber && m.id !== excludeMatchId
+    m => m.matchNumber === matchNumber && m.tournamentId === tournamentId && m.id !== excludeMatchId
   )
   return duplicate || null
 }
@@ -138,6 +139,7 @@ export function checkScheduleBreakConflict(
  */
 export function validateMatch(
   formData: {
+    tournamentId: string
     matchNumber: number
     poolId: string
     scheduledDate: string
@@ -145,6 +147,7 @@ export function validateMatch(
     duration: number
     darkTeamId: string
     lightTeamId: string
+    feedsFrom?: any // Allow feedsFrom for TBD teams
   },
   matches: Match[],
   pools: Pool[],
@@ -152,19 +155,24 @@ export function validateMatch(
   scheduleBreaks: ScheduleBreak[],
   excludeMatchId?: string
 ): string | null {
-  // Check same team constraint
-  if (formData.darkTeamId === formData.lightTeamId) {
+  // Check if teams are TBD (empty with feedsFrom rules)
+  const darkTeamIsTBD = !formData.darkTeamId && formData.feedsFrom?.darkFrom
+  const lightTeamIsTBD = !formData.lightTeamId && formData.feedsFrom?.lightFrom
+
+  // Check same team constraint (skip if either is TBD)
+  if (formData.darkTeamId && formData.lightTeamId && formData.darkTeamId === formData.lightTeamId) {
     return 'Dark team and light team cannot be the same'
   }
 
-  // Check duplicate match number
+  // Check duplicate match number within tournament
   const duplicateMatch = checkDuplicateMatchNumber(
     formData.matchNumber,
+    formData.tournamentId,
     matches,
     excludeMatchId
   )
   if (duplicateMatch) {
-    return `Match number ${formData.matchNumber} is already assigned. Please use a different match number.`
+    return `Match number ${formData.matchNumber} is already assigned in this tournament. Please use a different match number.`
   }
 
   // Check pool/date/time conflicts
@@ -185,18 +193,20 @@ export function validateMatch(
     return `Pool "${conflictPool?.name}" is occupied on ${formData.scheduledDate} from ${existingStart} to ${existingEnd} (Match #${poolTimeConflict.matchNumber}). Your match overlaps with this. Please choose a different time, date, or pool.`
   }
 
-  // Check team conflicts
-  const teamConflict = checkTeamConflict(
-    formData.darkTeamId,
-    formData.lightTeamId,
-    formData.scheduledDate,
-    formData.scheduledTime,
-    matches,
-    excludeMatchId
-  )
-  if (teamConflict) {
-    const conflictTeamName = teams.find(t => t.id === teamConflict.teamId)?.name
-    return `Team "${conflictTeamName}" is already scheduled to play on ${formData.scheduledDate} at ${formData.scheduledTime} in Match #${teamConflict.conflict.matchNumber}. A team cannot play in two matches at the same time.`
+  // Check team conflicts (skip if teams are TBD)
+  if (!darkTeamIsTBD && !lightTeamIsTBD && formData.darkTeamId && formData.lightTeamId) {
+    const teamConflict = checkTeamConflict(
+      formData.darkTeamId,
+      formData.lightTeamId,
+      formData.scheduledDate,
+      formData.scheduledTime,
+      matches,
+      excludeMatchId
+    )
+    if (teamConflict) {
+      const conflictTeamName = teams.find(t => t.id === teamConflict.teamId)?.name
+      return `Team "${conflictTeamName}" is already scheduled to play on ${formData.scheduledDate} at ${formData.scheduledTime} in Match #${teamConflict.conflict.matchNumber}. A team cannot play in two matches at the same time.`
+    }
   }
 
   // Check schedule break conflicts

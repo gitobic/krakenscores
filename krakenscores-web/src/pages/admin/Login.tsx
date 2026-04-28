@@ -34,7 +34,7 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-blue-600 mb-2">
             KrakenScores
           </h1>
-          <p className="text-gray-600">Admin Login</p>
+          <p className="text-gray-600">Login</p>
         </div>
 
         {error && (
@@ -55,7 +55,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="admin@example.com"
+              placeholder="Enter your email"
             />
           </div>
 

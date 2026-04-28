@@ -165,6 +165,9 @@ export default function Clubs() {
             <table className="min-w-full" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>
+                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827', width: '80px' }}>
+                    Logo
+                  </th>
                   <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
                     <button
                       onClick={() => handleSort('name')}
@@ -181,8 +184,32 @@ export default function Clubs() {
                         fontFamily: 'inherit'
                       }}
                     >
-                      Club
+                      Club Name
                       {sortField === 'name' && (
+                        <span style={{ fontSize: '10px' }}>
+                          {sortDirection === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </button>
+                  </th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827', width: '150px' }}>
+                    <button
+                      onClick={() => handleSort('abbreviation')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'inherit',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      Abbreviation
+                      {sortField === 'abbreviation' && (
                         <span style={{ fontSize: '10px' }}>
                           {sortDirection === 'asc' ? '▲' : '▼'}
                         </span>
@@ -197,22 +224,24 @@ export default function Clubs() {
               <tbody>
                 {sortedClubs.map((club, index) => (
                   <tr key={club.id} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '8px 12px', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        {club.logoUrl && (
-                          <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <img
-                              src={club.logoUrl}
-                              alt={club.name}
-                              style={{ maxWidth: '40px', maxHeight: '40px', objectFit: 'contain' }}
-                            />
-                          </div>
-                        )}
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: '500' }}>{club.name}</div>
-                          <div style={{ fontSize: '12px', color: '#6b7280' }}>{club.abbreviation}</div>
+                    <td style={{ padding: '8px 12px', textAlign: 'center', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                      {club.logoUrl ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <img
+                            src={club.logoUrl}
+                            alt={club.name}
+                            style={{ maxWidth: '40px', maxHeight: '40px', objectFit: 'contain' }}
+                          />
                         </div>
-                      </div>
+                      ) : (
+                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>—</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '500', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif', color: '#111827' }}>
+                      {club.name}
+                    </td>
+                    <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif', color: '#2563eb' }}>
+                      {club.abbreviation}
                     </td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       <button

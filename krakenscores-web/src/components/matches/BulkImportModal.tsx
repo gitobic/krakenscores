@@ -48,10 +48,11 @@ export default function BulkImportModal({
   const [parsedMatches, setParsedMatches] = useState<ParsedMatch[]>([])
   const [showPreview, setShowPreview] = useState(false)
 
-  // Get next match number
+  // Get next match number for the selected tournament
   const getNextMatchNumber = () => {
-    if (matches.length === 0) return 1
-    return Math.max(...matches.map(m => m.matchNumber)) + 1
+    const tournamentMatches = matches.filter(m => m.tournamentId === selectedTournamentId)
+    if (tournamentMatches.length === 0) return 1
+    return Math.max(...tournamentMatches.map(m => m.matchNumber)) + 1
   }
 
   const handleParse = () => {
@@ -73,7 +74,9 @@ export default function BulkImportModal({
     const newErrors: string[] = []
     const parsed: ParsedMatch[] = []
     let currentMatchNumber = getNextMatchNumber()
-    const usedMatchNumbers = new Set(matches.map(m => m.matchNumber))
+    // Only check match numbers within the selected tournament
+    const tournamentMatches = matches.filter(m => m.tournamentId === selectedTournamentId)
+    const usedMatchNumbers = new Set(tournamentMatches.map(m => m.matchNumber))
 
     // Helper functions
     const findPool = (poolName: string) => {
@@ -293,7 +296,8 @@ export default function BulkImportModal({
       setErrors(creationErrors)
       setShowPreview(false)
     } else {
-      onSave()
+      // Wait for data to reload before closing
+      await onSave()
       onClose()
     }
   }

@@ -10,7 +10,7 @@ import { getAllClubs } from '../../services/clubs'
 import { getAllDivisions } from '../../services/divisions'
 import BulkImportTeamsModal from '../../components/teams/BulkImportTeamsModal'
 
-type SortField = 'name' | 'club' | 'division'
+type SortField = 'name' | 'club' | 'division' | 'bracket'
 type SortDirection = 'asc' | 'desc'
 
 export default function Teams() {
@@ -135,6 +135,11 @@ export default function Teams() {
       comparison = getClubName(a.clubId).localeCompare(getClubName(b.clubId))
     } else if (sortField === 'division') {
       comparison = getDivisionName(a.divisionId).localeCompare(getDivisionName(b.divisionId))
+    } else if (sortField === 'bracket') {
+      // Sort brackets alphabetically, with empty brackets at the end
+      const aBracket = a.bracket || '\uFFFF' // Use max Unicode char for empty values
+      const bBracket = b.bracket || '\uFFFF'
+      comparison = aBracket.localeCompare(bBracket)
     }
 
     return sortDirection === 'asc' ? comparison : -comparison
@@ -298,6 +303,31 @@ export default function Teams() {
                       )}
                     </button>
                   </th>
+                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+                    <button
+                      onClick={() => handleSort('bracket')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'inherit',
+                        fontFamily: 'inherit',
+                        margin: '0 auto'
+                      }}
+                    >
+                      Bracket
+                      {sortField === 'bracket' && (
+                        <span style={{ fontSize: '10px' }}>
+                          {sortDirection === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </button>
+                  </th>
                   <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#111827' }}>
                     Actions
                   </th>
@@ -319,6 +349,20 @@ export default function Teams() {
                         />
                         <span style={{ fontSize: '14px' }}>{getDivisionName(team.divisionId)}</span>
                       </div>
+                    </td>
+                    <td style={{ padding: '8px 12px', textAlign: 'center', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                      <span style={{
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: team.bracket ? '#2563eb' : '#9ca3af',
+                        backgroundColor: team.bracket ? '#eff6ff' : 'transparent',
+                        padding: team.bracket ? '4px 10px' : '4px 0',
+                        borderRadius: '4px',
+                        display: 'inline-block',
+                        minWidth: '28px'
+                      }}>
+                        {team.bracket || '—'}
+                      </span>
                     </td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                       <button
@@ -431,7 +475,8 @@ function TeamModal({ team, clubs, divisions, onClose, onSave }: TeamModalProps) 
   const [formData, setFormData] = useState({
     clubId: team?.clubId || '',
     divisionId: team?.divisionId || '',
-    name: team?.name || ''
+    name: team?.name || '',
+    bracket: team?.bracket || ''
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -460,14 +505,16 @@ function TeamModal({ team, clubs, divisions, onClose, onSave }: TeamModalProps) 
         await updateTeam(team.id, {
           clubId: formData.clubId,
           divisionId: formData.divisionId,
-          name: formData.name
+          name: formData.name,
+          bracket: formData.bracket || undefined
         })
       } else {
         // Create new team
         await createTeam({
           clubId: formData.clubId,
           divisionId: formData.divisionId,
-          name: formData.name
+          name: formData.name,
+          bracket: formData.bracket || undefined
         })
       }
       onSave()
@@ -560,6 +607,40 @@ function TeamModal({ team, clubs, divisions, onClose, onSave }: TeamModalProps) 
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Bracket Assignment */}
+          <div style={{ marginBottom: '32px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+              Bracket (Optional)
+            </label>
+            <style>{`
+              .bracket-input::placeholder {
+                color: #d1d5db;
+                opacity: 1;
+              }
+            `}</style>
+            <input
+              type="text"
+              className="bracket-input"
+              value={formData.bracket}
+              onChange={(e) => setFormData({ ...formData, bracket: e.target.value.toUpperCase() })}
+              maxLength={1}
+              style={{
+                width: '80px',
+                padding: '12px 16px',
+                fontSize: '16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                textAlign: 'center',
+                fontWeight: '600',
+                textTransform: 'uppercase'
+              }}
+              placeholder="A"
+            />
+            <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
+              Assign team to a bracket letter (A, B, C, etc.) for playoff seeding
+            </p>
           </div>
 
           {/* Team Name */}

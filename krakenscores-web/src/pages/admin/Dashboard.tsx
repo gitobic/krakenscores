@@ -1,342 +1,279 @@
-import { useState } from 'react'
-import { useAuth } from '../../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import AdminLayout from '../../components/layout/AdminLayout'
+import { getAllTeams } from '../../services/teams'
+import { getAllTournaments } from '../../services/tournaments'
+import { getAllMatches } from '../../services/matches'
+import type { Team, Tournament, Match } from '../../types'
 
 export default function Dashboard() {
-  const { admin, signOut } = useAuth()
-  const navigate = useNavigate()
+  const [teams, setTeams] = useState<Team[]>([])
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
+  const [matches, setMatches] = useState<Match[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const handleSignOut = async () => {
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
     try {
-      await signOut()
-      navigate('/login')
+      const [teamsData, tournamentsData, matchesData] = await Promise.all([
+        getAllTeams(),
+        getAllTournaments(),
+        getAllMatches()
+      ])
+      setTeams(teamsData)
+      setTournaments(tournamentsData)
+      setMatches(matchesData)
     } catch (error) {
-      console.error('Sign out error:', error)
+      console.error('Error loading dashboard data:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header style={{
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e5e7eb',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
-      }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '20px 0'
-          }}>
-            <div>
-              <h1 style={{
-                fontSize: '32px',
-                fontWeight: 'bold',
-                color: '#2563eb',
-                marginBottom: '4px'
-              }}>
-                KrakenScores
-              </h1>
-              <p style={{
-                fontSize: '14px',
-                color: '#6b7280'
-              }}>
-                Admin Dashboard
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#111827',
-                  marginBottom: '2px'
-                }}>
-                  Admin User
-                </p>
-                <p style={{
-                  fontSize: '13px',
-                  color: '#6b7280'
-                }}>
-                  {admin?.role || 'super_admin'}
-                </p>
-              </div>
-              <button
-                onClick={handleSignOut}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#374151',
-                  backgroundColor: 'white',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f9fafb'
-                  e.currentTarget.style.borderColor = '#9ca3af'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'white'
-                  e.currentTarget.style.borderColor = '#d1d5db'
-                }}
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+  // Calculate active tournament (published and current date is within tournament dates)
+  const activeTournament = tournaments.find(t => {
+    if (!t.isPublished) return false
+    const now = new Date()
+    const start = new Date(t.startDate)
+    const end = new Date(t.endDate)
+    // Set to start of day for comparison
+    now.setHours(0, 0, 0, 0)
+    start.setHours(0, 0, 0, 0)
+    end.setHours(23, 59, 59, 999)
+    return now >= start && now <= end
+  })
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div style={{ marginBottom: '40px' }}>
-          <h2 style={{
+  // Calculate today's matches
+  const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
+  const todayMatches = matches.filter(m => m.scheduledDate === today)
+  const todayRemaining = todayMatches.filter(m => m.status !== 'final' && m.status !== 'cancelled')
+
+  return (
+    <AdminLayout>
+      <main style={{
+        padding: '48px 40px',
+        maxWidth: '1200px',
+        width: '100%'
+      }}>
+        {/* Welcome Section */}
+        <div style={{ marginBottom: '48px' }}>
+          <h1 style={{
             fontSize: '30px',
             fontWeight: 'bold',
             color: '#111827',
             marginBottom: '8px'
           }}>
-            Welcome to KrakenScores Admin
-          </h2>
+            Welcome to KrakenScores
+          </h1>
           <p style={{
             fontSize: '16px',
-            color: '#6b7280'
+            color: '#6b7280',
+            lineHeight: '1.5'
           }}>
             Manage tournaments, teams, schedules, and scores for Team Orlando Water Polo Club.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-10">
-          <ActionCardGroup title="Admin Functions">
-            <QuickActionCard
-              title="Tournaments"
-              icon="🏆"
-              onClick={() => navigate('/admin/tournaments')}
-            />
-            <QuickActionCard
-              title="Clubs"
-              icon="🏊"
-              onClick={() => navigate('/admin/clubs')}
-            />
-            <QuickActionCard
-              title="Divisions"
-              icon="📊"
-              onClick={() => navigate('/admin/divisions')}
-            />
-            <QuickActionCard
-              title="Teams"
-              icon="👥"
-              onClick={() => navigate('/admin/teams')}
-            />
-            <QuickActionCard
-              title="Pools"
-              icon="🏊‍♂️"
-              onClick={() => navigate('/admin/pools')}
-            />
-            <QuickActionCard
-              title="Matches"
-              icon="⏱️"
-              onClick={() => navigate('/admin/matches')}
-            />
-            <QuickActionCard
-              title="Schedule Breaks"
-              icon="☕"
-              onClick={() => navigate('/admin/schedule-breaks')}
-            />
-          </ActionCardGroup>
-
-          <ActionCardGroup title="Scorekeeper & Live Data">
-            <QuickActionCard
-              title="Scorekeeper"
-              icon="🎯"
-              onClick={() => navigate('/admin/scorekeeper')}
-            />
-            <QuickActionCard
-              title="Standings"
-              icon="📈"
-              onClick={() => navigate('/admin/standings')}
-            />
-          </ActionCardGroup>
-
-          <ActionCardGroup title="Public-Facing Pages">
-            <QuickActionCard
-              title="Public Schedule"
-              icon="📅"
-              onClick={() => window.open('/schedule', '_blank')}
-            />
-            <QuickActionCard
-              title="Public Standings"
-              icon="📊"
-              onClick={() => window.open('/standings', '_blank')}
-            />
-            <QuickActionCard
-              title="Team Schedule"
-              icon="📱"
-              onClick={() => window.open('/team-schedule', '_blank')}
-            />
-          </ActionCardGroup>
+        {/* Recent Activity Section */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '32px',
+          border: '1px solid #e5e7eb',
+          marginBottom: '32px'
+        }}>
+          <h2 style={{
+            fontSize: '20px',
+            fontWeight: '600',
+            color: '#111827',
+            marginBottom: '20px'
+          }}>
+            Recent Activity
+          </h2>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            {loading ? (
+              <p style={{ fontSize: '14px', color: '#6b7280' }}>Loading...</p>
+            ) : (
+              <>
+                <ActivityItem
+                  icon="⏱️"
+                  text={`${todayMatches.length} matches scheduled today`}
+                  time="Today"
+                  color="#2563eb"
+                />
+                <ActivityItem
+                  icon="👥"
+                  text={`${teams.length} teams registered`}
+                  time="Current"
+                  color="#16a34a"
+                />
+                <ActivityItem
+                  icon="🏆"
+                  text={activeTournament ? `${activeTournament.name} is active` : 'No active tournament'}
+                  time="Status"
+                  color={activeTournament ? '#f59e0b' : '#6b7280'}
+                />
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Status Section */}
+        {/* Quick Stats Section */}
         <div style={{
-          marginTop: '48px',
           backgroundColor: 'white',
           borderRadius: '8px',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
           padding: '32px',
           border: '1px solid #e5e7eb'
         }}>
-          <h3 style={{
+          <h2 style={{
             fontSize: '20px',
             fontWeight: '600',
             color: '#111827',
             marginBottom: '24px'
           }}>
-            System Status
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <StatusItem label="Firebase Connection" status="Connected" color="green" />
-            <StatusItem label="Active Tournament" status="None" color="gray" />
-            <StatusItem label="Total Teams" status="0" color="gray" />
+            Quick Stats
+          </h2>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '20px'
+          }}>
+            <StatCard
+              label="Active Tournament"
+              value={loading ? '...' : (activeTournament?.name || 'None')}
+              icon="🏆"
+              color={activeTournament ? '#f59e0b' : '#6b7280'}
+            />
+            <StatCard
+              label="Total Teams"
+              value={loading ? '...' : teams.length.toString()}
+              icon="👥"
+              color="#2563eb"
+            />
+            <StatCard
+              label="Matches Remaining"
+              value={loading ? '...' : `${todayRemaining.length} / ${todayMatches.length}`}
+              subtext={loading ? '' : `of ${todayMatches.length} today`}
+              icon="⏱️"
+              color="#16a34a"
+            />
+            <StatCard
+              label="Firebase Status"
+              value="Connected"
+              icon="✓"
+              color="#059669"
+            />
           </div>
         </div>
       </main>
-    </div>
+    </AdminLayout>
   )
 }
 
-interface QuickActionCardProps {
-  title: string
+interface ActivityItemProps {
   icon: string
-  onClick: () => void
+  text: string
+  time: string
+  color: string
 }
 
-function QuickActionCard({ title, icon, onClick }: QuickActionCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
-
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        backgroundColor: isHovered ? '#2563eb' : '#475569',
-        padding: '20px',
-        borderRadius: '8px',
-        boxShadow: isHovered
-          ? '0 6px 16px rgba(37, 99, 235, 0.3)'
-          : '0 2px 6px rgba(0, 0, 0, 0.15)',
-        textAlign: 'center',
-        border: 'none',
-        cursor: 'pointer',
-        transition: 'all 0.2s',
-        width: '100%',
-        aspectRatio: '1',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        transform: isHovered ? 'translateY(-2px)' : 'translateY(0)'
-      }}
-    >
-      <div style={{
-        fontSize: '36px',
-        lineHeight: '1'
-      }}>
-        {icon}
-      </div>
-      <h3 style={{
-        fontSize: '15px',
-        fontWeight: '600',
-        color: 'white',
-        lineHeight: '1.2'
-      }}>
-        {title}
-      </h3>
-    </button>
-  )
-}
-
-interface StatusItemProps {
-  label: string
-  status: string
-  color: 'green' | 'gray' | 'red'
-}
-
-function StatusItem({ label, status, color }: StatusItemProps) {
-  const colorStyles = {
-    green: {
-      text: '#059669',
-      bg: '#d1fae5',
-      border: '#6ee7b7'
-    },
-    gray: {
-      text: '#4b5563',
-      bg: '#f3f4f6',
-      border: '#d1d5db'
-    },
-    red: {
-      text: '#dc2626',
-      bg: '#fee2e2',
-      border: '#fca5a5'
-    }
-  }
-
-  const styles = colorStyles[color]
-
+function ActivityItem({ icon, text, time, color }: ActivityItemProps) {
   return (
     <div style={{
       display: 'flex',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      padding: '12px 0'
+      gap: '12px',
+      padding: '12px',
+      backgroundColor: '#f9fafb',
+      borderRadius: '6px',
+      borderLeft: `3px solid ${color}`
     }}>
+      <span style={{ fontSize: '20px' }}>{icon}</span>
+      <div style={{ flex: 1 }}>
+        <p style={{
+          fontSize: '14px',
+          fontWeight: '500',
+          color: '#111827',
+          margin: 0
+        }}>
+          {text}
+        </p>
+      </div>
       <span style={{
-        fontSize: '14px',
-        fontWeight: '500',
-        color: '#374151'
+        fontSize: '13px',
+        color: '#6b7280'
       }}>
-        {label}:
-      </span>
-      <span style={{
-        fontSize: '14px',
-        fontWeight: '600',
-        color: styles.text,
-        backgroundColor: styles.bg,
-        padding: '6px 14px',
-        borderRadius: '20px',
-        border: `1px solid ${styles.border}`
-      }}>
-        {status}
+        {time}
       </span>
     </div>
   )
 }
 
-function ActionCardGroup({ title, children }: { title: string, children: React.ReactNode }) {
+interface StatCardProps {
+  label: string
+  value: string
+  icon: string
+  color: string
+  subtext?: string
+}
+
+function StatCard({ label, value, icon, color, subtext }: StatCardProps) {
   return (
-    <div>
-      <h3 style={{
-        fontSize: '20px',
-        fontWeight: '600',
-        color: '#111827',
-        marginBottom: '16px'
-      }}>
-        {title}
-      </h3>
+    <div style={{
+      padding: '20px',
+      backgroundColor: '#f9fafb',
+      borderRadius: '8px',
+      border: '1px solid #e5e7eb'
+    }}>
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-        gap: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '12px'
       }}>
-        {children}
+        <span style={{
+          fontSize: '24px',
+          color: color
+        }}>
+          {icon}
+        </span>
+        <p style={{
+          fontSize: '13px',
+          fontWeight: '500',
+          color: '#6b7280',
+          margin: 0,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px'
+        }}>
+          {label}
+        </p>
       </div>
+      <p style={{
+        fontSize: '28px',
+        fontWeight: 'bold',
+        color: color,
+        margin: 0,
+        marginBottom: subtext ? '4px' : 0
+      }}>
+        {value}
+      </p>
+      {subtext && (
+        <p style={{
+          fontSize: '13px',
+          color: '#6b7280',
+          margin: 0
+        }}>
+          {subtext}
+        </p>
+      )}
     </div>
   )
 }

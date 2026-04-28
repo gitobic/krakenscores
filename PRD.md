@@ -160,6 +160,23 @@ A dedicated web application that:
 
 ---
 
+### Persona 5: Scorekeeper (David)
+**Role:** Volunteer responsible for entering scores
+**Tech Level:** Basic (smartphone/tablet user)
+**Goals:**
+- Quickly and accurately enter scores for completed games
+- Access only the necessary score entry interface
+- Avoid accidental changes to the schedule or tournament setup
+
+**Pain Points:**
+- Needs a simple, focused interface for score entry
+- Should not be distracted by other admin functions
+- May not be familiar with full admin features
+
+**Frequency:** Throughout tournament day (multiple times per hour)
+
+---
+
 ## User Stories
 
 ### Epic 1: Tournament Setup (Admin)
@@ -265,7 +282,7 @@ As a tournament administrator, I want to add breaks to the schedule (lunch, pool
 ### Epic 3: Score Entry & Standings (Admin)
 
 **US-3.1: Enter Scores**
-As a tournament administrator, I want to enter game scores quickly, so that standings update in real-time.
+As a tournament administrator or scorekeeper, I want to enter game scores quickly, so that standings update in real-time.
 
 **Acceptance Criteria:**
 - [ ] Can view list of games (filterable by division, pool, date)
@@ -277,6 +294,17 @@ As a tournament administrator, I want to enter game scores quickly, so that stan
 - [ ] Save button triggers immediate update
 - [ ] Public pages update within 2 seconds
 - [ ] Can edit scores after entry
+
+---
+
+**US-3.1.1: Scorekeeper Login**
+As a scorekeeper, I want to log in to a dedicated interface, so that I can enter scores without accessing full admin features.
+
+**Acceptance Criteria:**
+- [ ] Dedicated login page for scorekeepers
+- [ ] Successful login redirects to score entry page (`/admin/scorekeeper`)
+- [ ] Scorekeepers cannot access other admin pages (`/admin/tournaments`, etc.)
+- [ ] Uses local, hardcoded credentials (username: 'scorekeeper', password: 'password')
 
 ---
 
@@ -505,9 +533,12 @@ As a tournament administrator, I want to export tournament data, so that I can s
 | Requirement | Implementation |
 |-------------|----------------|
 | Admin authentication | Firebase email/password auth |
+| Scorekeeper authentication | Local hardcoded credentials (username: 'scorekeeper', password: 'password') |
 | Public read access | All tournament data |
 | Admin write access | Authenticated admins only |
+| Scorekeeper write access | Authenticated scorekeepers only to /admin/scorekeeper |
 | Admin authorization | Firestore security rules with /admins collection |
+| Scorekeeper authorization | Application-level role check for /admin/scorekeeper |
 | HTTPS | Firebase Hosting auto-provisioned SSL |
 | API key management | Environment variables (.env.local) |
 
@@ -588,6 +619,8 @@ As a tournament administrator, I want to export tournament data, so that I can s
 - ✅ Conflict validation
 - ✅ Score entry
 - ✅ Automatic standings
+- ✅ Scorekeeper role implemented (local authentication, restricted access)
+- ✅ Scorekeeper role implemented (local authentication, restricted access)
 
 **Deliverable:** Complete admin backend functional
 

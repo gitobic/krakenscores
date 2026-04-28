@@ -9,7 +9,9 @@ export default function PublicNav() {
   const menuItems = [
     { path: '/schedule', label: 'Schedule', icon: '📅' },
     { path: '/standings', label: 'Standings', icon: '🏆' },
-    { path: '/team-schedule', label: 'Team Schedule', icon: '📱' }
+    { path: '/brackets', label: 'Brackets', icon: '🏅' },
+    { path: '/team-schedule', label: 'Team Schedule', icon: '📱' },
+    { path: '/announcements', label: 'Announcements', icon: '📢' }
   ]
 
   const handleNavigate = (path: string) => {

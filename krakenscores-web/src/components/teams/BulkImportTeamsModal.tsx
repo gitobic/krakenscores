@@ -13,6 +13,7 @@ interface ParsedTeam {
   clubAbbreviation: string
   divisionName: string
   teamName: string
+  bracket?: string
   clubId?: string
   divisionId?: string
 }
@@ -50,11 +51,11 @@ export default function BulkImportTeamsModal({
         : line.split(',').map(p => p.trim().replace(/^["']|["']$/g, ''))
 
       if (parts.length < 2) {
-        errors.push(`Line ${i + 1}: Invalid format. Expected: Club Abbreviation, Division Name`)
+        errors.push(`Line ${i + 1}: Invalid format. Expected: Club Abbreviation, Division Name[, Bracket]`)
         continue
       }
 
-      const [clubAbbr, divisionName] = parts
+      const [clubAbbr, divisionName, bracket] = parts
 
       // Find matching club (case-insensitive abbreviation match)
       const club = clubs.find(c =>
@@ -81,6 +82,7 @@ export default function BulkImportTeamsModal({
         clubAbbreviation: clubAbbr,
         divisionName: divisionName,
         teamName: autoTeamName,
+        bracket: bracket?.toUpperCase() || undefined,
         clubId: club.id,
         divisionId: division.id
       })
@@ -108,7 +110,8 @@ export default function BulkImportTeamsModal({
         await createTeam({
           clubId: team.clubId,
           divisionId: team.divisionId,
-          name: team.teamName
+          name: team.teamName,
+          bracket: team.bracket
         })
       } catch (error) {
         console.error('Error creating team:', error)
@@ -174,18 +177,19 @@ export default function BulkImportTeamsModal({
                   📋 CSV Format Instructions
                 </h3>
                 <p style={{ fontSize: '14px', color: '#1e3a8a', marginBottom: '8px' }}>
-                  Paste CSV data with two columns:
+                  Paste CSV data with 2-3 columns:
                 </p>
                 <code style={{ display: 'block', padding: '12px', backgroundColor: 'white', border: '1px solid #bfdbfe', borderRadius: '4px', fontSize: '13px', fontFamily: 'monospace', marginBottom: '12px' }}>
-                  Club Abbreviation, Division Name<br/>
-                  TOWPC, 12u CoEd<br/>
-                  ORL, 14u CoEd<br/>
+                  Club Abbreviation, Division Name[, Bracket]<br/>
+                  TOWPC, 12u CoEd, A<br/>
+                  ORL, 14u CoEd, B<br/>
                   TOWPC, 16u Boys
                 </code>
                 <ul style={{ fontSize: '13px', color: '#1e3a8a', marginLeft: '20px', marginTop: '8px' }}>
                   <li>Team names will be auto-generated as "Division Club" (e.g., "12u CoEd Team Orlando")</li>
                   <li>Club abbreviations must match existing clubs exactly</li>
                   <li>Division names must match existing divisions exactly</li>
+                  <li><strong>Bracket column is optional</strong> - use letters (A, B, C, etc.) for playoff seeding</li>
                   <li>Header row is optional (will be auto-detected)</li>
                   <li>Supports both comma and tab separators</li>
                 </ul>
@@ -198,7 +202,7 @@ export default function BulkImportTeamsModal({
                 <textarea
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
-                  placeholder="Club Abbreviation, Division Name&#10;TOWPC, 12u CoEd&#10;ORL, 14u CoEd"
+                  placeholder="Club Abbreviation, Division Name, Bracket (optional)&#10;TOWPC, 12u CoEd, A&#10;ORL, 14u CoEd, B"
                   rows={12}
                   style={{
                     width: '100%',

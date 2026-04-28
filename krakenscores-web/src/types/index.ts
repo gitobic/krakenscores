@@ -36,6 +36,7 @@ export interface Team {
   divisionId: string;
   name: string; // e.g., "Orlando Black", "Tampa Blue"
   seedRank?: number; // Initial seeding (assigned when team is added to tournament)
+  bracket?: string; // Bracket assignment (A, B, C, D, etc.) for playoff seeding
   createdAt: Date;
   updatedAt: Date;
 }

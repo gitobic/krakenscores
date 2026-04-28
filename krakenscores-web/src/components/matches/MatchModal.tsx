@@ -72,8 +72,20 @@ export default function MatchModal({
     isSemiFinal: match?.isSemiFinal || false,
     roundType: match?.roundType || 'pool' as 'pool' | 'semi' | 'final' | 'placement',
     isFinal: match?.isFinal || false,
+    bracketRef: match?.bracketRef || '',
+    feedsFrom: match?.feedsFrom || undefined
   })
   const [saving, setSaving] = useState(false)
+
+  // Bracket rule state for TBD teams
+  const [darkTeamRule, setDarkTeamRule] = useState<{type: string, value: string}>({
+    type: match?.feedsFrom?.darkFrom?.type || 'winnerOf',
+    value: match?.feedsFrom?.darkFrom?.value?.toString() || ''
+  })
+  const [lightTeamRule, setLightTeamRule] = useState<{type: string, value: string}>({
+    type: match?.feedsFrom?.lightFrom?.type || 'winnerOf',
+    value: match?.feedsFrom?.lightFrom?.value?.toString() || ''
+  })
 
   // Filter pools by selected tournament
   const availablePools = pools.filter(p => p.tournamentId === formData.tournamentId)
@@ -93,9 +105,46 @@ export default function MatchModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validate TBD teams have bracket rules
+    if (formData.darkTeamId === 'TBD' && !darkTeamRule.value) {
+      alert('Please specify how the Dark Team will be determined (e.g., "3a" or "SF1")')
+      return
+    }
+    if (formData.lightTeamId === 'TBD' && !lightTeamRule.value) {
+      alert('Please specify how the Light Team will be determined (e.g., "4b" or "SF2")')
+      return
+    }
+
+    // Build feedsFrom object if teams are TBD
+    let feedsFromData = undefined
+    if (formData.darkTeamId === 'TBD' || formData.lightTeamId === 'TBD') {
+      feedsFromData = {
+        ...(formData.darkTeamId === 'TBD' && darkTeamRule.value && {
+          darkFrom: {
+            type: darkTeamRule.type as 'seed' | 'place' | 'winnerOf' | 'loserOf',
+            value: darkTeamRule.value
+          }
+        }),
+        ...(formData.lightTeamId === 'TBD' && lightTeamRule.value && {
+          lightFrom: {
+            type: lightTeamRule.type as 'seed' | 'place' | 'winnerOf' | 'loserOf',
+            value: lightTeamRule.value
+          }
+        })
+      }
+    }
+
+    const submissionData = {
+      ...formData,
+      ...(feedsFromData && { feedsFrom: feedsFromData }), // Only include if defined
+      // Set team IDs to empty string if TBD (validation will be updated to allow this)
+      darkTeamId: formData.darkTeamId === 'TBD' ? '' : formData.darkTeamId,
+      lightTeamId: formData.lightTeamId === 'TBD' ? '' : formData.lightTeamId
+    }
+
     // Validate match using centralized validation
     const validationError = validateMatch(
-      formData,
+      submissionData,
       matches,
       pools,
       teams,
@@ -111,19 +160,22 @@ export default function MatchModal({
     setSaving(true)
 
     try {
-      if (match) {
-        await updateMatch(match.id, formData)
-      } else {
-        // Remove undefined score fields for new matches
-        const { darkTeamScore, lightTeamScore, ...matchData } = formData
-        const newMatchData = {
-          ...matchData,
-          ...(darkTeamScore !== undefined && { darkTeamScore }),
-          ...(lightTeamScore !== undefined && { lightTeamScore })
-        }
-        await createMatch(newMatchData as Omit<Match, 'id' | 'createdAt' | 'updatedAt'>)
+      // Remove undefined score fields to prevent Firebase errors
+      const { darkTeamScore, lightTeamScore, feedsFrom, ...matchData } = submissionData
+      const cleanedData = {
+        ...matchData,
+        ...(darkTeamScore !== undefined && { darkTeamScore }),
+        ...(lightTeamScore !== undefined && { lightTeamScore }),
+        ...(feedsFrom && { feedsFrom }) // Only include if defined
       }
-      onSave()
+
+      if (match) {
+        await updateMatch(match.id, cleanedData)
+      } else {
+        await createMatch(cleanedData as Omit<Match, 'id' | 'createdAt' | 'updatedAt'>)
+      }
+      // Wait for data to reload before closing
+      await onSave()
       onClose()
     } catch (error) {
       console.error('Error saving match:', error)
@@ -410,12 +462,80 @@ export default function MatchModal({
                   disabled={!formData.divisionId}
                 >
                   <option value="">Select dark team</option>
+                  <option value="TBD">TBD - To Be Determined</option>
                   {availableDarkTeams.map(team => (
                     <option key={team.id} value={team.id}>
                       {team.name}
                     </option>
                   ))}
                 </select>
+
+                {/* Bracket Rule Builder for Dark Team */}
+                {formData.darkTeamId === 'TBD' && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px',
+                    backgroundColor: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '6px'
+                  }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#1e40af',
+                      marginBottom: '4px'
+                    }}>
+                      How is this team determined?
+                    </label>
+                    <p style={{
+                      fontSize: '11px',
+                      color: '#1e40af',
+                      marginBottom: '8px',
+                      margin: '0 0 8px 0'
+                    }}>
+                      {darkTeamRule.type === 'winnerOf' && 'Enter match reference (e.g., "3a" for Match 3 Bracket A, or "SF1")'}
+                      {darkTeamRule.type === 'loserOf' && 'Enter match reference (e.g., "3a" for Match 3 Bracket A, or "SF1")'}
+                      {darkTeamRule.type === 'place' && 'Enter placement (e.g., "Bracket A 1st", "Pool 1 2nd")'}
+                      {darkTeamRule.type === 'seed' && 'Enter seed number (e.g., "1", "2", "3")'}
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px' }}>
+                      <select
+                        value={darkTeamRule.type}
+                        onChange={(e) => setDarkTeamRule({ ...darkTeamRule, type: e.target.value })}
+                        style={{
+                          padding: '8px',
+                          fontSize: '14px',
+                          border: '1px solid #bfdbfe',
+                          borderRadius: '4px',
+                          backgroundColor: 'white'
+                        }}
+                      >
+                        <option value="winnerOf">Winner of</option>
+                        <option value="loserOf">Loser of</option>
+                        <option value="place">Place</option>
+                        <option value="seed">Seed</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={darkTeamRule.value}
+                        onChange={(e) => setDarkTeamRule({ ...darkTeamRule, value: e.target.value })}
+                        placeholder={
+                          darkTeamRule.type === 'winnerOf' ? '3a or SF1' :
+                          darkTeamRule.type === 'loserOf' ? '3a or SF1' :
+                          darkTeamRule.type === 'place' ? 'Bracket A 1st' :
+                          '1'
+                        }
+                        style={{
+                          padding: '8px',
+                          fontSize: '14px',
+                          border: '1px solid #bfdbfe',
+                          borderRadius: '4px'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -442,12 +562,80 @@ export default function MatchModal({
                   disabled={!formData.divisionId}
                 >
                   <option value="">Select light team</option>
+                  <option value="TBD">TBD - To Be Determined</option>
                   {availableLightTeams.map(team => (
                     <option key={team.id} value={team.id}>
                       {team.name}
                     </option>
                   ))}
                 </select>
+
+                {/* Bracket Rule Builder for Light Team */}
+                {formData.lightTeamId === 'TBD' && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px',
+                    backgroundColor: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '6px'
+                  }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      color: '#1e40af',
+                      marginBottom: '4px'
+                    }}>
+                      How is this team determined?
+                    </label>
+                    <p style={{
+                      fontSize: '11px',
+                      color: '#1e40af',
+                      marginBottom: '8px',
+                      margin: '0 0 8px 0'
+                    }}>
+                      {lightTeamRule.type === 'winnerOf' && 'Enter match reference (e.g., "4b" for Match 4 Bracket B, or "SF2")'}
+                      {lightTeamRule.type === 'loserOf' && 'Enter match reference (e.g., "4b" for Match 4 Bracket B, or "SF2")'}
+                      {lightTeamRule.type === 'place' && 'Enter placement (e.g., "Bracket B 1st", "Pool 2 2nd")'}
+                      {lightTeamRule.type === 'seed' && 'Enter seed number (e.g., "1", "2", "3")'}
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px' }}>
+                      <select
+                        value={lightTeamRule.type}
+                        onChange={(e) => setLightTeamRule({ ...lightTeamRule, type: e.target.value })}
+                        style={{
+                          padding: '8px',
+                          fontSize: '14px',
+                          border: '1px solid #bfdbfe',
+                          borderRadius: '4px',
+                          backgroundColor: 'white'
+                        }}
+                      >
+                        <option value="winnerOf">Winner of</option>
+                        <option value="loserOf">Loser of</option>
+                        <option value="place">Place</option>
+                        <option value="seed">Seed</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={lightTeamRule.value}
+                        onChange={(e) => setLightTeamRule({ ...lightTeamRule, value: e.target.value })}
+                        placeholder={
+                          lightTeamRule.type === 'winnerOf' ? '4b or SF2' :
+                          lightTeamRule.type === 'loserOf' ? '4b or SF2' :
+                          lightTeamRule.type === 'place' ? 'Bracket B 1st' :
+                          '1'
+                        }
+                        style={{
+                          padding: '8px',
+                          fontSize: '14px',
+                          border: '1px solid #bfdbfe',
+                          borderRadius: '4px'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -535,36 +723,67 @@ export default function MatchModal({
               </div>
             )}
 
-            {/* Match Type Flags */}
-            <div style={{ marginBottom: '32px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '12px'
-              }}>
-                Match Type
-              </label>
-              <div style={{ display: 'flex', gap: '24px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.isSemiFinal}
-                    onChange={(e) => setFormData({ ...formData, isSemiFinal: e.target.checked, isFinal: false })}
-                    style={{ marginRight: '8px', width: '18px', height: '18px' }}
-                  />
-                  <span style={{ fontSize: '14px', color: '#374151' }}>Semi-Final</span>
+            {/* Match Type and Bracket Reference */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Round Type
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.isFinal}
-                    onChange={(e) => setFormData({ ...formData, isFinal: e.target.checked, isSemiFinal: false })}
-                    style={{ marginRight: '8px', width: '18px', height: '18px' }}
-                  />
-                  <span style={{ fontSize: '14px', color: '#374151' }}>Final</span>
+                <select
+                  value={formData.roundType}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    roundType: e.target.value as any,
+                    isSemiFinal: e.target.value === 'semi',
+                    isFinal: e.target.value === 'final'
+                  })}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: '16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px'
+                  }}
+                >
+                  <option value="pool">Pool Play</option>
+                  <option value="semi">Semi-Final</option>
+                  <option value="final">Final</option>
+                  <option value="placement">Placement</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '8px'
+                }}>
+                  Bracket Reference (Optional)
                 </label>
+                <input
+                  type="text"
+                  value={formData.bracketRef}
+                  onChange={(e) => setFormData({ ...formData, bracketRef: e.target.value })}
+                  placeholder="e.g., SF1, SF2, F, 3rd, 5th"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontSize: '16px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px'
+                  }}
+                />
+                <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                  Used to identify playoff matches (SF1, SF2, F, etc.)
+                </p>
               </div>
             </div>
 

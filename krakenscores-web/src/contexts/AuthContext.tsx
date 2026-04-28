@@ -13,6 +13,7 @@ import type { Admin } from '../types'
 interface AuthContextType {
   user: User | null
   admin: Admin | null
+  userRole: 'admin' | 'scorekeeper' | 'public' | null // Added userRole
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [admin, setAdmin] = useState<Admin | null>(null)
+  const [userRole, setUserRole] = useState<'admin' | 'scorekeeper' | 'public' | null>(null) // Added userRole state
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -37,15 +39,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const adminDoc = await getDoc(doc(db, 'admins', user.uid))
           if (adminDoc.exists()) {
             setAdmin({ id: adminDoc.id, ...adminDoc.data() } as Admin)
+            setUserRole('admin')
           } else {
             setAdmin(null)
+            // If not an admin, check if they are a scorekeeper
+            const staffDoc = await getDoc(doc(db, 'staff', user.uid))
+            if (staffDoc.exists()) {
+              setUserRole('scorekeeper')
+            } else {
+              setUserRole('public') // Authenticated but neither admin nor scorekeeper
+            }
           }
         } catch (error) {
-          console.error('Error fetching admin data:', error)
+          console.error('Error fetching user role data:', error)
           setAdmin(null)
+          setUserRole('public')
         }
       } else {
         setAdmin(null)
+        setUserRole('public') // Default for unauthenticated users
       }
 
       setLoading(false)
@@ -57,8 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password)
+      // userRole will be set by onAuthStateChanged listener
     } catch (error) {
-      console.error('Sign in error:', error)
+      console.error('Firebase Sign in error:', error)
       throw error
     }
   }
@@ -67,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await firebaseSignOut(auth)
       setAdmin(null)
+      setUserRole('public') // Reset user role on sign out
     } catch (error) {
       console.error('Sign out error:', error)
       throw error
@@ -76,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = {
     user,
     admin,
+    userRole, // Export userRole
     loading,
     signIn,
     signOut,

@@ -131,6 +131,9 @@ export async function createTeam(
     if (data.seedRank !== undefined) {
       teamData.seedRank = data.seedRank
     }
+    if (data.bracket !== undefined) {
+      teamData.bracket = data.bracket
+    }
 
     const docRef = await addDoc(collection(db, COLLECTION_NAME), teamData)
     return docRef.id
@@ -156,6 +159,7 @@ export async function updateTeam(
     if (data.divisionId !== undefined) updateData.divisionId = data.divisionId
     if (data.name !== undefined) updateData.name = data.name
     if (data.seedRank !== undefined) updateData.seedRank = data.seedRank
+    if (data.bracket !== undefined) updateData.bracket = data.bracket
 
     await updateDoc(docRef, updateData)
   } catch (error) {

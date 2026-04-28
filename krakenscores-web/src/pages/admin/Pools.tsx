@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
-import type { Pool } from '../../types/index'
+import type { Pool, Tournament } from '../../types/index'
 import { getAllPools, createPool, updatePool, deletePool } from '../../services/pools'
+import { getAllTournaments } from '../../services/tournaments'
 
 type SortField = 'name' | 'location' | 'startTime'
 type SortDirection = 'asc' | 'desc'
 
 export default function Pools() {
   const [pools, setPools] = useState<Pool[]>([])
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingPool, setEditingPool] = useState<Pool | null>(null)
@@ -19,8 +21,12 @@ export default function Pools() {
 
   const loadData = async () => {
     try {
-      const poolsData = await getAllPools()
+      const [poolsData, tournamentsData] = await Promise.all([
+        getAllPools(),
+        getAllTournaments()
+      ])
       setPools(poolsData)
+      setTournaments(tournamentsData)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -170,6 +176,9 @@ export default function Pools() {
                   </button>
                 </th>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
+                  Tournament
+                </th>
+                <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', borderRight: '1px solid #e5e7eb', color: '#111827' }}>
                   <button
                     onClick={() => handleSort('location')}
                     style={{
@@ -225,38 +234,44 @@ export default function Pools() {
             <tbody>
               {sortedPools.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ padding: '32px', textAlign: 'center', color: '#6b7280', fontSize: '14px', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                  <td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: '#6b7280', fontSize: '14px', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                     No pools found. Click "Add Pool" to create one.
                   </td>
                 </tr>
               ) : (
-                sortedPools.map((pool, index) => (
-                  <tr key={pool.id} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '500', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-                      {pool.name}
-                    </td>
-                    <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-                      {pool.location}
-                    </td>
-                    <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-                      {pool.defaultStartTime}
-                    </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-                      <button
-                        onClick={() => handleEdit(pool)}
-                        style={{ color: '#4f46e5', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(pool.id)}
-                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                sortedPools.map((pool, index) => {
+                  const tournament = tournaments.find(t => t.id === pool.tournamentId)
+                  return (
+                    <tr key={pool.id} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '500', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                        {pool.name}
+                      </td>
+                      <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                        {tournament ? tournament.name : <span style={{ color: '#dc2626', fontStyle: 'italic' }}>Not assigned</span>}
+                      </td>
+                      <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                        {pool.location}
+                      </td>
+                      <td style={{ padding: '8px 12px', fontSize: '14px', color: '#6b7280', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                        {pool.defaultStartTime}
+                      </td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', whiteSpace: 'nowrap', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                        <button
+                          onClick={() => handleEdit(pool)}
+                          style={{ color: '#4f46e5', marginRight: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(pool.id)}
+                          style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
@@ -266,6 +281,7 @@ export default function Pools() {
       {showModal && (
         <PoolModal
           pool={editingPool}
+          tournaments={tournaments}
           onClose={() => setShowModal(false)}
           onSave={loadData}
         />
@@ -276,12 +292,14 @@ export default function Pools() {
 
 interface PoolModalProps {
   pool: Pool | null
+  tournaments: Tournament[]
   onClose: () => void
   onSave: () => void
 }
 
-function PoolModal({ pool, onClose, onSave }: PoolModalProps) {
+function PoolModal({ pool, tournaments, onClose, onSave }: PoolModalProps) {
   const [formData, setFormData] = useState({
+    tournamentId: pool?.tournamentId || '',
     name: pool?.name || '',
     location: pool?.location || '',
     defaultStartTime: pool?.defaultStartTime || '08:00',
@@ -293,18 +311,21 @@ function PoolModal({ pool, onClose, onSave }: PoolModalProps) {
     setSaving(true)
 
     try {
+      const poolData: any = {
+        name: formData.name,
+        location: formData.location,
+        defaultStartTime: formData.defaultStartTime
+      }
+
+      // Only include tournamentId if it's set
+      if (formData.tournamentId) {
+        poolData.tournamentId = formData.tournamentId
+      }
+
       if (pool) {
-        await updatePool(pool.id, {
-          name: formData.name,
-          location: formData.location,
-          defaultStartTime: formData.defaultStartTime
-        })
+        await updatePool(pool.id, poolData)
       } else {
-        await createPool({
-          name: formData.name,
-          location: formData.location,
-          defaultStartTime: formData.defaultStartTime
-        })
+        await createPool(poolData)
       }
       onSave()
       onClose()
@@ -357,6 +378,44 @@ function PoolModal({ pool, onClose, onSave }: PoolModalProps) {
           </h2>
 
           <form onSubmit={handleSubmit}>
+            {/* Tournament */}
+            <div style={{ marginBottom: '32px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '8px'
+              }}>
+                Tournament
+              </label>
+              <select
+                value={formData.tournamentId}
+                onChange={(e) => setFormData({ ...formData, tournamentId: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  fontSize: '16px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px'
+                }}
+              >
+                <option value="">Not assigned to a tournament</option>
+                {tournaments.map(tournament => (
+                  <option key={tournament.id} value={tournament.id}>
+                    {tournament.name}
+                  </option>
+                ))}
+              </select>
+              <p style={{
+                fontSize: '13px',
+                color: '#6b7280',
+                marginTop: '6px'
+              }}>
+                Assign this pool to a specific tournament (optional)
+              </p>
+            </div>
+
             {/* Pool Name */}
             <div style={{ marginBottom: '32px' }}>
               <label style={{

@@ -3,7 +3,6 @@ import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Standing } from '../../types/index'
 import PublicNav from '../../components/layout/PublicNav'
-import SortableStandingsTable from '../../components/SortableStandingsTable'
 
 interface MatchWithDetails {
   match: Match
@@ -66,6 +65,32 @@ export default function PublicStandings() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Group team standings by bracket
+  const groupByBracket = (teamStandings: any[], teamsMap: Map<string, Team>): Map<string, any[]> => {
+    const groups = new Map<string, any[]>()
+
+    teamStandings.forEach(ts => {
+      const team = teamsMap.get(ts.teamStanding.teamId)
+      const bracket = team?.bracket || 'No Bracket'
+
+      if (!groups.has(bracket)) {
+        groups.set(bracket, [])
+      }
+      groups.get(bracket)!.push(ts)
+    })
+
+    // Sort brackets alphabetically (No Bracket goes last)
+    const sorted = new Map(
+      Array.from(groups.entries()).sort(([a], [b]) => {
+        if (a === 'No Bracket') return 1
+        if (b === 'No Bracket') return -1
+        return a.localeCompare(b)
+      })
+    )
+
+    return sorted
   }
 
   const loadTournamentData = async () => {
@@ -432,32 +457,145 @@ export default function PublicStandings() {
               </p>
             </div>
           ) : (
-            filteredStandings.map(standing => (
-              <div key={standing.divisionId} style={{ marginBottom: '24px' }}>
-                {/* Division Header */}
-                <div style={{
-                  backgroundColor: getDivisionColor(standing.divisionId),
-                  color: '#000000',
-                  padding: '12px 16px',
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  borderRadius: '6px 6px 0 0'
-                }}>
-                  {getDivisionName(standing.divisionId)}
-                </div>
+            filteredStandings.map(standing => {
+              const teamsMap = new Map(teams.map(t => [t.id, t]))
+              const bracketGroups = groupByBracket(standing.tableWithClubs, teamsMap)
 
-                {/* Standings Table */}
-                <div style={{
-                  backgroundColor: 'white',
-                  borderRadius: '0 0 6px 6px',
-                  overflow: 'hidden',
-                  border: '1px solid #e5e7eb',
-                  borderTop: 'none'
-                }}>
-                  <SortableStandingsTable standings={standing.tableWithClubs} />
+              return (
+                <div key={standing.divisionId} style={{ marginBottom: '24px' }}>
+                  {/* Division Header */}
+                  <div style={{
+                    backgroundColor: getDivisionColor(standing.divisionId),
+                    color: '#000000',
+                    padding: '12px 16px',
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    borderRadius: '6px 6px 0 0'
+                  }}>
+                    {getDivisionName(standing.divisionId)}
+                  </div>
+
+                  {/* Standings Tables Grouped by Bracket */}
+                  <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '0 0 6px 6px',
+                    overflow: 'hidden',
+                    border: '1px solid #e5e7eb',
+                    borderTop: 'none'
+                  }}>
+                    {Array.from(bracketGroups.entries()).map(([bracket, bracketTeams], bracketIndex) => (
+                      <div key={bracket}>
+                        {/* Bracket Header */}
+                        {bracketGroups.size > 1 && (
+                          <div style={{
+                            backgroundColor: '#f3f4f6',
+                            padding: '8px 12px',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: '#2563eb',
+                            borderTop: bracketIndex > 0 ? '2px solid #e5e7eb' : 'none'
+                          }}>
+                            {bracket === 'No Bracket' ? 'Pool Play' : `Bracket ${bracket}`}
+                          </div>
+                        )}
+
+                        {/* Bracket Table */}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                          <colgroup>
+                            <col style={{ width: '45px' }} />
+                            <col style={{ width: '30%' }} />
+                            <col style={{ width: '42px' }} />
+                            <col style={{ width: '38px' }} />
+                            <col style={{ width: '38px' }} />
+                            <col style={{ width: '45px' }} />
+                            <col style={{ width: '45px' }} />
+                            <col style={{ width: '50px' }} />
+                            <col style={{ width: '48px' }} />
+                          </colgroup>
+                          <thead>
+                            <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                                Rank
+                              </th>
+                              <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'left', color: '#374151' }}>
+                                Team
+                              </th>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                                GP
+                              </th>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                                W
+                              </th>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                                L
+                              </th>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                                GF
+                              </th>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                                GA
+                              </th>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                                GD
+                              </th>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                                Pts
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {bracketTeams.map((item: any, idx: number) => {
+                              const { teamStanding, clubName } = item
+                              const isEven = idx % 2 === 0
+                              return (
+                                <tr
+                                  key={teamStanding.teamId}
+                                  style={{
+                                    backgroundColor: isEven ? '#ffffff' : '#f9fafb',
+                                    borderBottom: '1px solid #e5e7eb'
+                                  }}
+                                >
+                                  <td style={{ padding: '6px 2px', fontSize: '13px', textAlign: 'center', fontWeight: '600', color: '#111827' }}>
+                                    {teamStanding.rank}
+                                  </td>
+                                  <td style={{ padding: '6px 4px', fontSize: '13px', textAlign: 'left', fontWeight: '500', color: '#111827' }}>
+                                    {clubName}
+                                  </td>
+                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+                                    {teamStanding.games}
+                                  </td>
+                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>
+                                    {teamStanding.wins}
+                                  </td>
+                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#dc2626', fontWeight: '600' }}>
+                                    {teamStanding.losses}
+                                  </td>
+                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+                                    {Math.round(teamStanding.goalsFor * 100) / 100}
+                                  </td>
+                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+                                    {Math.round(teamStanding.goalsAgainst * 100) / 100}
+                                  </td>
+                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151', fontWeight: '600' }}>
+                                    {(() => {
+                                      const rounded = Math.round(teamStanding.goalDiff * 100) / 100
+                                      return rounded > 0 ? `+${rounded}` : rounded
+                                    })()}
+                                  </td>
+                                  <td style={{ padding: '6px 2px', fontSize: '13px', textAlign: 'center', fontWeight: '700', color: '#2563eb' }}>
+                                    {teamStanding.points}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
 

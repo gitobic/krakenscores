@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
-import type { Standing, Tournament, Division } from '../../types/index'
+import type { Standing, Tournament, Division, Team, TeamStanding } from '../../types/index'
 import { getStandingsByTournament, recalculateStandingsForDivision } from '../../services/standings'
 import { getAllTournaments } from '../../services/tournaments'
 import { getAllDivisions } from '../../services/divisions'
+import { getAllTeams } from '../../services/teams'
 
 export default function Standings() {
   const [standings, setStandings] = useState<Standing[]>([])
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [divisions, setDivisions] = useState<Division[]>([])
+  const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>('')
   const [recalculating, setRecalculating] = useState<string | null>(null) // divisionId being recalculated
@@ -32,12 +34,14 @@ export default function Standings() {
 
   const loadData = async () => {
     try {
-      const [tournamentsData, divisionsData] = await Promise.all([
+      const [tournamentsData, divisionsData, teamsData] = await Promise.all([
         getAllTournaments(),
-        getAllDivisions()
+        getAllDivisions(),
+        getAllTeams()
       ])
       setTournaments(tournamentsData)
       setDivisions(divisionsData)
+      setTeams(teamsData)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -54,6 +58,32 @@ export default function Standings() {
     } catch (error) {
       console.error('Error loading standings:', error)
     }
+  }
+
+  // Group team standings by bracket
+  const groupByBracket = (teamStandings: TeamStanding[]): Map<string, TeamStanding[]> => {
+    const groups = new Map<string, TeamStanding[]>()
+
+    teamStandings.forEach(ts => {
+      const team = teams.find(t => t.id === ts.teamId)
+      const bracket = team?.bracket || 'No Bracket'
+
+      if (!groups.has(bracket)) {
+        groups.set(bracket, [])
+      }
+      groups.get(bracket)!.push(ts)
+    })
+
+    // Sort brackets alphabetically (No Bracket goes last)
+    const sorted = new Map(
+      Array.from(groups.entries()).sort(([a], [b]) => {
+        if (a === 'No Bracket') return 1
+        if (b === 'No Bracket') return -1
+        return a.localeCompare(b)
+      })
+    )
+
+    return sorted
   }
 
   const handleRecalculate = async (divisionId: string) => {
@@ -253,84 +283,103 @@ export default function Standings() {
                     </button>
                   </div>
 
-                  {/* Standings Table */}
-                  <table className="min-w-full divide-y divide-gray-200" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
-                          Rank
-                        </th>
-                        <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
-                          Team
-                        </th>
-                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
-                          GP
-                        </th>
-                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
-                          W
-                        </th>
-                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
-                          L
-                        </th>
-                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
-                          GF
-                        </th>
-                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
-                          GA
-                        </th>
-                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
-                          GD
-                        </th>
-                        <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase' }}>
-                          Pts
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {standing.table.length === 0 ? (
-                        <tr>
-                          <td colSpan={9} style={{ padding: '24px 12px', textAlign: 'center', fontSize: '14px', color: '#6b7280' }}>
-                            No teams in this division have completed matches yet.
-                          </td>
-                        </tr>
-                      ) : (
-                        standing.table.map((teamStanding, index) => (
-                          <tr key={teamStanding.teamId} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: '700', color: '#111827' }}>
-                              {teamStanding.rank}
-                            </td>
-                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: '500', color: '#111827' }}>
-                              {teamStanding.teamName}
-                            </td>
-                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
-                              {teamStanding.games}
-                            </td>
-                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>
-                              {teamStanding.wins}
-                            </td>
-                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#dc2626', fontWeight: '600' }}>
-                              {teamStanding.losses}
-                            </td>
-                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
-                              {Math.round(teamStanding.goalsFor * 100) / 100}
-                            </td>
-                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
-                              {Math.round(teamStanding.goalsAgainst * 100) / 100}
-                            </td>
-                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', fontWeight: '600', color: '#374151' }}>
-                              {(() => {
-                                const rounded = Math.round(teamStanding.goalDiff * 100) / 100
-                                return rounded > 0 ? `+${rounded}` : rounded
-                              })()}
-                            </td>
-                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '13px', textAlign: 'center', fontWeight: '700', color: '#2563eb' }}>
-                              {teamStanding.points}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                  {/* Standings Tables Grouped by Bracket */}
+                  {standing.table.length === 0 ? (
+                    <div style={{ padding: '24px 12px', textAlign: 'center', fontSize: '14px', color: '#6b7280' }}>
+                      No teams in this division have completed matches yet.
+                    </div>
+                  ) : (
+                    <>
+                      {Array.from(groupByBracket(standing.table).entries()).map(([bracket, bracketTeams], bracketIndex) => (
+                        <div key={bracket}>
+                          {/* Bracket Header */}
+                          {groupByBracket(standing.table).size > 1 && (
+                            <div style={{
+                              backgroundColor: '#f3f4f6',
+                              padding: '8px 12px',
+                              fontSize: '13px',
+                              fontWeight: '600',
+                              color: '#2563eb',
+                              borderTop: bracketIndex > 0 ? '2px solid #e5e7eb' : 'none'
+                            }}>
+                              {bracket === 'No Bracket' ? 'Pool Play' : `Bracket ${bracket}`}
+                            </div>
+                          )}
+
+                          {/* Bracket Table */}
+                          <table className="min-w-full" style={{ fontFamily: 'system-ui, -apple-system, sans-serif', borderCollapse: 'collapse' }}>
+                            <thead style={{ backgroundColor: '#f9fafb' }}>
+                              <tr>
+                                <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>
+                                  Rank
+                                </th>
+                                <th style={{ padding: '8px 12px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>
+                                  Team
+                                </th>
+                                <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>
+                                  GP
+                                </th>
+                                <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>
+                                  W
+                                </th>
+                                <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>
+                                  L
+                                </th>
+                                <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>
+                                  GF
+                                </th>
+                                <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>
+                                  GA
+                                </th>
+                                <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>
+                                  GD
+                                </th>
+                                <th style={{ padding: '8px 12px', textAlign: 'center', fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', borderBottom: '1px solid #e5e7eb' }}>
+                                  Pts
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {bracketTeams.map((teamStanding, index) => (
+                                <tr key={teamStanding.teamId} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: '700', color: '#111827' }}>
+                                    {teamStanding.rank}
+                                  </td>
+                                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: '500', color: '#111827' }}>
+                                    {teamStanding.teamName}
+                                  </td>
+                                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+                                    {teamStanding.games}
+                                  </td>
+                                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>
+                                    {teamStanding.wins}
+                                  </td>
+                                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#dc2626', fontWeight: '600' }}>
+                                    {teamStanding.losses}
+                                  </td>
+                                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+                                    {Math.round(teamStanding.goalsFor * 100) / 100}
+                                  </td>
+                                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+                                    {Math.round(teamStanding.goalsAgainst * 100) / 100}
+                                  </td>
+                                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '12px', textAlign: 'center', fontWeight: '600', color: '#374151' }}>
+                                    {(() => {
+                                      const rounded = Math.round(teamStanding.goalDiff * 100) / 100
+                                      return rounded > 0 ? `+${rounded}` : rounded
+                                    })()}
+                                  </td>
+                                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontSize: '13px', textAlign: 'center', fontWeight: '700', color: '#2563eb' }}>
+                                    {teamStanding.points}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ))}
+                    </>
+                  )}
 
                   {/* Tiebreaker Notes */}
                   {standing.tiebreakerNotes && standing.tiebreakerNotes.length > 0 && (
