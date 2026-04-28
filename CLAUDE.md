@@ -77,7 +77,7 @@ KrakenScores is a water polo tournament scoring and tracking application for Tea
 |----------|-----|-------------|
 | 10u CoEd | #F0E442 | Yellow |
 | 12u CoEd | #8DD3C7 | Soft teal |
-| 13u CoEd | #FDB462 | Peach |
+| 13u CoEd | #CAB2D6 | Lavender |
 | 14u CoEd | #E69F00 | Amber orange |
 | 15u Boys | #6A3D9A | Deep violet |
 | 16u Boys | #56B4E9 | Sky blue |

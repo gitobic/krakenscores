@@ -11,7 +11,7 @@ import {
 const STANDARD_DIVISIONS = [
   { name: '10u CoEd', hex: '#F0E442' },   // Yellow
   { name: '12u CoEd', hex: '#8DD3C7' },   // Soft teal
-  { name: '13u CoEd', hex: '#FDB462' },   // Peach
+  { name: '13u CoEd', hex: '#CAB2D6' },   // Lavender
   { name: '14u CoEd', hex: '#E69F00' },   // Amber orange
   { name: '15u Boys', hex: '#6A3D9A' },   // Deep violet
   { name: '16u Boys', hex: '#56B4E9' },   // Sky blue
@@ -27,7 +27,7 @@ const STANDARD_DIVISIONS = [
 const AVAILABLE_COLORS = [
   { hex: '#F0E442', name: '10u CoEd' },
   { hex: '#8DD3C7', name: '12u CoEd' },
-  { hex: '#FDB462', name: '13u CoEd' },
+  { hex: '#CAB2D6', name: '13u CoEd' },
   { hex: '#E69F00', name: '14u CoEd' },
   { hex: '#6A3D9A', name: '15u Boys' },
   { hex: '#56B4E9', name: '16u Boys' },
