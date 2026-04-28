@@ -7,18 +7,20 @@ import {
   deleteDivision
 } from '../../services/divisions'
 
-// Predefined divisions from CLAUDE.md - these should be pre-populated in the database
+// Predefined divisions — Okabe-Ito colorblind-safe palette
 const STANDARD_DIVISIONS = [
-  { name: '12u CoEd', hex: '#8DD3C7' },
-  { name: '13u CoEd', hex: '#F0E442' },
-  { name: '14u CoEd', hex: '#FDB462' },
-  { name: '15u Boys', hex: '#6A3D9A' },
-  { name: '16u Boys', hex: '#80B1D3' },
-  { name: '16u Girls', hex: '#CAB2D6' },
-  { name: '18u Boys', hex: '#FB8072' },
-  { name: '18u Girls', hex: '#B3DE69' },
-  { name: 'Mens Open', hex: '#009E73' },
-  { name: 'Womens Open', hex: '#EE95A8' },
+  { name: '10u CoEd', hex: '#F0E442' },   // Yellow
+  { name: '12u CoEd', hex: '#8DD3C7' },   // Soft teal
+  { name: '13u CoEd', hex: '#FDB462' },   // Peach
+  { name: '14u CoEd', hex: '#E69F00' },   // Amber orange
+  { name: '15u Boys', hex: '#6A3D9A' },   // Deep violet
+  { name: '16u Boys', hex: '#56B4E9' },   // Sky blue
+  { name: '16u Girls', hex: '#CC79A7' },  // Reddish pink
+  { name: '18u Boys', hex: '#D55E00' },   // Vermillion
+  { name: '18u Girls', hex: '#009E73' },  // Bluish green
+  { name: 'Masters', hex: '#0072B2' },    // Deep blue
+  { name: 'Mens Open', hex: '#B3DE69' },  // Yellow-green
+  { name: 'Womens Open', hex: '#EE95A8' },// Pink
 ]
 
 // Available colors for custom divisions

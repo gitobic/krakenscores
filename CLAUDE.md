@@ -72,22 +72,24 @@ KrakenScores is a water polo tournament scoring and tracking application for Tea
 - **Tables**: Banded rows (alternating white/#f9fafb), sortable headers, 8px padding
 - **Forms**: Two-column grids for related fields, 32px spacing between groups
 
-### Division Colors (Color-Blind Safe)
+### Division Colors (Okabe-Ito Colorblind-Safe Palette)
 | Division | Hex | Description |
 |----------|-----|-------------|
+| 10u CoEd | #F0E442 | Yellow |
 | 12u CoEd | #8DD3C7 | Soft teal |
-| 13u CoEd | #F0E442 | Bright yellow |
-| 14u CoEd | #FDB462 | Warm peach-orange |
+| 13u CoEd | #FDB462 | Peach |
+| 14u CoEd | #E69F00 | Amber orange |
 | 15u Boys | #6A3D9A | Deep violet |
-| 16u Boys | #80B1D3 | Muted sky blue |
-| 16u Girls | #CAB2D6 | Muted lavender |
-| 18u Boys | #FB8072 | Coral red |
-| 18u Girls | #B3DE69 | Yellow-green |
+| 16u Boys | #56B4E9 | Sky blue |
+| 16u Girls | #CC79A7 | Reddish pink |
+| 18u Boys | #D55E00 | Vermillion |
+| 18u Girls | #009E73 | Bluish green |
+| Masters | #0072B2 | Deep blue |
+| Mens Open | #B3DE69 | Yellow-green |
+| Womens Open | #EE95A8 | Pink |
 | 1st Place | #FFD700 | Gold |
 | 2nd Place | #C0C0C0 | Silver |
 | 3rd Place | #CD7F32 | Bronze |
-
-*(27 total colors defined in color table - see ref_images/)*
 
 ## Tech Stack
 
@@ -105,7 +107,6 @@ KrakenScores is a water polo tournament scoring and tracking application for Tea
 krakenscores/
 ├── CLAUDE.md                         # This file
 ├── TECHNICAL_SPEC_FIREBASE.md        # Complete technical spec
-├── ref_images/                       # Design mockups
 ├── firebase.json                     # Firebase config
 ├── firestore.rules                   # Security rules
 └── krakenscores-web/                # React app
