@@ -11,7 +11,7 @@ KrakenScores is a water polo tournament scoring and tracking application for Tea
 - Budget: Free/low-cost Firebase Spark Plan
 - Tech stack: React 18 + TypeScript + Vite + Firebase
 - Repo: git@github.com:gitobic/krakenscores.git
-- Deployed: https://krakenscores-prod.web.app
+- Deployed: https://krakenscores.web.app
 
 ## Architecture
 

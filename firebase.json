@@ -6,6 +6,7 @@
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
+    "target": "krakenscores",
     "public": "krakenscores-web/dist",
     "ignore": [
       "firebase.json",

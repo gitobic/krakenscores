@@ -4,7 +4,7 @@ A water polo tournament scoring and tracking application for Team Orlando Water 
 
 ## Live App
 
-**https://krakenscores-prod.web.app**
+**https://krakenscores.web.app**
 
 ## Overview
 
