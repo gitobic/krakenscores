@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Standing, Tournament, Division, Team, TeamStanding } from '../../types/index'
-import { getStandingsByTournament, recalculateStandingsForDivision } from '../../services/standings'
+import { getStandingsByTournament, recalculateStandingsForDivision, deleteStandingsForTournament, recalculateAllStandingsForTournament } from '../../services/standings'
 import { getAllTournaments } from '../../services/tournaments'
 import { getAllDivisions } from '../../services/divisions'
 import { getAllTeams } from '../../services/teams'
@@ -13,6 +13,7 @@ export default function Standings() {
   const [loading, setLoading] = useState(true)
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>('')
   const [recalculating, setRecalculating] = useState<string | null>(null) // divisionId being recalculated
+  const [resetting, setResetting] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -89,7 +90,7 @@ export default function Standings() {
   const handleRecalculate = async (divisionId: string) => {
     setRecalculating(divisionId)
     try {
-      await recalculateStandingsForDivision(divisionId)
+      await recalculateStandingsForDivision(divisionId, selectedTournamentId)
       await loadStandings()
       alert('Standings recalculated successfully!')
     } catch (error) {
@@ -97,6 +98,23 @@ export default function Standings() {
       alert('Failed to recalculate standings. Please try again.')
     } finally {
       setRecalculating(null)
+    }
+  }
+
+  const handleResetAndRecalculateAll = async () => {
+    if (!selectedTournamentId) return
+    if (!confirm('This will delete all current standings and rebuild them from scratch for every division. Continue?')) return
+    setResetting(true)
+    try {
+      await deleteStandingsForTournament(selectedTournamentId)
+      await recalculateAllStandingsForTournament(selectedTournamentId)
+      await loadStandings()
+      alert('All standings reset and recalculated successfully!')
+    } catch (error) {
+      console.error('Error resetting standings:', error)
+      alert('Failed to reset standings. Please try again.')
+    } finally {
+      setResetting(false)
     }
   }
 
@@ -177,7 +195,7 @@ export default function Standings() {
             padding: '16px',
             border: '1px solid #e5e7eb'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <label style={{
                 fontSize: '14px',
                 fontWeight: '500',
@@ -207,6 +225,27 @@ export default function Standings() {
                   </option>
                 ))}
               </select>
+              {selectedTournamentId && (
+                <button
+                  onClick={handleResetAndRecalculateAll}
+                  disabled={resetting}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: resetting ? '#6b7280' : 'white',
+                    backgroundColor: resetting ? '#d1d5db' : '#dc2626',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: resetting ? 'not-allowed' : 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={(e) => { if (!resetting) e.currentTarget.style.backgroundColor = '#b91c1c' }}
+                  onMouseLeave={(e) => { if (!resetting) e.currentTarget.style.backgroundColor = '#dc2626' }}
+                >
+                  {resetting ? '⟳ Resetting...' : '⟳ Reset & Recalculate All'}
+                </button>
+              )}
             </div>
           </div>
         )}

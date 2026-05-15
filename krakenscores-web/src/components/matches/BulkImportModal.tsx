@@ -23,6 +23,10 @@ interface ParsedMatch {
   darkTeamName: string
   lightTeamName: string
   lineNum: number
+  isBracketGame: boolean
+  darkTeamLabel?: string   // set when dark team is a bracket ref (e.g. "3M", "Winner 47")
+  lightTeamLabel?: string
+  roundType?: 'pool' | 'semi' | 'final' | 'placement'
   // Resolved entities
   pool?: Pool
   division?: Division
@@ -79,6 +83,22 @@ export default function BulkImportModal({
     // Only check match numbers within the selected tournament
     const tournamentMatches = matches.filter(m => m.tournamentId === selectedTournamentId)
     const usedMatchNumbers = new Set(tournamentMatches.map(m => m.matchNumber))
+
+    // Detect bracket seed refs like "3M", "1C", "1 E", "Winner 47", "Loser 52"
+    const isBracketLabel = (str: string): boolean => {
+      const s = str.trim()
+      const lower = s.toLowerCase()
+      // Seed format: digits followed by letters (e.g. "3M", "1C", "1E", "1 E")
+      if (/^[0-9]+\s*[A-Za-z]+$/.test(s)) return true
+      // Game winner/loser reference
+      if (lower.startsWith('winner') || lower.startsWith('loser')) return true
+      return false
+    }
+
+    // Normalize bracket label (remove internal spaces like "1 E" → "1E")
+    const normalizeBracketLabel = (str: string): string => {
+      return str.trim().replace(/^(\d+)\s+([A-Z]+)$/i, '$1$2')
+    }
 
     // Helper functions
     const findPool = (poolName: string) => {
@@ -139,7 +159,8 @@ export default function BulkImportModal({
         continue
       }
 
-      const [matchNumStr, poolName, divisionName, dateStr, time, darkTeamName, lightTeamName] = cleaned
+      const [matchNumStr, poolName, divisionName, dateStr, time, darkTeamName, lightTeamName, roundTypeRaw] = cleaned
+      const roundTypeInput = roundTypeRaw?.toLowerCase() as 'pool' | 'semi' | 'final' | 'placement' | undefined
 
       // Parse match number
       let matchNum = parseInt(matchNumStr)
@@ -164,8 +185,20 @@ export default function BulkImportModal({
       // Find entities
       const pool = findPool(poolName)
       const division = findDivision(divisionName)
+      // Try real team lookup first, then fall back to bracket label detection
       const darkTeam = division ? findTeam(darkTeamName, division.id) : undefined
       const lightTeam = division ? findTeam(lightTeamName, division.id) : undefined
+      const darkIsBracket = !darkTeam && isBracketLabel(darkTeamName)
+      const lightIsBracket = !lightTeam && isBracketLabel(lightTeamName)
+      const isBracketGame = darkIsBracket || lightIsBracket
+
+      // Determine round type: use explicit column, else infer from bracket labels
+      let roundType: 'pool' | 'semi' | 'final' | 'placement' = 'pool'
+      if (roundTypeInput && ['pool', 'semi', 'final', 'placement'].includes(roundTypeInput)) {
+        roundType = roundTypeInput
+      } else if (isBracketGame) {
+        roundType = 'placement'
+      }
 
       // Validate
       if (!pool) {
@@ -174,13 +207,13 @@ export default function BulkImportModal({
       if (!division) {
         newErrors.push(`Line ${lineNum}: Division "${divisionName}" not found`)
       }
-      if (division && !darkTeam) {
+      if (division && !darkIsBracket && !darkTeam) {
         const availableClubs = teams
           .filter(t => t.divisionId === division.id)
           .map(t => clubs.find(c => c.id === t.clubId)?.abbreviation || t.name)
         newErrors.push(`Line ${lineNum}: Dark team "${darkTeamName}" not found in ${divisionName}. Available club abbreviations: ${availableClubs.join(', ')}`)
       }
-      if (division && !lightTeam) {
+      if (division && !lightIsBracket && !lightTeam) {
         const availableClubs = teams
           .filter(t => t.divisionId === division.id)
           .map(t => clubs.find(c => c.id === t.clubId)?.abbreviation || t.name)
@@ -248,6 +281,10 @@ export default function BulkImportModal({
         darkTeamName,
         lightTeamName,
         lineNum,
+        isBracketGame,
+        darkTeamLabel: darkIsBracket ? normalizeBracketLabel(darkTeamName) : undefined,
+        lightTeamLabel: lightIsBracket ? normalizeBracketLabel(lightTeamName) : undefined,
+        roundType,
         pool,
         division,
         darkTeam,
@@ -276,7 +313,10 @@ export default function BulkImportModal({
     const defaultDuration = tournament?.defaultMatchDuration || 55
 
     for (const match of parsedMatches) {
-      if (!match.pool || !match.division || !match.darkTeam || !match.lightTeam || !match.scheduledTime || !match.scheduledDate) {
+      const teamsResolved = match.isBracketGame
+        ? (match.darkTeamLabel || match.lightTeamLabel)  // bracket game only needs labels
+        : (match.darkTeam && match.lightTeam)            // pool game needs real teams
+      if (!match.pool || !match.division || !teamsResolved || !match.scheduledTime || !match.scheduledDate) {
         creationErrors.push(`Line ${match.lineNum}: Missing required data`)
         continue
       }
@@ -287,15 +327,17 @@ export default function BulkImportModal({
           poolId: match.pool.id,
           divisionId: match.division.id,
           matchNumber: match.matchNum,
-          scheduledDate: match.scheduledDate, // Use parsed date from import
+          scheduledDate: match.scheduledDate,
           scheduledTime: match.scheduledTime,
-          duration: defaultDuration, // Use tournament's default duration
-          darkTeamId: match.darkTeam.id,
-          lightTeamId: match.lightTeam.id,
+          duration: defaultDuration,
+          darkTeamId: match.darkTeam?.id || '',
+          lightTeamId: match.lightTeam?.id || '',
+          darkTeamLabel: match.darkTeamLabel,
+          lightTeamLabel: match.lightTeamLabel,
           status: 'scheduled',
-          roundType: 'pool',
-          isSemiFinal: false,
-          isFinal: false
+          roundType: match.roundType || 'pool',
+          isSemiFinal: match.roundType === 'semi',
+          isFinal: match.roundType === 'final'
         })
       } catch (error) {
         creationErrors.push(`Line ${match.lineNum}: Failed to create match - ${error}`)
@@ -395,6 +437,9 @@ export default function BulkImportModal({
                         <div style={{ fontSize: '12px' }}>
                           <div>
                             <span style={{ color: '#6b7280' }}>"{match.darkTeamName}"</span>
+                            {match.darkTeamLabel && (
+                              <span style={{ color: '#7c3aed', marginLeft: '8px' }}>→ TBD: {match.darkTeamLabel}</span>
+                            )}
                             {match.darkTeam && (
                               <span style={{ color: '#16a34a', marginLeft: '8px' }}>→ {match.darkTeam.name}</span>
                             )}
@@ -402,6 +447,9 @@ export default function BulkImportModal({
                           <div style={{ color: '#9ca3af', margin: '4px 0' }}>vs</div>
                           <div>
                             <span style={{ color: '#6b7280' }}>"{match.lightTeamName}"</span>
+                            {match.lightTeamLabel && (
+                              <span style={{ color: '#7c3aed', marginLeft: '8px' }}>→ TBD: {match.lightTeamLabel}</span>
+                            )}
                             {match.lightTeam && (
                               <span style={{ color: '#16a34a', marginLeft: '8px' }}>→ {match.lightTeam.name}</span>
                             )}
@@ -595,14 +643,14 @@ export default function BulkImportModal({
               color: '#374151',
               marginBottom: '8px'
             }}>
-              Required Format (7 columns, tab or comma separated):
+              Format (7–8 columns, tab or comma separated):
             </p>
             <p style={{
               fontSize: '12px',
               color: '#6b7280',
               marginBottom: '8px'
             }}>
-              Match# → Pool → Division → Date → Time → Dark Club Abbrev → Light Club Abbrev
+              Match# → Pool → Division → Date → Time → Dark Team → Light Team → [Round Type]
             </p>
             <pre style={{
               fontSize: '12px',
@@ -611,18 +659,23 @@ export default function BulkImportModal({
               margin: 0,
               whiteSpace: 'pre-wrap'
             }}>
-{`1,Pool 1,18u Boys,1/15/25,08:00,TOWPC,ORL
-2,Pool 1,18u Boys,1/15/25,08:55,SEM,PAT
-3,Pool 2,16u Girls,1/16/25,08:00,TOWPC,SJC`}
+{`# Pool play (use club abbreviations)
+1,Pool 1,18u Boys,5/16/26,07:00,TOWPC,ORL
+2,Pool 2,18u Girls,5/16/26,07:55,PAT,SEM
+
+# Bracket play (use seed codes — auto-detected as TBD)
+47,Pool 1,18u Boys,5/16/26,17:05,3M,3N
+73,Pool 3,16u Girls,5/16/26,10:40,Loser 52,Loser 54
+84,Pool 2,16u Girls,5/17/26,14:20,Winner 69,Winner 72`}
             </pre>
             <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '8px' }}>
+              🏆 Bracket codes: <strong>3M</strong> = 3rd place bracket M, <strong>Winner 47</strong> = winner of game 47, <strong>Loser 52</strong> = loser of game 52
+            </p>
+            <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
               📅 Date formats: YYYY-MM-DD, MM/DD/YY, MM/DD/YYYY, or "Jan 15"
             </p>
             <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
-              💡 Use club abbreviations (same as Teams page). Full team names also accepted as fallback.
-            </p>
-            <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
-              ⬇ Use "Export CSV" on this page to get existing matches as a re-importable template.
+              ⚙ Optional 8th column: round type — pool, semi, final, placement (default: pool for known teams, placement for bracket codes)
             </p>
           </div>
 

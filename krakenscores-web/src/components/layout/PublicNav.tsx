@@ -167,9 +167,36 @@ export default function PublicNav() {
               })}
             </nav>
 
+            {/* Feedback Link */}
+            <div style={{ padding: '8px 0', borderTop: '1px solid #e5e7eb' }}>
+              <a
+                href="https://forms.gle/GEmtM5MtaXmDqwjh7"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: 'transparent',
+                  color: '#7c3aed',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  textDecoration: 'none',
+                  transition: 'background-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f3ff'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <span style={{ fontSize: '20px' }}>📝</span>
+                <span>Give Feedback</span>
+              </a>
+            </div>
+
             {/* Menu Footer */}
             <div style={{
-              padding: '20px',
+              padding: '12px 20px',
               borderTop: '1px solid #e5e7eb',
               textAlign: 'center'
             }}>

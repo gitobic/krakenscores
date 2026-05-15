@@ -83,8 +83,10 @@ export interface Match {
   venue?: string; // Optional explicit venue name
 
   // Teams
-  darkTeamId: string;
-  lightTeamId: string;
+  darkTeamId: string;  // Empty string when team is TBD (bracket game)
+  lightTeamId: string; // Empty string when team is TBD (bracket game)
+  darkTeamLabel?: string;  // Display label for TBD teams (e.g. "3M", "Winner G47", "Loser 52")
+  lightTeamLabel?: string;
 
   // Scoring (optional until match is finalized)
   darkTeamScore?: number;

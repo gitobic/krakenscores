@@ -5,10 +5,10 @@ interface MatchWithDetails {
   match: Match
   division: Division
   pool: Pool
-  darkTeam: Team
-  lightTeam: Team
-  darkTeamClub: Club
-  lightTeamClub: Club
+  darkTeam?: Team
+  lightTeam?: Team
+  darkTeamClub?: Club
+  lightTeamClub?: Club
 }
 
 type SortableMatch = MatchWithDetails & {
@@ -176,11 +176,19 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
               {/* Teams */}
               <td style={{ padding: '6px 4px', fontSize: '12px', color: '#111827' }}>
                 <span style={{ fontWeight: '600' }}>
-                  {showFullClubNames ? darkTeamClub.name : darkTeamClub.abbreviation}
+                  {match.darkTeamLabel
+                    ? match.darkTeamLabel
+                    : darkTeamClub
+                      ? (showFullClubNames ? darkTeamClub.name : darkTeamClub.abbreviation)
+                      : 'TBD'}
                 </span>
                 {' vs '}
                 <span style={{ fontWeight: '600' }}>
-                  {showFullClubNames ? lightTeamClub.name : lightTeamClub.abbreviation}
+                  {match.lightTeamLabel
+                    ? match.lightTeamLabel
+                    : lightTeamClub
+                      ? (showFullClubNames ? lightTeamClub.name : lightTeamClub.abbreviation)
+                      : 'TBD'}
                 </span>
               </td>
 

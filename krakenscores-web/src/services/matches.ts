@@ -135,10 +135,10 @@ export async function updateMatchScore(
     updatedAt: serverTimestamp(),
   })
 
-  // If status is 'final', trigger standings recalculation
+  // If status is 'final', trigger standings recalculation scoped to this tournament
   if (status === 'final') {
     try {
-      await recalculateStandingsForDivision(match.divisionId)
+      await recalculateStandingsForDivision(match.divisionId, match.tournamentId)
     } catch (error) {
       console.error('Error recalculating standings:', error)
       // Don't throw - match update succeeded, standings recalc can be retried manually

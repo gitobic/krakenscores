@@ -31,18 +31,10 @@ export default function MatchTable({
   const { getPoolName, getDivisionName, getDivisionColor, getTeamAbbreviation } =
     useMatchHelpers(pools, divisions, teams, clubs)
 
-  // Helper to format TBD team display
-  const getTeamDisplay = (teamId: string, feedsFrom?: {type: string, value: string | number}): string => {
-    if (!teamId && feedsFrom) {
-      const typeLabels: Record<string, string> = {
-        winnerOf: 'W',
-        loserOf: 'L',
-        place: 'P',
-        seed: 'S'
-      }
-      const typeLabel = typeLabels[feedsFrom.type] || feedsFrom.type
-      return `TBD (${typeLabel}: ${feedsFrom.value})`
-    }
+  // Display label for bracket games, abbreviation for known teams
+  const getTeamDisplay = (teamId: string, label?: string): string => {
+    if (label) return label
+    if (!teamId) return 'TBD'
     return getTeamAbbreviation(teamId)
   }
 
@@ -282,14 +274,14 @@ export default function MatchTable({
                     <span style={{ fontSize: '14px' }}>{getDivisionName(match.divisionId)}</span>
                   </div>
                 </td>
-                <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '500', color: match.darkTeamId ? '#111827' : '#9ca3af', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-                  {getTeamDisplay(match.darkTeamId, match.feedsFrom?.darkFrom)}
+                <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '500', color: (match.darkTeamId || match.darkTeamLabel) ? '#111827' : '#9ca3af', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                  {getTeamDisplay(match.darkTeamId, match.darkTeamLabel)}
                 </td>
                 <td style={{ padding: '8px 4px', fontSize: '12px', color: '#9ca3af', textAlign: 'center', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                   vs
                 </td>
-                <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '500', color: match.lightTeamId ? '#111827' : '#9ca3af', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-                  {getTeamDisplay(match.lightTeamId, match.feedsFrom?.lightFrom)}
+                <td style={{ padding: '8px 12px', fontSize: '14px', fontWeight: '500', color: (match.lightTeamId || match.lightTeamLabel) ? '#111827' : '#9ca3af', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+                  {getTeamDisplay(match.lightTeamId, match.lightTeamLabel)}
                 </td>
                 <td style={{ padding: '8px 12px', borderRight: '1px solid #e5e7eb', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
                   <span

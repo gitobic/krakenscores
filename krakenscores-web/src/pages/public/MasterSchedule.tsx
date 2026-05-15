@@ -10,10 +10,10 @@ interface MatchWithDetails {
   match: Match
   division: Division
   pool: Pool
-  darkTeam: Team
-  lightTeam: Team
-  darkTeamClub: Club
-  lightTeamClub: Club
+  darkTeam?: Team
+  lightTeam?: Team
+  darkTeamClub?: Club
+  lightTeamClub?: Club
 }
 
 interface GroupedMatches {
@@ -121,7 +121,7 @@ export default function MasterSchedule() {
         updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
       } as Pool]))
 
-      const matchesWithDetails: MatchWithDetails[] = matchesSnap.docs
+      const matchesWithDetails: MatchWithDetails[] = (matchesSnap.docs
         .map(doc => {
           const matchData = {
             id: doc.id,
@@ -137,22 +137,13 @@ export default function MasterSchedule() {
           const darkTeamClub = darkTeam ? clubsMap.get(darkTeam.clubId) : undefined
           const lightTeamClub = lightTeam ? clubsMap.get(lightTeam.clubId) : undefined
 
-          if (!division || !pool || !darkTeam || !lightTeam || !darkTeamClub || !lightTeamClub) {
-            return null
-          }
+          // Require division and pool; teams may be TBD for bracket games
+          if (!division || !pool) return null
 
-          return {
-            match: matchData,
-            division,
-            pool,
-            darkTeam,
-            lightTeam,
-            darkTeamClub,
-            lightTeamClub,
-          }
+          return { match: matchData, division, pool, darkTeam, lightTeam, darkTeamClub, lightTeamClub }
         })
-        .filter((m): m is MatchWithDetails => m !== null)
-        .filter(m => m.match.status !== 'cancelled') // Filter out cancelled matches in JavaScript
+        .filter(m => m !== null) as MatchWithDetails[])
+        .filter(m => m.match.status !== 'cancelled')
 
       console.log('Matches with details:', matchesWithDetails.length)
       setMatches(matchesWithDetails)
@@ -410,6 +401,46 @@ export default function MasterSchedule() {
             </div>
           ))
         )}
+      </div>
+
+      {/* Feedback Banner */}
+      <div style={{
+        margin: '16px',
+        padding: '16px 20px',
+        backgroundColor: '#f5f3ff',
+        border: '1px solid #ddd6fe',
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '12px',
+        flexWrap: 'wrap'
+      }}>
+        <div>
+          <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#5b21b6' }}>
+            Trying out KrakenScores?
+          </p>
+          <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#7c3aed' }}>
+            Help us improve — takes 1 minute.
+          </p>
+        </div>
+        <a
+          href="https://forms.gle/GEmtM5MtaXmDqwjh7"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: '8px 18px',
+            backgroundColor: '#7c3aed',
+            color: 'white',
+            fontSize: '13px',
+            fontWeight: '600',
+            borderRadius: '6px',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          📝 Give Feedback
+        </a>
       </div>
 
       {/* Footer */}

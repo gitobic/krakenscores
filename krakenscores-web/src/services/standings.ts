@@ -55,14 +55,16 @@ export async function getStandingsByTournament(tournamentId: string): Promise<St
 }
 
 /**
- * Calculate and save standings for a division
- * This is triggered when a match is finalized (status = 'final')
+ * Calculate and save standings for a division, scoped to a specific tournament.
+ * Pass tournamentId explicitly to avoid cross-tournament team pollution.
  */
-export async function recalculateStandingsForDivision(divisionId: string): Promise<void> {
-  // 1. Get all teams in the division
-  const teamsSnapshot = await getDocs(
-    query(collection(db, 'teams'), where('divisionId', '==', divisionId))
-  )
+export async function recalculateStandingsForDivision(divisionId: string, tournamentId?: string): Promise<void> {
+  // 1. Get teams in the division, scoped to the tournament if known
+  const teamsQuery = tournamentId
+    ? query(collection(db, 'teams'), where('divisionId', '==', divisionId), where('tournamentId', '==', tournamentId))
+    : query(collection(db, 'teams'), where('divisionId', '==', divisionId))
+
+  const teamsSnapshot = await getDocs(teamsQuery)
 
   const teams: Team[] = teamsSnapshot.docs.map(doc => ({
     id: doc.id,
@@ -72,18 +74,16 @@ export async function recalculateStandingsForDivision(divisionId: string): Promi
   } as Team))
 
   if (teams.length === 0) {
-    console.warn(`No teams found for division ${divisionId}`)
-    return // No teams in division
+    console.warn(`No teams found for division ${divisionId}${tournamentId ? ` in tournament ${tournamentId}` : ''}`)
+    return
   }
 
-  // 2. Get all final matches for this division
-  const matchesSnapshot = await getDocs(
-    query(
-      collection(db, 'matches'),
-      where('divisionId', '==', divisionId),
-      where('status', '==', 'final')
-    )
-  )
+  // 2. Get all final matches for this division (scoped to tournament)
+  const matchesQuery = tournamentId
+    ? query(collection(db, 'matches'), where('divisionId', '==', divisionId), where('tournamentId', '==', tournamentId), where('status', '==', 'final'))
+    : query(collection(db, 'matches'), where('divisionId', '==', divisionId), where('status', '==', 'final'))
+
+  const matchesSnapshot = await getDocs(matchesQuery)
 
   const matches: Match[] = matchesSnapshot.docs.map(doc => {
     const data = doc.data()
@@ -95,28 +95,46 @@ export async function recalculateStandingsForDivision(divisionId: string): Promi
     } as Match
   })
 
-  // 3. Calculate standings
-  const standing = calculateStandings(teams, matches)
+  // 3. Resolve tournamentId (use provided, or infer from matches/teams)
+  const resolvedTournamentId = tournamentId
+    || (matches.length > 0 ? matches[0].tournamentId : teams[0].tournamentId)
 
-  // 4. Get tournamentId from the first match (all matches in division should have same tournament)
-  // If no matches yet, get from first team
-  const tournamentId = matches.length > 0
-    ? matches[0].tournamentId
-    : teams[0].tournamentId
-
-  if (!tournamentId) {
+  if (!resolvedTournamentId) {
     console.error(`Cannot determine tournamentId for division ${divisionId}`)
     throw new Error('Tournament ID is required to save standings')
   }
 
+  // 4. Calculate standings
+  const standing = calculateStandings(teams, matches)
+
   // 5. Save to Firestore
   const docRef = doc(db, COLLECTION, divisionId)
   await setDoc(docRef, {
-    tournamentId: tournamentId,
+    tournamentId: resolvedTournamentId,
     table: standing.table,
     tiebreakerNotes: standing.tiebreakerNotes,
     updatedAt: serverTimestamp(),
   })
+}
+
+/**
+ * Delete all standings documents for a tournament so they can be rebuilt cleanly.
+ */
+export async function deleteStandingsForTournament(tournamentId: string): Promise<void> {
+  const { deleteDoc } = await import('firebase/firestore')
+  const snapshot = await getDocs(query(collection(db, COLLECTION), where('tournamentId', '==', tournamentId)))
+  await Promise.all(snapshot.docs.map(d => deleteDoc(d.ref)))
+}
+
+/**
+ * Recalculate standings for every division that has teams in a tournament.
+ */
+export async function recalculateAllStandingsForTournament(tournamentId: string): Promise<void> {
+  const teamsSnapshot = await getDocs(
+    query(collection(db, 'teams'), where('tournamentId', '==', tournamentId))
+  )
+  const divisionIds = Array.from(new Set(teamsSnapshot.docs.map(d => d.data().divisionId as string)))
+  await Promise.all(divisionIds.map(divisionId => recalculateStandingsForDivision(divisionId, tournamentId)))
 }
 
 /**

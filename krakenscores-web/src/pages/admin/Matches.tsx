@@ -27,6 +27,7 @@ export default function Matches() {
   const [editingMatch, setEditingMatch] = useState<Match | null>(null)
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>('')
   const [viewMode, setViewMode] = useState<ViewMode>('table')
+  const [showExportMenu, setShowExportMenu] = useState(false)
 
   // Auto-select first tournament
   useEffect(() => {
@@ -90,8 +91,11 @@ export default function Matches() {
     }
   }
 
-  const handleExportCSV = () => {
-    const header = 'Match#,Pool,Division,Date,Time,Dark Club,Light Club'
+  const handleExportCSV = (includeFullNames = false) => {
+    setShowExportMenu(false)
+    const header = includeFullNames
+      ? 'Match#,Pool,Division,Date,Time,Dark Abbrev,Dark Club Name,Light Abbrev,Light Club Name'
+      : 'Match#,Pool,Division,Date,Time,Dark Club,Light Club'
     const rows = filteredMatches
       .slice()
       .sort((a, b) => a.matchNumber - b.matchNumber)
@@ -100,14 +104,21 @@ export default function Matches() {
         const division = divisions.find(d => d.id === match.divisionId)
         const darkClub = clubs.find(c => c.id === teams.find(t => t.id === match.darkTeamId)?.clubId)
         const lightClub = clubs.find(c => c.id === teams.find(t => t.id === match.lightTeamId)?.clubId)
-        return `${match.matchNumber},${pool?.name || ''},${division?.name || ''},${match.scheduledDate},${match.scheduledTime},${darkClub?.abbreviation || ''},${lightClub?.abbreviation || ''}`
+        const darkAbbrev = match.darkTeamLabel || darkClub?.abbreviation || ''
+        const lightAbbrev = match.lightTeamLabel || lightClub?.abbreviation || ''
+        if (includeFullNames) {
+          const darkName = darkClub?.name || match.darkTeamLabel || ''
+          const lightName = lightClub?.name || match.lightTeamLabel || ''
+          return `${match.matchNumber},${pool?.name || ''},${division?.name || ''},${match.scheduledDate},${match.scheduledTime},${darkAbbrev},"${darkName}",${lightAbbrev},"${lightName}"`
+        }
+        return `${match.matchNumber},${pool?.name || ''},${division?.name || ''},${match.scheduledDate},${match.scheduledTime},${darkAbbrev},${lightAbbrev}`
       })
     const csv = [header, ...rows].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'matches.csv'
+    a.download = includeFullNames ? 'matches-with-names.csv' : 'matches.csv'
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -310,25 +321,97 @@ export default function Matches() {
         {/* Bulk Action Buttons - Below Table */}
         {filteredMatches.length > 0 && (
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '24px' }}>
-            <button
-              onClick={handleExportCSV}
-              style={{
-                padding: '10px 20px',
-                fontSize: '15px',
-                fontWeight: '600',
-                color: 'white',
-                backgroundColor: '#0369a1',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#075985'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0369a1'}
-            >
-              ⬇ Export CSV
-            </button>
+            <div style={{ position: 'relative' }}>
+              {/* Split button: main action + dropdown arrow */}
+              <div style={{ display: 'flex', borderRadius: '6px', overflow: 'visible', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                <button
+                  onClick={() => handleExportCSV(false)}
+                  style={{
+                    padding: '10px 16px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    color: 'white',
+                    backgroundColor: '#0369a1',
+                    border: 'none',
+                    borderRight: '1px solid #075985',
+                    borderRadius: '6px 0 0 6px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#075985'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0369a1'}
+                >
+                  ⬇ Export CSV
+                </button>
+                <button
+                  onClick={() => setShowExportMenu(v => !v)}
+                  title="More export options"
+                  style={{
+                    padding: '10px 10px',
+                    fontSize: '13px',
+                    color: 'white',
+                    backgroundColor: '#0369a1',
+                    border: 'none',
+                    borderRadius: '0 6px 6px 0',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#075985'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0369a1'}
+                >
+                  ▾
+                </button>
+              </div>
+              {/* Dropdown menu */}
+              {showExportMenu && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+                    onClick={() => setShowExportMenu(false)}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    left: 0,
+                    zIndex: 100,
+                    backgroundColor: 'white',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                    minWidth: '220px',
+                    overflow: 'hidden'
+                  }}>
+                    <button
+                      onClick={() => handleExportCSV(false)}
+                      style={{
+                        display: 'block', width: '100%', padding: '10px 16px',
+                        textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                        color: '#111827', background: 'none', border: 'none', cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      ⬇ Abbreviations only
+                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>Re-importable format</div>
+                    </button>
+                    <button
+                      onClick={() => handleExportCSV(true)}
+                      style={{
+                        display: 'block', width: '100%', padding: '10px 16px',
+                        textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                        color: '#111827', background: 'none', border: 'none', cursor: 'pointer',
+                        borderTop: '1px solid #e5e7eb'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      ⬇ Abbreviations + Full names
+                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>Adds club name columns</div>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
             <button
               onClick={() => setShowBulkImport(true)}
               style={{
