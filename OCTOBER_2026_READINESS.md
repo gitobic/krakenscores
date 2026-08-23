@@ -61,7 +61,7 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 
 ## Phase 2 — Simplified tournament setup
 
-**Status:** In progress
+**Status:** Complete
 
 - [x] Design a guided setup workflow around Coach's real source material.
 - [x] Add tournament cloning from a previous event.
@@ -73,15 +73,15 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 - [x] Provide import preview, normalization, and row-level validation errors.
 - [x] Resolve team references using explicit team abbreviations and safe fallbacks.
 - [x] Configure seed/winner/loser dependencies without raw database editing.
-- [ ] Validate pool conflicts, team conflicts, breaks, and insufficient rest time.
-- [ ] Provide a complete public preview before publishing.
+- [x] Validate pool conflicts, team conflicts, breaks, and insufficient rest time.
+- [x] Provide a complete public preview before publishing.
 
 ### Phase 2 exit criteria
 
-- [ ] A new tournament can be configured without several separate ad hoc imports.
-- [ ] Exported data can be imported again without manual restructuring.
-- [ ] Invalid or ambiguous rows are caught before Firestore writes.
-- [ ] The administrator can preview the entire schedule and playoff flow before publishing.
+- [x] A new tournament can be configured without several separate ad hoc imports.
+- [x] Exported data can be imported again without manual restructuring.
+- [x] Invalid or ambiguous rows are caught before Firestore writes.
+- [x] The administrator can preview the entire schedule and playoff flow before publishing.
 
 ## Phase 3 — Tournament-day operations
 

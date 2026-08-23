@@ -7,10 +7,11 @@ import { createTournamentSetupDraft, getAllTournaments, type SetupParticipantInp
 import { getAllTeams } from '../../services/teams'
 import { getAllPools } from '../../services/pools'
 import { getMatchesByTournament } from '../../services/matches'
-import type { Club, Division, MatchParticipantSlot, Tournament } from '../../types/index'
+import type { Club, Division, Match, MatchParticipantSlot, Pool, ScheduleBreak, Team, Tournament } from '../../types/index'
 import { generateScheduleSlots, type GeneratedScheduleSlot } from '../../utils/scheduleGenerator'
 import { parseParticipantLabel } from '../../utils/participantSlots'
 import { exportSetupCsv, parseSetupCsv, type SetupCsvIssue, type SetupCsvSlot } from '../../utils/setupCsv'
+import { validateTournamentSetup } from '../../utils/setupValidation'
 
 const steps = ['Tournament', 'Divisions', 'Teams', 'Pools', 'Schedule', 'Review']
 
@@ -24,6 +25,7 @@ interface TeamDraft {
 
 interface ClubDraft { key: string; name: string; abbreviation: string }
 interface PoolDraft { key: string; name: string; location: string; defaultStartTime: string }
+interface BreakDraft { id: string; poolKey: string; scheduledDate: string; startTime: string; endTime: string; reason: string }
 interface SlotDraft extends GeneratedScheduleSlot {
   darkParticipant?: SetupParticipantInput
   lightParticipant?: SetupParticipantInput
@@ -49,6 +51,8 @@ export default function TournamentSetup() {
   const [newClubs, setNewClubs] = useState<ClubDraft[]>([])
   const [pools, setPools] = useState<PoolDraft[]>([])
   const [slots, setSlots] = useState<SlotDraft[]>([])
+  const [breaks, setBreaks] = useState<BreakDraft[]>([])
+  const [minimumRestMinutes, setMinimumRestMinutes] = useState(30)
   const [clubForm, setClubForm] = useState({ name: '', abbreviation: '' })
   const [generator, setGenerator] = useState({ date: '', startTime: '07:00', rounds: 1, firstMatchNumber: 1, intervalMinutes: 55 })
   const [templateId, setTemplateId] = useState('')
@@ -109,6 +113,8 @@ export default function TournamentSetup() {
   }
   const addPool = () => setPools(current => [...current, { key: `new-pool-${crypto.randomUUID()}`, name: `Pool ${current.length + 1}`, location: '', defaultStartTime: '07:00' }])
   const updatePool = (key: string, patch: Partial<PoolDraft>) => setPools(current => current.map(pool => pool.key === key ? { ...pool, ...patch } : pool))
+  const addBreak = () => pools[0] && setBreaks(current => [...current, { id: crypto.randomUUID(), poolKey: pools[0].key, scheduledDate: details.startDate, startTime: '12:00', endTime: '13:00', reason: 'Break' }])
+  const updateBreak = (id: string, patch: Partial<BreakDraft>) => setBreaks(current => current.map(item => item.id === id ? { ...item, ...patch } : item))
   const buildSlots = () => setSlots(generateScheduleSlots({
     date: generator.date,
     startTime: generator.startTime,
@@ -208,6 +214,34 @@ export default function TournamentSetup() {
     anchor.click()
     URL.revokeObjectURL(url)
   }
+  const canonicalParticipant = (participant: SetupParticipantInput | undefined): MatchParticipantSlot | undefined => {
+    if (!participant) return undefined
+    if (participant.source === 'team') return { source: 'team', teamId: participant.teamKey }
+    if (participant.source === 'groupSeed') return participant
+    return { source: 'matchOutcome', matchId: participant.matchKey, outcome: participant.outcome }
+  }
+  const now = new Date()
+  const validationIssues = validateTournamentSetup({
+    name: details.name,
+    startDate: details.startDate,
+    endDate: details.endDate,
+    defaultMatchDuration: details.defaultMatchDuration,
+    divisionIds,
+    clubs: [...clubs, ...newClubs.map(club => ({ id: club.key, name: club.name, abbreviation: club.abbreviation, createdAt: now, updatedAt: now } as Club))],
+    teams: teams.map(team => ({ id: team.id, clubId: team.clubKey, divisionId: team.divisionId, name: team.name, bracket: team.bracket || undefined, createdAt: now, updatedAt: now } as Team)),
+    pools: pools.map(pool => ({ id: pool.key, name: pool.name, location: pool.location, defaultStartTime: pool.defaultStartTime, createdAt: now, updatedAt: now } as Pool)),
+    matches: slots.map(slot => ({
+      id: slot.id, tournamentId: 'draft', divisionId: slot.divisionId, poolId: slot.poolKey,
+      matchNumber: slot.matchNumber, scheduledDate: slot.scheduledDate, scheduledTime: slot.scheduledTime,
+      duration: slot.duration, darkTeamId: slot.darkParticipant?.source === 'team' ? slot.darkParticipant.teamKey : '',
+      lightTeamId: slot.lightParticipant?.source === 'team' ? slot.lightParticipant.teamKey : '',
+      darkParticipant: canonicalParticipant(slot.darkParticipant), lightParticipant: canonicalParticipant(slot.lightParticipant),
+      status: 'scheduled', roundType: slot.roundType, isSemiFinal: false, isFinal: false, createdAt: now, updatedAt: now,
+    } as Match)),
+    breaks: breaks.map(item => ({ id: item.id, tournamentId: 'draft', poolId: item.poolKey, scheduledDate: item.scheduledDate, startTime: item.startTime, endTime: item.endTime, reason: item.reason, createdAt: now, updatedAt: now } as ScheduleBreak)),
+    minimumRestMinutes,
+  })
+  const blockingIssues = validationIssues.filter(issue => issue.severity === 'error')
 
   const saveDraft = async () => {
     setSaving(true)
@@ -231,7 +265,7 @@ export default function TournamentSetup() {
         roundType: slot.roundType,
         darkParticipant: slot.darkParticipant,
         lightParticipant: slot.lightParticipant,
-      })))
+      })), breaks)
       navigate('/admin/tournaments')
     } catch (saveError) {
       console.error('Error creating tournament setup draft:', saveError)
@@ -355,6 +389,7 @@ export default function TournamentSetup() {
                   <button type="button" onClick={() => setPools(current => current.filter(item => item.key !== pool.key))} className="rounded-md px-3 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50">Remove</button>
                 </div>)}
               </div>}
+              {pools.length > 0 && <div className="mt-8 border-t border-gray-200 pt-6"><div className="flex items-center justify-between"><div><h3 className="font-semibold text-gray-950">Scheduled breaks</h3><p className="text-sm text-gray-600">Lunch, equipment changes, ceremonies, or planned closures.</p></div><button type="button" onClick={addBreak} className="rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700">+ Add break</button></div>{breaks.length > 0 && <div className="mt-4 grid gap-3">{breaks.map(item => <div key={item.id} className="grid gap-2 rounded-lg border border-gray-200 p-3 sm:grid-cols-[1fr_1.2fr_8rem_8rem_1.2fr_auto] sm:items-end"><select value={item.poolKey} onChange={event => updateBreak(item.id, { poolKey: event.target.value })} className="rounded border border-gray-300 px-2 py-2 text-sm">{pools.map(pool => <option key={pool.key} value={pool.key}>{pool.name}</option>)}</select><input type="date" value={item.scheduledDate} onChange={event => updateBreak(item.id, { scheduledDate: event.target.value })} className="rounded border border-gray-300 px-2 py-2 text-sm" /><input type="time" value={item.startTime} onChange={event => updateBreak(item.id, { startTime: event.target.value })} className="rounded border border-gray-300 px-2 py-2 text-sm" /><input type="time" value={item.endTime} onChange={event => updateBreak(item.id, { endTime: event.target.value })} className="rounded border border-gray-300 px-2 py-2 text-sm" /><input value={item.reason} onChange={event => updateBreak(item.id, { reason: event.target.value })} placeholder="Lunch" className="rounded border border-gray-300 px-2 py-2 text-sm" /><button type="button" onClick={() => setBreaks(current => current.filter(candidate => candidate.id !== item.id))} className="px-2 py-2 text-sm text-red-700">Remove</button></div>)}</div>}</div>}
             </div>
           )}
 
@@ -378,6 +413,7 @@ export default function TournamentSetup() {
                 <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">Cadence<input type="number" min="10" value={generator.intervalMinutes} onChange={event => setGenerator({ ...generator, intervalMinutes: Number(event.target.value) })} className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-normal" /></label>
                 <button type="button" onClick={buildSlots} disabled={!generator.date || generator.rounds < 1} className="rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40">Generate</button>
               </div>
+              <label className="mt-4 flex items-center gap-3 text-sm font-medium text-gray-700">Minimum team rest <input type="number" min="0" value={minimumRestMinutes} onChange={event => setMinimumRestMinutes(Number(event.target.value))} className="w-20 rounded border border-gray-300 px-2 py-1.5" /> minutes</label>
               {slots.length > 0 && <div className="mt-6 overflow-x-auto rounded-lg border border-gray-200"><table className="min-w-full divide-y divide-gray-200 text-sm"><thead className="bg-gray-50"><tr><th className="p-3 text-left">Game</th><th className="p-3 text-left">Date / time</th><th className="p-3 text-left">Pool</th><th className="p-3 text-left">Division</th><th className="p-3 text-left">Round</th><th className="min-w-52 p-3 text-left">Dark</th><th className="min-w-52 p-3 text-left">Light</th></tr></thead><tbody className="divide-y divide-gray-100">{slots.map(slot => <tr key={slot.id}><td className="p-3 font-semibold">{slot.matchNumber}</td><td className="p-3">{slot.scheduledDate} · {slot.scheduledTime}</td><td className="p-3">{slot.poolName}</td><td className="p-3"><select value={slot.divisionId} onChange={event => setSlots(current => current.map(item => item.id === slot.id ? { ...item, divisionId: event.target.value, darkParticipant: undefined, lightParticipant: undefined } : item))} className="rounded border border-gray-300 bg-white px-2 py-1">{selectedDivisions.map(division => <option key={division.id} value={division.id}>{division.name}</option>)}</select></td><td className="p-3"><select value={slot.roundType} onChange={event => setSlots(current => current.map(item => item.id === slot.id ? { ...item, roundType: event.target.value as SlotDraft['roundType'] } : item))} className="rounded border border-gray-300 bg-white px-2 py-1"><option value="pool">Pool</option><option value="semi">Semi</option><option value="final">Final</option><option value="placement">Placement</option></select></td><td className="p-3"><ParticipantSelect value={slot.darkParticipant} slot={slot} teams={teams} slots={slots} onChange={participant => setSlots(current => current.map(item => item.id === slot.id ? { ...item, darkParticipant: participant } : item))} /></td><td className="p-3"><ParticipantSelect value={slot.lightParticipant} slot={slot} teams={teams} slots={slots} onChange={participant => setSlots(current => current.map(item => item.id === slot.id ? { ...item, lightParticipant: participant } : item))} /></td></tr>)}</tbody></table></div>}
               {slots.length > 0 && !slotsValid && <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Assign two different participant sources to every generated game before continuing.</div>}
               <p className="mt-4 text-sm text-gray-500">Dependencies only offer earlier game numbers, preventing forward references and circular bracket paths.</p>
@@ -397,14 +433,18 @@ export default function TournamentSetup() {
                 <div className="grid gap-2 p-4 sm:grid-cols-3"><dt className="text-sm font-medium text-gray-500">Pools</dt><dd className="sm:col-span-2 text-gray-900">{pools.map(pool => pool.name).join(', ')}</dd></div>
                 <div className="grid gap-2 p-4 sm:grid-cols-3"><dt className="text-sm font-medium text-gray-500">Schedule slots</dt><dd className="sm:col-span-2 text-gray-900">{slots.length} generated</dd></div>
               </dl>
-              <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>Next:</strong> add clubs and named teams, assign preliminary groups, configure pools, then build or import the schedule.</div>
+              <div className="mt-7 overflow-x-auto rounded-lg border border-gray-200"><table className="min-w-full text-sm"><thead className="bg-gray-100"><tr><th className="p-3 text-left">Game</th><th className="p-3 text-left">When</th><th className="p-3 text-left">Pool</th><th className="p-3 text-left">Division / round</th><th className="p-3 text-left">Matchup / progression</th></tr></thead><tbody className="divide-y divide-gray-100">{[...slots].sort((a, b) => a.matchNumber - b.matchNumber).map(slot => <tr key={slot.id}><td className="p-3 font-semibold">{slot.matchNumber}</td><td className="p-3 whitespace-nowrap">{slot.scheduledDate}<br />{slot.scheduledTime}</td><td className="p-3">{slot.poolName}</td><td className="p-3">{selectedDivisions.find(division => division.id === slot.divisionId)?.name}<br /><span className="text-xs uppercase text-gray-500">{slot.roundType}</span></td><td className="p-3">{slot.darkParticipant ? participantCsvName(slot.darkParticipant) : 'TBD'} <span className="text-gray-400">vs</span> {slot.lightParticipant ? participantCsvName(slot.lightParticipant) : 'TBD'}</td></tr>)}</tbody></table></div>
+              <div className={`mt-6 rounded-md border p-4 text-sm ${blockingIssues.length ? 'border-red-200 bg-red-50 text-red-900' : validationIssues.length ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-900'}`}>
+                <strong>{blockingIssues.length ? `${blockingIssues.length} blocking setup issue${blockingIssues.length === 1 ? '' : 's'}` : validationIssues.length ? `${validationIssues.length} warning${validationIssues.length === 1 ? '' : 's'} to review` : 'Ready to save as an unpublished draft'}</strong>
+                {validationIssues.length > 0 && <ul className="mt-2 grid gap-1">{validationIssues.map((issue, index) => <li key={`${issue.code}-${index}`}>{issue.severity === 'error' ? 'Error' : 'Warning'}: {issue.message}</li>)}</ul>}
+              </div>
             </div>
           )}
 
           <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
             <button type="button" disabled={step === 0 || saving} onClick={() => setStep(current => current - 1)} className="rounded-md border border-gray-300 px-5 py-2.5 font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40">Back</button>
             {step < 5 ? <button type="button" disabled={!canContinue || saving} onClick={() => setStep(current => current + 1)} className="rounded-md bg-blue-700 px-5 py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Continue</button>
-              : <button type="button" disabled={saving} onClick={saveDraft} className="rounded-md bg-emerald-700 px-5 py-2.5 font-semibold text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save unpublished draft'}</button>}
+              : <button type="button" disabled={saving || blockingIssues.length > 0 || !slotsValid} onClick={saveDraft} className="rounded-md bg-emerald-700 px-5 py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{saving ? 'Saving…' : 'Save unpublished draft'}</button>}
           </div>
         </section>
       </main>

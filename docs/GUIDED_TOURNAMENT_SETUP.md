@@ -39,6 +39,8 @@ Blocking errors include:
 
 Warnings include insufficient rest between known fixed-team games. The initial default is 30 minutes and will be configurable. Future-team paths cannot always be proven conflict-free before preliminary results, so the preview will identify those as dependency risks rather than claiming certainty.
 
+The final Review step renders every game with date, time, pool, division, round type, and its friendly matchup/progression label. Blocking validation issues disable the unpublished-draft save; insufficient-rest warnings remain visible for organizer review. Configured schedule breaks are saved atomically with the rest of the draft and participate in the same collision checks.
+
 ## Write strategy
 
 Validation and preview operate on a pure in-memory draft. Firestore receives normalized records only after validation succeeds. Related records use preallocated document IDs and batched writes so team, pool, match, and dependency references cannot be partially remapped. Publishing is never part of the setup save batch.

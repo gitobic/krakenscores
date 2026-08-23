@@ -55,6 +55,14 @@ export type SetupParticipantInput =
   | { source: 'groupSeed'; groupId: string; rank: number }
   | { source: 'matchOutcome'; matchKey: string; outcome: 'winner' | 'loser' }
 
+export interface SetupBreakInput {
+  poolKey: string
+  scheduledDate: string
+  startTime: string
+  endTime: string
+  reason: string
+}
+
 const COLLECTION_NAME = 'tournaments'
 
 // Convert Firestore Timestamp to Date
@@ -134,9 +142,10 @@ export async function createTournamentSetupDraft(
   teams: SetupTeamInput[],
   newClubs: SetupClubInput[] = [],
   pools: SetupPoolInput[] = [],
-  slots: SetupSlotInput[] = []
+  slots: SetupSlotInput[] = [],
+  breaks: SetupBreakInput[] = []
 ): Promise<string> {
-  const writeCount = 1 + teams.length + newClubs.length + pools.length + slots.length
+  const writeCount = 1 + teams.length + newClubs.length + pools.length + slots.length + breaks.length
   if (writeCount > 500) throw new Error('This setup draft exceeds Firestore’s 500-record batch limit. Split the schedule into a later save.')
   const now = Timestamp.now()
   const tournamentRef = doc(collection(db, COLLECTION_NAME))
@@ -232,6 +241,19 @@ export async function createTournamentSetupDraft(
       roundType: slot.roundType || 'pool',
       isSemiFinal: false,
       isFinal: false,
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  breaks.forEach(scheduleBreak => {
+    batch.set(doc(collection(db, 'scheduleBreaks')), {
+      tournamentId: tournamentRef.id,
+      poolId: poolIds.get(scheduleBreak.poolKey) || scheduleBreak.poolKey,
+      scheduledDate: scheduleBreak.scheduledDate,
+      startTime: scheduleBreak.startTime,
+      endTime: scheduleBreak.endTime,
+      reason: scheduleBreak.reason.trim(),
       createdAt: now,
       updatedAt: now,
     })

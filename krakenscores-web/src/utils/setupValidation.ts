@@ -68,6 +68,12 @@ export function validateTournamentSetup(draft: TournamentSetupDraft): SetupIssue
     participantTeamIds(match).forEach(teamId => {
       if (!teamIds.has(teamId)) add('error', 'match.team', `Game ${match.matchNumber} references a missing team.`, [match.id])
     })
+    const participantSlots = [match.darkParticipant, match.lightParticipant]
+    participantSlots.forEach(slot => {
+      if (slot?.source !== 'groupSeed') return
+      const groupSize = draft.teams.filter(team => team.divisionId === match.divisionId && team.bracket === slot.groupId).length
+      if (groupSize === 0 || slot.rank > groupSize) add('error', 'match.seed', `Game ${match.matchNumber} references unavailable seed ${slot.rank}${slot.groupId}.`, [match.id])
+    })
     const sources = referencedMatchIds(match)
     sources.forEach(sourceId => {
       if (!matchIds.has(sourceId)) add('error', 'match.source', `Game ${match.matchNumber} references a missing source match.`, [match.id])
@@ -103,6 +109,10 @@ export function validateTournamentSetup(draft: TournamentSetupDraft): SetupIssue
   }
 
   draft.breaks.forEach(scheduleBreak => {
+    if (!poolIds.has(scheduleBreak.poolId)) add('error', 'break.pool', `${scheduleBreak.reason || 'A break'} references a missing pool.`)
+    if (scheduleBreak.scheduledDate < draft.startDate || scheduleBreak.scheduledDate > draft.endDate) add('error', 'break.date', `${scheduleBreak.reason || 'A break'} falls outside the tournament dates.`)
+    if (scheduleBreak.endTime <= scheduleBreak.startTime) add('error', 'break.time', `${scheduleBreak.reason || 'A break'} must end after it starts.`)
+    if (!scheduleBreak.reason.trim()) add('error', 'break.reason', 'Every scheduled break needs a reason.')
     const breakStart = minutesAt(scheduleBreak.scheduledDate, scheduleBreak.startTime)
     const breakEnd = minutesAt(scheduleBreak.scheduledDate, scheduleBreak.endTime)
     scheduled.filter(match => match.poolId === scheduleBreak.poolId).forEach(match => {
