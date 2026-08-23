@@ -33,3 +33,9 @@ jobs:
 
       - name: Run quality checks
         run: npm run check
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools@15.28.1
+
+      - name: Test Firestore security rules
+        run: npm run test:rules

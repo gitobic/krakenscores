@@ -40,3 +40,9 @@ The build also reports that a dynamic Firestore import in `services/standings.ts
 ## Dependency maintenance
 
 The clean install reports that the resolved ESLint 9 release is unsupported. Plan a deliberate ESLint major-version upgrade with configuration compatibility verification; do not mix it into unrelated feature work.
+
+## Firebase rules tests
+
+Run `npm run test:rules` from `krakenscores-web/`. The command uses Firebase project ID `demo-krakenscores`, starts only the local Firestore emulator, executes the rules suite, and shuts the emulator down. Firebase's `rules-unit-testing` environment is emulator-only and does not access production.
+
+The Firestore emulator requires Java. GitHub Actions provides Java and runs the rules suite on every push and pull request. Local execution is currently unavailable on the development Mac until a Java runtime is installed.
