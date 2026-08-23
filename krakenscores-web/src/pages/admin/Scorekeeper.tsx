@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { collection, query, where, getDocs, Timestamp, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Pool } from '../../types/index'
-import { recalculateStandingsForDivision } from '../../services/standings'
+import { ResultImpactError, saveMatchResult } from '../../services/matches'
 import { teamCompactName, teamPublicName } from '../../utils/teamIdentity'
 
 interface MatchWithDetails {
@@ -251,8 +251,6 @@ export default function Scorekeeper() {
     const matchWithDetails = matches.find(m => m.match.id === matchId)
     if (!matchWithDetails) return
 
-    const oldStatus = matchWithDetails.match.status
-
     // If setting to final, require scores
     if (newStatus === 'final') {
       const scores = editedScores[matchId]
@@ -265,20 +263,17 @@ export default function Scorekeeper() {
 
     setSavingMatchId(matchId)
     try {
-      const matchRef = doc(db, 'matches', matchId)
       const scores = editedScores[matchId] || { darkScore: 0, lightScore: 0 }
-
-      await updateDoc(matchRef, {
-        darkTeamScore: scores.darkScore,
-        lightTeamScore: scores.lightScore,
-        status: newStatus,
-        updatedAt: serverTimestamp()
-      })
-
-      // If status changed to 'final', trigger standings recalculation
-      if (oldStatus !== 'final' && newStatus === 'final') {
-        console.log('Recalculating standings for division:', matchWithDetails.match.divisionId)
-        await recalculateStandingsForDivision(matchWithDetails.match.divisionId)
+      try {
+        await saveMatchResult(matchId, scores.darkScore, scores.lightScore, newStatus)
+      } catch (error) {
+        if (!(error instanceof ResultImpactError)) throw error
+        const affected = error.affectedMatches.map(match => `Game ${match.matchNumber}`).join(', ')
+        if (!confirm(`${error.message}\n\nAffected: ${affected}\n\nContinuing will reopen the affected games and clear their scores. Continue?`)) return
+        const result = await saveMatchResult(matchId, scores.darkScore, scores.lightScore, newStatus, true)
+        if (result.invalidatedMatchIds.length > 0) {
+          alert(`Result saved. ${result.invalidatedMatchIds.length} downstream game${result.invalidatedMatchIds.length === 1 ? '' : 's'} reopened for review.`)
+        }
       }
 
       await loadMatches()

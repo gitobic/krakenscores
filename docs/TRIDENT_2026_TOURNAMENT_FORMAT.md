@@ -72,10 +72,26 @@ New or edited matches now store `darkParticipant` and `lightParticipant` as one 
 
 `matchId` is the permanent Firestore document ID. The editor and bulk importer may display or accept a game number, but resolve it to that ID before writing. Existing records without these fields remain readable through `darkTeamId`, `lightTeamId`, labels, and the legacy `feedsFrom` shape. Editing such a record writes the canonical slots and removes obsolete source metadata where appropriate; no production migration is required for this compatibility step.
 
-## Unresolved rules requiring tournament-owner confirmation
+## October 2026 operating defaults
 
-- The preliminary ranking tie-break order is not recoverable reliably from the workbook. The `16u Boys J` group, for example, contains a multi-team win tie.
-- The policy for tied advancement or medal games (overtime, shootout, recorded tie, or manual winner) is not stated.
+Until a tournament owner explicitly selects a different policy, KrakenScores ranks preliminary groups using:
+
+1. standings points (two for a win, one for a draw, zero for a loss);
+2. points in a mini-table among all teams tied on standings points;
+3. goal difference in that mini-table;
+4. overall goal difference;
+5. overall goals scored;
+6. fewest overall goals conceded; and
+7. team name as the deterministic final fallback.
+
+Draws remain valid in preliminary and round-robin games. A final result cannot be tied when a later participant slot depends on that game's winner or loser; the scorekeeper must enter the decisive post-overtime or shootout result.
+
+Finalizing a result resolves every affected seed and winner/loser slot in one Firestore batch. Correcting a result first previews any completed downstream games whose participants would change. With confirmation, those games and their descendants are reopened and their scores cleared in the same batch. Standings are recalculated immediately afterward; a failed recalculation can be retried without changing the saved match result.
+
+## Rules still requiring tournament-owner confirmation
+
+- Whether the October tournament should override the operating tie-break defaults above. The original workbook does not reliably preserve its policy; the `16u Boys J` group, for example, contains a multi-team win tie.
+- Whether decisive playoff scores should record only the regulation score or include overtime/shootout results.
 - Whether the two 10u games are intentionally a two-game series and how a 1–1 split is ranked is not stated.
 - The final placement mapping for seed-tier mini-leagues must be confirmed, including whether preliminary results carry over or the placement mini-league starts fresh.
 - Masters gender configuration is not explicit in the 2026 sheet and should not be inferred from the generic division name.

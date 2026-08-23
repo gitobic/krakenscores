@@ -108,10 +108,30 @@ describe('scorekeeper access', () => {
     await assertFails(deleteDoc(doc(db, 'matches/match-1')))
   })
 
-  it('cannot read the staff membership list', async () => {
+  it('can read its own membership but not another staff record', async () => {
     const db = testEnv.authenticatedContext('scorekeeper-user').firestore()
 
-    await assertFails(getDoc(doc(db, 'staff/scorekeeper-user')))
+    await assertSucceeds(getDoc(doc(db, 'staff/scorekeeper-user')))
+    await assertFails(getDoc(doc(db, 'staff/another-user')))
+  })
+
+  it('can write derived advancement and standings fields but not participant sources', async () => {
+    const db = testEnv.authenticatedContext('scorekeeper-user').firestore()
+
+    await assertSucceeds(updateDoc(doc(db, 'matches/match-1'), {
+      darkTeamId: 'team-a',
+      lightTeamId: 'team-b',
+      darkTeamLabel: '1F',
+      lightTeamLabel: 'Winner of Game 52',
+    }))
+    await assertSucceeds(setDoc(doc(db, 'standings/division-1'), {
+      tournamentId: 'tournament-1',
+      table: [],
+      updatedAt: new Date('2026-10-10T14:00:00Z'),
+    }))
+    await assertFails(updateDoc(doc(db, 'matches/match-1'), {
+      darkParticipant: { source: 'team', teamId: 'unauthorized-change' },
+    }))
   })
 })
 

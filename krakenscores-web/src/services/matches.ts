@@ -11,11 +11,14 @@ import {
   orderBy,
   serverTimestamp,
   deleteField,
+  writeBatch,
   Timestamp
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import type { Match } from '../types/index'
+import type { Match, Team } from '../types/index'
 import { recalculateStandingsForDivision } from './standings'
+import { changedParticipantMatchIds, downstreamMatchIds, resolveParticipantAssignments } from '../utils/tournamentEngine'
+import { referencedMatchIds } from '../utils/participantSlots'
 
 const COLLECTION = 'matches'
 
@@ -153,4 +156,92 @@ export async function updateMatchScore(
       // Don't throw - match update succeeded, standings recalc can be retried manually
     }
   }
+}
+
+export class ResultImpactError extends Error {
+  readonly affectedMatches: Match[]
+
+  constructor(affectedMatches: Match[]) {
+    super(`This correction affects ${affectedMatches.length} completed downstream match${affectedMatches.length === 1 ? '' : 'es'}.`)
+    this.name = 'ResultImpactError'
+    this.affectedMatches = affectedMatches
+  }
+}
+
+export async function saveMatchResult(
+  id: string,
+  darkTeamScore: number,
+  lightTeamScore: number,
+  status: Match['status'],
+  allowInvalidation = false
+): Promise<{ invalidatedMatchIds: string[] }> {
+  const matchRef = doc(db, COLLECTION, id)
+  const matchSnapshot = await getDoc(matchRef)
+  if (!matchSnapshot.exists()) throw new Error('Match not found')
+
+  const source = { id: matchSnapshot.id, ...matchSnapshot.data() } as Match
+  const [matches, teamsSnapshot] = await Promise.all([
+    getMatchesByTournament(source.tournamentId),
+    getDocs(collection(db, 'teams')),
+  ])
+  const allTeams = teamsSnapshot.docs.map(teamDoc => ({ id: teamDoc.id, ...teamDoc.data() })) as Team[]
+  const participatingTeamIds = new Set(matches.flatMap(match => [match.darkTeamId, match.lightTeamId]).filter(Boolean))
+  const teams = allTeams.filter(team => team.tournamentId === source.tournamentId || participatingTeamIds.has(team.id))
+
+  const hasOutcomeDependent = matches.some(match => referencedMatchIds(match).includes(id))
+  if (status === 'final' && darkTeamScore === lightTeamScore && hasOutcomeDependent) {
+    throw new Error('This match must have a winner because a later match depends on its winner or loser.')
+  }
+  const hypothetical = matches.map(match => match.id === id
+    ? { ...match, darkTeamScore, lightTeamScore, status }
+    : { ...match })
+
+  const initialAssignments = resolveParticipantAssignments(hypothetical, teams)
+  const changedIds = changedParticipantMatchIds(matches, initialAssignments)
+  const completedChanged = matches.filter(match => match.id !== id && match.status === 'final' && changedIds.includes(match.id))
+
+  if (completedChanged.length > 0 && !allowInvalidation) throw new ResultImpactError(completedChanged)
+
+  const invalidatedIds = completedChanged.length > 0
+    ? Array.from(new Set([...completedChanged.map(match => match.id), ...downstreamMatchIds(completedChanged.map(match => match.id), matches)]))
+    : []
+  hypothetical.forEach(match => {
+    if (invalidatedIds.includes(match.id)) {
+      match.status = 'scheduled'
+      match.darkTeamScore = undefined
+      match.lightTeamScore = undefined
+    }
+  })
+
+  const assignments = resolveParticipantAssignments(hypothetical, teams)
+  const batch = writeBatch(db)
+  batch.update(matchRef, {
+    darkTeamScore,
+    lightTeamScore,
+    status,
+    updatedAt: serverTimestamp(),
+  })
+  assignments.forEach(assignment => {
+    if (assignment.matchId === id) return
+    const current = matches.find(match => match.id === assignment.matchId)
+    if (!current) return
+    const participantsChanged = current.darkTeamId !== assignment.darkTeamId || current.lightTeamId !== assignment.lightTeamId
+    if (!participantsChanged && !invalidatedIds.includes(assignment.matchId)) return
+    const updates: Record<string, unknown> = {
+      darkTeamId: assignment.darkTeamId,
+      lightTeamId: assignment.lightTeamId,
+      updatedAt: serverTimestamp(),
+    }
+    updates.darkTeamLabel = assignment.darkTeamLabel || deleteField()
+    updates.lightTeamLabel = assignment.lightTeamLabel || deleteField()
+    if (invalidatedIds.includes(assignment.matchId)) {
+      updates.status = 'scheduled'
+      updates.darkTeamScore = deleteField()
+      updates.lightTeamScore = deleteField()
+    }
+    batch.update(doc(db, COLLECTION, assignment.matchId), updates)
+  })
+  await batch.commit()
+  await recalculateStandingsForDivision(source.divisionId, source.tournamentId)
+  return { invalidatedMatchIds: invalidatedIds }
 }

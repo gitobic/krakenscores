@@ -7,10 +7,12 @@ import {
   query,
   where,
   serverTimestamp,
+  deleteDoc,
   Timestamp
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
-import type { Standing, TeamStanding, Match, Team } from '../types/index'
+import type { Standing, Match, Team } from '../types/index'
+import { calculateStandings as calculateStandingsPure } from '../utils/standingsCalculator'
 
 const COLLECTION = 'standings'
 
@@ -59,31 +61,20 @@ export async function getStandingsByTournament(tournamentId: string): Promise<St
  * Pass tournamentId explicitly to avoid cross-tournament team pollution.
  */
 export async function recalculateStandingsForDivision(divisionId: string, tournamentId?: string): Promise<void> {
-  // 1. Get teams in the division, scoped to the tournament if known
-  const teamsQuery = tournamentId
-    ? query(collection(db, 'teams'), where('divisionId', '==', divisionId), where('tournamentId', '==', tournamentId))
-    : query(collection(db, 'teams'), where('divisionId', '==', divisionId))
+  // Legacy team records may not have tournamentId, so scope them by participation
+  // in this tournament rather than silently dropping them.
+  const teamsQuery = query(collection(db, 'teams'), where('divisionId', '==', divisionId))
+  const matchesQuery = tournamentId
+    ? query(collection(db, 'matches'), where('divisionId', '==', divisionId), where('tournamentId', '==', tournamentId))
+    : query(collection(db, 'matches'), where('divisionId', '==', divisionId))
+  const [teamsSnapshot, matchesSnapshot] = await Promise.all([getDocs(teamsQuery), getDocs(matchesQuery)])
 
-  const teamsSnapshot = await getDocs(teamsQuery)
-
-  const teams: Team[] = teamsSnapshot.docs.map(doc => ({
+  const allTeams: Team[] = teamsSnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
     createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
     updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
   } as Team))
-
-  if (teams.length === 0) {
-    console.warn(`No teams found for division ${divisionId}${tournamentId ? ` in tournament ${tournamentId}` : ''}`)
-    return
-  }
-
-  // 2. Get all final matches for this division (scoped to tournament)
-  const matchesQuery = tournamentId
-    ? query(collection(db, 'matches'), where('divisionId', '==', divisionId), where('tournamentId', '==', tournamentId), where('status', '==', 'final'))
-    : query(collection(db, 'matches'), where('divisionId', '==', divisionId), where('status', '==', 'final'))
-
-  const matchesSnapshot = await getDocs(matchesQuery)
 
   const matches: Match[] = matchesSnapshot.docs.map(doc => {
     const data = doc.data()
@@ -94,6 +85,15 @@ export async function recalculateStandingsForDivision(divisionId: string, tourna
       updatedAt: (data.updatedAt as Timestamp)?.toDate() || new Date(),
     } as Match
   })
+  const participantTeamIds = new Set(matches.flatMap(match => [match.darkTeamId, match.lightTeamId]).filter(Boolean))
+  const teams = tournamentId
+    ? allTeams.filter(team => team.tournamentId === tournamentId || participantTeamIds.has(team.id))
+    : allTeams
+
+  if (teams.length === 0) {
+    console.warn(`No teams found for division ${divisionId}${tournamentId ? ` in tournament ${tournamentId}` : ''}`)
+    return
+  }
 
   // 3. Resolve tournamentId (use provided, or infer from matches/teams)
   const resolvedTournamentId = tournamentId
@@ -105,7 +105,7 @@ export async function recalculateStandingsForDivision(divisionId: string, tourna
   }
 
   // 4. Calculate standings
-  const standing = calculateStandings(teams, matches)
+  const standing = calculateStandingsPure(teams, matches)
 
   // 5. Save to Firestore
   const docRef = doc(db, COLLECTION, divisionId)
@@ -121,7 +121,6 @@ export async function recalculateStandingsForDivision(divisionId: string, tourna
  * Delete all standings documents for a tournament so they can be rebuilt cleanly.
  */
 export async function deleteStandingsForTournament(tournamentId: string): Promise<void> {
-  const { deleteDoc } = await import('firebase/firestore')
   const snapshot = await getDocs(query(collection(db, COLLECTION), where('tournamentId', '==', tournamentId)))
   await Promise.all(snapshot.docs.map(d => deleteDoc(d.ref)))
 }
@@ -135,204 +134,4 @@ export async function recalculateAllStandingsForTournament(tournamentId: string)
   )
   const divisionIds = Array.from(new Set(teamsSnapshot.docs.map(d => d.data().divisionId as string)))
   await Promise.all(divisionIds.map(divisionId => recalculateStandingsForDivision(divisionId, tournamentId)))
-}
-
-/**
- * Pure function to calculate standings from teams and matches
- * This function is testable and contains all the tie-breaker logic
- */
-export function calculateStandings(teams: Team[], matches: Match[]): Omit<Standing, 'divisionId' | 'tournamentId' | 'updatedAt'> {
-  // Initialize team stats
-  const teamStats = new Map<string, TeamStanding>()
-
-  teams.forEach(team => {
-    teamStats.set(team.id, {
-      teamId: team.id,
-      teamName: team.name,
-      games: 0,
-      wins: 0,
-      losses: 0,
-      draws: 0, // Always 0 - no draws in water polo (shootouts determine winner)
-      goalsFor: 0,
-      goalsAgainst: 0,
-      goalDiff: 0,
-      points: 0,
-      rank: 0,
-    })
-  })
-
-  // Process final matches
-  matches.forEach(match => {
-    if (match.status !== 'final' || match.darkTeamScore === undefined || match.lightTeamScore === undefined) {
-      return
-    }
-
-    const darkStats = teamStats.get(match.darkTeamId)
-    const lightStats = teamStats.get(match.lightTeamId)
-
-    if (!darkStats || !lightStats) {
-      return // Team not in division (shouldn't happen)
-    }
-
-    // Update games played
-    darkStats.games++
-    lightStats.games++
-
-    // Update goals
-    darkStats.goalsFor += match.darkTeamScore
-    darkStats.goalsAgainst += match.lightTeamScore
-    lightStats.goalsFor += match.lightTeamScore
-    lightStats.goalsAgainst += match.darkTeamScore
-
-    // Update wins/losses (no draws - shootouts determine winner)
-    if (match.darkTeamScore > match.lightTeamScore) {
-      // Dark team wins (including shootout wins like 4.5 > 4.4)
-      darkStats.wins++
-      lightStats.losses++
-    } else if (match.lightTeamScore > match.darkTeamScore) {
-      // Light team wins (including shootout wins)
-      lightStats.wins++
-      darkStats.losses++
-    }
-    // Note: No else case for draws - all matches go to shootout if tied
-  })
-
-  // Calculate derived stats
-  teamStats.forEach(stats => {
-    // Round to 2 decimal places to avoid floating-point precision errors
-    stats.goalsFor = Math.round(stats.goalsFor * 100) / 100
-    stats.goalsAgainst = Math.round(stats.goalsAgainst * 100) / 100
-    stats.goalDiff = Math.round((stats.goalsFor - stats.goalsAgainst) * 100) / 100
-    stats.points = stats.wins * 2 // 2 points per win (no draws in water polo)
-  })
-
-  // Convert to array and sort with tie-breakers
-  const table = Array.from(teamStats.values())
-  const tiebreakerNotes: string[] = []
-
-  // Sort by: 1. Points, 2. Goal Diff, 3. Goals For, 4. Fewest Goals Against, 5. Team Name
-  table.sort((a, b) => {
-    // 1. Total points (descending)
-    if (a.points !== b.points) {
-      return b.points - a.points
-    }
-
-    // TODO: 2. Head-to-head points among tied teams (requires additional logic)
-    // For now, we'll skip head-to-head and go straight to goal differential
-
-    // 3. Total goal differential (descending)
-    if (a.goalDiff !== b.goalDiff) {
-      return b.goalDiff - a.goalDiff
-    }
-
-    // 4. Total goals for (descending)
-    if (a.goalsFor !== b.goalsFor) {
-      return b.goalsFor - a.goalsFor
-    }
-
-    // 5. Fewest goals against (ascending)
-    if (a.goalsAgainst !== b.goalsAgainst) {
-      return a.goalsAgainst - b.goalsAgainst
-    }
-
-    // 6. Alphabetical by team name (tie-breaker of last resort)
-    return a.teamName.localeCompare(b.teamName)
-  })
-
-  // Assign ranks (handle ties in points)
-  let currentRank = 1
-  for (let i = 0; i < table.length; i++) {
-    if (i > 0 && table[i].points === table[i - 1].points) {
-      // Same points as previous team - check if truly tied or separated by tie-breaker
-      const prev = table[i - 1]
-      const curr = table[i]
-
-      if (prev.goalDiff === curr.goalDiff && prev.goalsFor === curr.goalsFor) {
-        // Truly tied on all criteria except goals against or name
-        table[i].rank = table[i - 1].rank
-        tiebreakerNotes.push(
-          `${curr.teamName} ranked ${curr.rank === prev.rank ? 'equal to' : 'below'} ${prev.teamName}: ` +
-          `both have ${curr.points} points, ${curr.goalDiff} goal diff, ${curr.goalsFor} goals for; ` +
-          `separated by goals against (${prev.goalsAgainst} vs ${curr.goalsAgainst})`
-        )
-      } else {
-        // Separated by tie-breaker
-        table[i].rank = currentRank
-        if (prev.goalDiff !== curr.goalDiff) {
-          tiebreakerNotes.push(
-            `${curr.teamName} ranked below ${prev.teamName}: both have ${curr.points} points, ` +
-            `but ${prev.teamName} has better goal differential (+${prev.goalDiff} vs +${curr.goalDiff})`
-          )
-        } else if (prev.goalsFor !== curr.goalsFor) {
-          tiebreakerNotes.push(
-            `${curr.teamName} ranked below ${prev.teamName}: both have ${curr.points} points and ` +
-            `${prev.goalDiff} goal diff, but ${prev.teamName} scored more goals (${prev.goalsFor} vs ${curr.goalsFor})`
-          )
-        }
-      }
-    } else {
-      table[i].rank = currentRank
-    }
-    currentRank++
-  }
-
-  return {
-    table,
-    tiebreakerNotes: tiebreakerNotes.length > 0 ? tiebreakerNotes : undefined,
-  }
-}
-
-/**
- * Helper function to calculate head-to-head record between two teams
- * Used for tie-breaking when teams have the same points
- *
- * @internal - Reserved for future tie-breaker enhancement (Phase 2C)
- * TODO: Integrate this into the tie-breaker logic in calculateStandings()
- */
-export function calculateHeadToHead(teamAId: string, teamBId: string, matches: Match[]): {
-  teamAPoints: number
-  teamBPoints: number
-  teamAGoalDiff: number
-  teamBGoalDiff: number
-} {
-  let teamAPoints = 0
-  let teamBPoints = 0
-  let teamAGoalDiff = 0
-  let teamBGoalDiff = 0
-
-  matches.forEach(match => {
-    if (match.status !== 'final' || match.darkTeamScore === undefined || match.lightTeamScore === undefined) {
-      return
-    }
-
-    // Check if this match involves both teams
-    const isHeadToHead =
-      (match.darkTeamId === teamAId && match.lightTeamId === teamBId) ||
-      (match.darkTeamId === teamBId && match.lightTeamId === teamAId)
-
-    if (!isHeadToHead) {
-      return
-    }
-
-    // Determine which team is which
-    const teamAIsDark = match.darkTeamId === teamAId
-    const teamAScore = teamAIsDark ? match.darkTeamScore : match.lightTeamScore
-    const teamBScore = teamAIsDark ? match.lightTeamScore : match.darkTeamScore
-
-    // Update points
-    if (teamAScore > teamBScore) {
-      teamAPoints += 2
-    } else if (teamBScore > teamAScore) {
-      teamBPoints += 2
-    } else {
-      teamAPoints += 1
-      teamBPoints += 1
-    }
-
-    // Update goal differential
-    teamAGoalDiff += teamAScore - teamBScore
-    teamBGoalDiff += teamBScore - teamAScore
-  })
-
-  return { teamAPoints, teamBPoints, teamAGoalDiff, teamBGoalDiff }
 }

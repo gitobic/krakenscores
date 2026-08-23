@@ -46,10 +46,12 @@
 
       match /matches/{matchId} {
         allow read: if true;
-        // Staff can update scores and status only
+        // Staff can update scores plus app-derived participant resolution only.
+        // Participant source definitions, scheduling, and match metadata remain admin-only.
         allow update: if isStaff() &&
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['darkTeamScore', 'lightTeamScore', 'status', 'period', 'updatedAt']);
+            .hasOnly(['darkTeamScore', 'lightTeamScore', 'darkTeamId', 'lightTeamId',
+                      'darkTeamLabel', 'lightTeamLabel', 'status', 'period', 'updatedAt']);
         // Admins have full write access
         allow create, delete: if isAdmin();
         allow update: if isAdmin();
@@ -67,6 +69,8 @@
 
       match /standings/{standingId} {
         allow read: if true;
+        allow create, update: if isStaff() &&
+          request.resource.data.keys().hasOnly(['tournamentId', 'table', 'tiebreakerNotes', 'updatedAt']);
         allow write: if isAdmin();
       }
 
@@ -80,7 +84,7 @@
       // Staff list - Only admins can read this
       // Nobody can write (manual setup only via Firebase Console)
       match /staff/{userId} {
-        allow read: if isAdmin();
+        allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
         allow write: if false;  // Prevent any writes via app
       }
     }

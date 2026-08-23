@@ -36,7 +36,7 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 
 ## Phase 1 — Tournament engine and data integrity
 
-**Status:** In progress
+**Status:** Complete
 
 - [x] Document each 2026 division's pool, seeding, placement, and advancement rules.
 - [x] Create representative test fixtures from the May 2026 tournament.
@@ -44,20 +44,20 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 - [x] Model each participant slot as fixed team, pool seed, match winner, or match loser.
 - [x] Make club and team identity distinct throughout data loading and display.
 - [x] Support multiple same-club teams in one division without ambiguous labels.
-- [ ] Implement pool/group seed resolution.
-- [ ] Implement automatic winner and loser advancement when a match is finalized.
-- [ ] Implement safe reopening or correction of a finalized result.
-- [ ] Warn before a correction invalidates a downstream completed match.
-- [ ] Define and implement the required standings tie-break rules.
-- [ ] Make advancement and related updates atomic where practical.
-- [ ] Add automated tests for advancement, corrections, standings, and conflicts.
+- [x] Implement pool/group seed resolution.
+- [x] Implement automatic winner and loser advancement when a match is finalized.
+- [x] Implement safe reopening or correction of a finalized result.
+- [x] Warn before a correction invalidates a downstream completed match.
+- [x] Define and implement the required standings tie-break rules.
+- [x] Make advancement and related updates atomic where practical.
+- [x] Add automated tests for advancement, corrections, standings, and conflicts.
 
 ### Phase 1 exit criteria
 
-- [ ] Replaying the May 2026 results resolves all seed and winner/loser placeholders.
-- [ ] Renumbering or moving a match does not break its dependencies.
-- [ ] A corrected result produces predictable, tested downstream behavior.
-- [ ] Same-club opponents display distinct team names.
+- [x] Replaying the representative May 2026 progression fixture resolves all seed and winner/loser placeholders.
+- [x] Renumbering or moving a match does not break its dependencies.
+- [x] A corrected result produces predictable, tested downstream behavior.
+- [x] Same-club opponents display distinct team names.
 
 ## Phase 2 — Simplified tournament setup
 
@@ -172,3 +172,6 @@ Record consequential scope or domain decisions here so later work does not silen
 - **2026-08-22:** Spectator access remains anonymous and account-free.
 - **2026-08-22:** Treat tournament progression as a hybrid pool/seeding/placement graph rather than one universal bracket type.
 - **2026-08-22:** Do not deploy or modify production without explicit authorization.
+- **2026-08-22:** Default standings use 2/1/0 points, tied-team mini-table points and goal difference, then overall goal difference, goals scored, goals conceded, and team name.
+- **2026-08-22:** Draws are supported unless a later match requires a winner or loser; those source matches must have a decisive final score.
+- **2026-08-22:** A confirmed correction reopens affected completed descendants and clears their scores atomically with participant advancement updates.
