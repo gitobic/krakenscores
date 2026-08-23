@@ -21,7 +21,7 @@ An organizer can also load a previous tournament as an in-memory template. The c
 
 The setup workspace owns one tournament and contains its selected division IDs, clubs referenced by its teams, tournament-scoped teams, tournament-scoped pools, matches, and schedule breaks. Existing legacy records remain readable, but all newly created teams and pools require a `tournamentId`.
 
-The canonical import/export format will represent the same draft boundary rather than requiring separate team and match files. Human-friendly game numbers and labels are accepted at the import boundary, then normalized to stable IDs before Firestore writes.
+The canonical schedule import/export format uses one round-trip CSV with these columns: `game_number,date,time,pool,division,dark,light,duration,round_type`. Participant cells accept an exact team name, the unambiguous abbreviation of a club with one team in that division, `ABBR: Exact Team Name` for same-club variants, a group seed such as `2F`, or an earlier outcome such as `Winner of Game 12`. Import first shows normalized rows and row/field-specific errors; it never writes directly. Human-friendly game numbers are normalized to stable IDs during the eventual draft save.
 
 ## Validation policy
 

@@ -45,6 +45,7 @@ export interface SetupSlotInput {
   scheduledDate: string
   scheduledTime: string
   duration: number
+  roundType?: 'pool' | 'semi' | 'final' | 'placement'
   darkParticipant?: SetupParticipantInput
   lightParticipant?: SetupParticipantInput
 }
@@ -228,7 +229,7 @@ export async function createTournamentSetupDraft(
       ...(darkTeamLabel ? { darkTeamLabel } : {}),
       ...(lightTeamLabel ? { lightTeamLabel } : {}),
       status: 'scheduled',
-      roundType: 'pool',
+      roundType: slot.roundType || 'pool',
       isSemiFinal: false,
       isFinal: false,
       createdAt: now,

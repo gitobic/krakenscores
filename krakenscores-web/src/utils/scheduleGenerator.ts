@@ -12,6 +12,7 @@ export interface GeneratedScheduleSlot {
   scheduledDate: string
   scheduledTime: string
   duration: number
+  roundType: 'pool' | 'semi' | 'final' | 'placement'
 }
 
 export interface ScheduleGenerationInput {
@@ -46,6 +47,7 @@ export function generateScheduleSlots(input: ScheduleGenerationInput): Generated
         scheduledDate: `${time.getFullYear()}-${pad(time.getMonth() + 1)}-${pad(time.getDate())}`,
         scheduledTime: `${pad(time.getHours())}:${pad(time.getMinutes())}`,
         duration: input.duration,
+        roundType: 'pool',
       })
     })
   }

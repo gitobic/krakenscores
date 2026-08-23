@@ -10,6 +10,7 @@ import { getMatchesByTournament } from '../../services/matches'
 import type { Club, Division, MatchParticipantSlot, Tournament } from '../../types/index'
 import { generateScheduleSlots, type GeneratedScheduleSlot } from '../../utils/scheduleGenerator'
 import { parseParticipantLabel } from '../../utils/participantSlots'
+import { exportSetupCsv, parseSetupCsv, type SetupCsvIssue, type SetupCsvSlot } from '../../utils/setupCsv'
 
 const steps = ['Tournament', 'Divisions', 'Teams', 'Pools', 'Schedule', 'Review']
 
@@ -52,6 +53,10 @@ export default function TournamentSetup() {
   const [generator, setGenerator] = useState({ date: '', startTime: '07:00', rounds: 1, firstMatchNumber: 1, intervalMinutes: 55 })
   const [templateId, setTemplateId] = useState('')
   const [loadingTemplate, setLoadingTemplate] = useState(false)
+  const [showCsvImport, setShowCsvImport] = useState(false)
+  const [csvText, setCsvText] = useState('')
+  const [csvIssues, setCsvIssues] = useState<SetupCsvIssue[]>([])
+  const [csvPreview, setCsvPreview] = useState<SetupCsvSlot[]>([])
 
   useEffect(() => {
     Promise.all([getAllDivisions(), getAllClubs(), getAllTournaments()])
@@ -156,7 +161,7 @@ export default function TournamentSetup() {
       setSlots(sourceMatches.map(match => ({
         id: matchKeys.get(match.id)!, matchNumber: match.matchNumber, poolKey: poolKeys.get(match.poolId) || match.poolId,
         poolName: sourcePools.find(pool => pool.id === match.poolId)?.name || 'Pool', divisionId: match.divisionId,
-        scheduledDate: shiftedDate(match.scheduledDate), scheduledTime: match.scheduledTime, duration: match.duration,
+        scheduledDate: shiftedDate(match.scheduledDate), scheduledTime: match.scheduledTime, duration: match.duration, roundType: match.roundType,
         darkParticipant: cloneParticipant(match.darkParticipant, match.darkTeamId, match.darkTeamLabel),
         lightParticipant: cloneParticipant(match.lightParticipant, match.lightTeamId, match.lightTeamLabel),
       })))
@@ -174,6 +179,34 @@ export default function TournamentSetup() {
     } finally {
       setLoadingTemplate(false)
     }
+  }
+
+  const participantCsvName = (participant: SetupParticipantInput): string => {
+    if (participant.source === 'groupSeed') return `${participant.rank}${participant.groupId}`
+    if (participant.source === 'matchOutcome') return `${participant.outcome === 'winner' ? 'Winner' : 'Loser'} of Game ${slots.find(slot => slot.id === participant.matchKey)?.matchNumber ?? '?'}`
+    const team = teams.find(item => item.id === participant.teamKey)
+    const club = availableClubs.find(item => item.key === team?.clubKey)
+    return team ? `${club?.abbreviation || ''}: ${team.name}` : participant.teamKey
+  }
+  const previewCsv = () => {
+    const result = parseSetupCsv(csvText, {
+      pools: pools.map(pool => ({ key: pool.key, name: pool.name })),
+      divisions: selectedDivisions.map(division => ({ key: division.id, name: division.name })),
+      teams: teams.map(team => ({ key: team.id, name: team.name, divisionId: team.divisionId, clubKey: team.clubKey })),
+      clubs: availableClubs,
+      defaultDuration: details.defaultMatchDuration,
+    })
+    setCsvIssues(result.issues)
+    setCsvPreview(result.slots)
+  }
+  const downloadCsv = () => {
+    const csvSlots: SetupCsvSlot[] = slots.map(slot => ({ ...slot, key: slot.id, divisionName: selectedDivisions.find(division => division.id === slot.divisionId)?.name || slot.divisionId }))
+    const url = URL.createObjectURL(new Blob([exportSetupCsv(csvSlots, participantCsvName)], { type: 'text/csv' }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `${details.name.trim().replaceAll(/[^a-z0-9]+/gi, '-').toLowerCase() || 'krakenscores'}-schedule.csv`
+    anchor.click()
+    URL.revokeObjectURL(url)
   }
 
   const saveDraft = async () => {
@@ -195,6 +228,7 @@ export default function TournamentSetup() {
         scheduledDate: slot.scheduledDate,
         scheduledTime: slot.scheduledTime,
         duration: slot.duration,
+        roundType: slot.roundType,
         darkParticipant: slot.darkParticipant,
         lightParticipant: slot.lightParticipant,
       })))
@@ -326,8 +360,16 @@ export default function TournamentSetup() {
 
           {step === 4 && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-950">Generate the master schedule grid</h2>
-              <p className="mt-1 text-sm text-gray-600">One round creates one simultaneous slot in every pool. You can assign teams and advancement sources afterward.</p>
+              <div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-xl font-semibold text-gray-950">Build the master schedule</h2><p className="mt-1 text-sm text-gray-600">Generate a grid or import/export the same canonical CSV format.</p></div><div className="flex gap-2"><button type="button" onClick={() => setShowCsvImport(current => !current)} className="rounded-md border border-blue-700 px-3 py-2 text-sm font-semibold text-blue-800">Import CSV</button><button type="button" onClick={downloadCsv} disabled={!slots.length} className="rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 disabled:opacity-40">Export CSV</button></div></div>
+              {showCsvImport && <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <h3 className="font-semibold text-blue-950">Canonical KrakenScores schedule CSV</h3>
+                <p className="mt-1 text-sm text-blue-800">Columns: game_number, date, time, pool, division, dark, light, duration, round_type. Participants accept exact team names, <code>ABBR: Exact Team Name</code>, <code>2F</code>, or <code>Winner of Game 12</code>.</p>
+                <textarea value={csvText} onChange={event => { setCsvText(event.target.value); setCsvIssues([]); setCsvPreview([]) }} rows={8} className="mt-4 w-full rounded-md border border-blue-200 bg-white p-3 font-mono text-xs" placeholder="game_number,date,time,pool,division,dark,light,duration" />
+                <div className="mt-3 flex flex-wrap gap-3"><button type="button" onClick={previewCsv} disabled={!csvText.trim()} className="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Validate and preview</button>{csvPreview.length > 0 && csvIssues.length === 0 && <button type="button" onClick={() => { setSlots(csvPreview.map(slot => ({ ...slot, id: slot.key }))); setShowCsvImport(false) }} className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">Use these {csvPreview.length} games</button>}</div>
+                {csvIssues.length > 0 && <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3"><p className="font-semibold text-red-900">Fix {csvIssues.length} import issue{csvIssues.length === 1 ? '' : 's'}:</p><ul className="mt-2 grid gap-1 text-sm text-red-800">{csvIssues.map((issue, index) => <li key={`${issue.row}-${issue.field}-${index}`}>Row {issue.row}, {issue.field}: {issue.message}</li>)}</ul></div>}
+                {csvPreview.length > 0 && csvIssues.length === 0 && <div className="mt-4 max-h-52 overflow-auto rounded-md border border-emerald-200 bg-white"><table className="min-w-full text-xs"><thead className="sticky top-0 bg-emerald-50"><tr><th className="p-2 text-left">Game</th><th className="p-2 text-left">When</th><th className="p-2 text-left">Pool</th><th className="p-2 text-left">Division</th></tr></thead><tbody>{csvPreview.map(slot => <tr key={slot.key} className="border-t"><td className="p-2">{slot.matchNumber}</td><td className="p-2">{slot.scheduledDate} {slot.scheduledTime}</td><td className="p-2">{slot.poolName}</td><td className="p-2">{slot.divisionName}</td></tr>)}</tbody></table></div>}
+              </div>}
+              <p className="mt-6 text-sm text-gray-600">One generated round creates one simultaneous slot in every pool.</p>
               <div className="mt-7 grid gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-3 lg:grid-cols-6 lg:items-end">
                 <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">Date<input type="date" min={details.startDate} max={details.endDate} value={generator.date} onChange={event => setGenerator({ ...generator, date: event.target.value })} className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-normal" /></label>
                 <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">First time<input type="time" value={generator.startTime} onChange={event => setGenerator({ ...generator, startTime: event.target.value })} className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-normal" /></label>
@@ -336,7 +378,7 @@ export default function TournamentSetup() {
                 <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">Cadence<input type="number" min="10" value={generator.intervalMinutes} onChange={event => setGenerator({ ...generator, intervalMinutes: Number(event.target.value) })} className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-normal" /></label>
                 <button type="button" onClick={buildSlots} disabled={!generator.date || generator.rounds < 1} className="rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40">Generate</button>
               </div>
-              {slots.length > 0 && <div className="mt-6 overflow-x-auto rounded-lg border border-gray-200"><table className="min-w-full divide-y divide-gray-200 text-sm"><thead className="bg-gray-50"><tr><th className="p-3 text-left">Game</th><th className="p-3 text-left">Date / time</th><th className="p-3 text-left">Pool</th><th className="p-3 text-left">Division</th><th className="min-w-52 p-3 text-left">Dark</th><th className="min-w-52 p-3 text-left">Light</th></tr></thead><tbody className="divide-y divide-gray-100">{slots.map(slot => <tr key={slot.id}><td className="p-3 font-semibold">{slot.matchNumber}</td><td className="p-3">{slot.scheduledDate} · {slot.scheduledTime}</td><td className="p-3">{slot.poolName}</td><td className="p-3"><select value={slot.divisionId} onChange={event => setSlots(current => current.map(item => item.id === slot.id ? { ...item, divisionId: event.target.value, darkParticipant: undefined, lightParticipant: undefined } : item))} className="rounded border border-gray-300 bg-white px-2 py-1">{selectedDivisions.map(division => <option key={division.id} value={division.id}>{division.name}</option>)}</select></td><td className="p-3"><ParticipantSelect value={slot.darkParticipant} slot={slot} teams={teams} slots={slots} onChange={participant => setSlots(current => current.map(item => item.id === slot.id ? { ...item, darkParticipant: participant } : item))} /></td><td className="p-3"><ParticipantSelect value={slot.lightParticipant} slot={slot} teams={teams} slots={slots} onChange={participant => setSlots(current => current.map(item => item.id === slot.id ? { ...item, lightParticipant: participant } : item))} /></td></tr>)}</tbody></table></div>}
+              {slots.length > 0 && <div className="mt-6 overflow-x-auto rounded-lg border border-gray-200"><table className="min-w-full divide-y divide-gray-200 text-sm"><thead className="bg-gray-50"><tr><th className="p-3 text-left">Game</th><th className="p-3 text-left">Date / time</th><th className="p-3 text-left">Pool</th><th className="p-3 text-left">Division</th><th className="p-3 text-left">Round</th><th className="min-w-52 p-3 text-left">Dark</th><th className="min-w-52 p-3 text-left">Light</th></tr></thead><tbody className="divide-y divide-gray-100">{slots.map(slot => <tr key={slot.id}><td className="p-3 font-semibold">{slot.matchNumber}</td><td className="p-3">{slot.scheduledDate} · {slot.scheduledTime}</td><td className="p-3">{slot.poolName}</td><td className="p-3"><select value={slot.divisionId} onChange={event => setSlots(current => current.map(item => item.id === slot.id ? { ...item, divisionId: event.target.value, darkParticipant: undefined, lightParticipant: undefined } : item))} className="rounded border border-gray-300 bg-white px-2 py-1">{selectedDivisions.map(division => <option key={division.id} value={division.id}>{division.name}</option>)}</select></td><td className="p-3"><select value={slot.roundType} onChange={event => setSlots(current => current.map(item => item.id === slot.id ? { ...item, roundType: event.target.value as SlotDraft['roundType'] } : item))} className="rounded border border-gray-300 bg-white px-2 py-1"><option value="pool">Pool</option><option value="semi">Semi</option><option value="final">Final</option><option value="placement">Placement</option></select></td><td className="p-3"><ParticipantSelect value={slot.darkParticipant} slot={slot} teams={teams} slots={slots} onChange={participant => setSlots(current => current.map(item => item.id === slot.id ? { ...item, darkParticipant: participant } : item))} /></td><td className="p-3"><ParticipantSelect value={slot.lightParticipant} slot={slot} teams={teams} slots={slots} onChange={participant => setSlots(current => current.map(item => item.id === slot.id ? { ...item, lightParticipant: participant } : item))} /></td></tr>)}</tbody></table></div>}
               {slots.length > 0 && !slotsValid && <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Assign two different participant sources to every generated game before continuing.</div>}
               <p className="mt-4 text-sm text-gray-500">Dependencies only offer earlier game numbers, preventing forward references and circular bracket paths.</p>
             </div>
