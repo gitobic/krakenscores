@@ -20,13 +20,13 @@ KrakenScores replaces a manual Google Sheets-based system with a dedicated web a
 ## Technology Stack
 
 - **Backend & Hosting:** Firebase (Firestore, Auth, Hosting)
-- **Frontend:** Vite + React 18 + TypeScript
+- **Frontend:** Vite + React 19 + TypeScript
 - **Styling:** Tailwind CSS + inline styles
 - **State:** React Context + react-firebase-hooks
 
 ## Project Status
 
-**Current Phase: Phase 3D Complete**
+**Current focus:** October 2026 tournament readiness
 
 - ✅ Full admin CRUD (tournaments, clubs, divisions, teams, pools, matches, schedule breaks, standings, announcements)
 - ✅ Public pages (schedule, standings, team schedule, announcements, brackets)
@@ -34,13 +34,13 @@ KrakenScores replaces a manual Google Sheets-based system with a dedicated web a
 - ✅ Match conflict validation
 - ✅ Deployed to Firebase Hosting
 
-**Up Next (Phase 4):** Bracket visualization, fun stats, drag-and-drop scheduling, CSV export
+**Up next:** automatic bracket advancement, easier tournament setup, volunteer-ready score entry, and connected public brackets
 
 ## Local Development
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 22
 - Firebase CLI: `npm install -g firebase-tools`
 
 ### Setup
@@ -80,12 +80,12 @@ firebase login --reauth
 
 # Build and deploy
 cd krakenscores-web && npm run build
-cd .. && firebase deploy --only hosting
+cd .. && firebase deploy --only hosting:krakenscores
 ```
 
 ## Documentation
 
-- **[CLAUDE.md](CLAUDE.md)** — Full developer guide: architecture, design system, data model, commands
+- **[AGENTS.md](AGENTS.md)** — Repository guidance, product priorities, domain model, and safety rules
 - **[PRD.md](PRD.md)** — Product requirements and user stories
 - **[TECHNICAL_SPEC_FIREBASE.md](TECHNICAL_SPEC_FIREBASE.md)** — Technical architecture details
 

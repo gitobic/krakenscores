@@ -15,7 +15,7 @@ export interface Tournament {
 export interface Division {
   id: string;
   name: string; // e.g., "12u CoEd", "16u Boys"
-  colorHex: string; // Color-blind safe color from CLAUDE.md
+  colorHex: string; // Colorblind-aware color from AGENTS.md
   createdAt: Date;
   updatedAt: Date;
 }
@@ -136,7 +136,7 @@ export interface TeamStanding {
   games: number;
   wins: number;
   losses: number;
-  draws: number; // Changed from "ties" to match CLAUDE.md
+  draws: number; // Draw count used by standings
   goalsFor: number;
   goalsAgainst: number;
   goalDiff: number; // goalsFor - goalsAgainst

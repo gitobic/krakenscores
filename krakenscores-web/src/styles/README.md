@@ -420,7 +420,7 @@ If you find yourself:
 
 For complete design specifications, see:
 - **`/STYLE_GUIDE.md`** - Complete visual design system
-- **`/CLAUDE.md`** - Project architecture and domain model
+- **`/AGENTS.md`** - Product priorities, repository guidance, and domain model
 - **`theme.ts`** - Source code with all constants
 
 ---

@@ -590,7 +590,7 @@ These colors are assigned to divisions at tournament setup and used consistently
 | **Semi-Final** | #0072B2 | 0, 114, 178 | Electric Blue |
 | **Womens Open** | #EE95A8 | 238, 149, 168 | Rosy pink |
 
-**Additional Colors Available**: See CLAUDE.md for full 27-color palette
+**Additional Colors Available**: See AGENTS.md for the maintained division color palette
 
 **Usage Guidelines**:
 - Always use black text (#000000) on division color backgrounds
@@ -679,6 +679,6 @@ When adding new features or updating existing pages:
 ## Questions?
 
 For questions about the style guide or design decisions, refer to:
-- `CLAUDE.md` - Project overview and architecture
+- `AGENTS.md` - Product priorities, repository guidance, and domain model
 - `TECHNICAL_SPEC_FIREBASE.md` - Technical implementation details
 - Design reference images in `/ref_images/` directory
