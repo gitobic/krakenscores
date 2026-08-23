@@ -4,16 +4,17 @@ import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Pool } from '../../types/index'
 import { ResultImpactError, saveMatchResult } from '../../services/matches'
 import { teamCompactName, teamPublicName } from '../../utils/teamIdentity'
+import { buildScorekeeperQueue } from '../../utils/scorekeeperQueue'
 
 interface MatchWithDetails {
   match: Match
   tournament: Tournament
   division: Division
   pool: Pool
-  darkTeam: Team
-  lightTeam: Team
-  darkTeamClub: Club
-  lightTeamClub: Club
+  darkTeam: Team | undefined
+  lightTeam: Team | undefined
+  darkTeamClub: Club | undefined
+  lightTeamClub: Club | undefined
 }
 
 type SortField = 'matchNumber' | 'day' | 'time' | 'division' | 'pool' | 'status'
@@ -29,13 +30,24 @@ export default function Scorekeeper() {
   const [savingMatchId, setSavingMatchId] = useState<string | null>(null)
   const [sortField, setSortField] = useState<SortField>('matchNumber')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
-  const [showTeamNames, setShowTeamNames] = useState<boolean>(false)
+  const [showTeamNames, setShowTeamNames] = useState<boolean>(true)
+  const [showAllGames, setShowAllGames] = useState(false)
+  const [saveStates, setSaveStates] = useState<Record<string, 'saving' | 'saved' | 'error'>>({})
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine)
 
   // Track edited scores for each match
   const [editedScores, setEditedScores] = useState<Record<string, { darkScore: number; lightScore: number }>>({})
 
   useEffect(() => {
     loadData()
+  }, [])
+
+  useEffect(() => {
+    const online = () => setIsOnline(true)
+    const offline = () => setIsOnline(false)
+    window.addEventListener('online', online)
+    window.addEventListener('offline', offline)
+    return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline) }
   }, [])
 
   useEffect(() => {
@@ -124,16 +136,12 @@ export default function Scorekeeper() {
           const lightTeam = teamsMap.get(matchData.lightTeamId)
           const tournament = tournaments.find(t => t.id === matchData.tournamentId)
 
-          if (!division || !pool || !darkTeam || !lightTeam || !tournament) {
+          if (!division || !pool || !tournament) {
             return null
           }
 
-          const darkTeamClub = clubsMap.get(darkTeam.clubId)
-          const lightTeamClub = clubsMap.get(lightTeam.clubId)
-
-          if (!darkTeamClub || !lightTeamClub) {
-            return null
-          }
+          const darkTeamClub = darkTeam ? clubsMap.get(darkTeam.clubId) : undefined
+          const lightTeamClub = lightTeam ? clubsMap.get(lightTeam.clubId) : undefined
 
           return {
             match: matchData,
@@ -226,6 +234,18 @@ export default function Scorekeeper() {
     return sorted
   }, [matches, selectedDay, sortField, sortDirection])
 
+  const queue = useMemo(() => buildScorekeeperQueue(
+    selectedDay === 'all' ? matches : matches.filter(item => getDayOfWeek(item.match.scheduledDate) === selectedDay)
+  ), [matches, selectedDay])
+  const knownTeams = useMemo(() => matches.flatMap(item => [item.darkTeam, item.lightTeam]).filter((team): team is Team => Boolean(team)), [matches])
+  const participantName = (item: MatchWithDetails, side: 'dark' | 'light') => {
+    const team = side === 'dark' ? item.darkTeam : item.lightTeam
+    const club = side === 'dark' ? item.darkTeamClub : item.lightTeamClub
+    const provisional = side === 'dark' ? item.match.darkTeamLabel : item.match.lightTeamLabel
+    if (!team || !club) return provisional || 'To be determined'
+    return showTeamNames ? teamPublicName(team, club) : teamCompactName(team, club, knownTeams)
+  }
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
@@ -248,6 +268,10 @@ export default function Scorekeeper() {
   }
 
   const handleSetStatus = async (matchId: string, newStatus: 'scheduled' | 'in_progress' | 'final' | 'forfeit' | 'cancelled') => {
+    if (!isOnline) {
+      setSaveStates(current => ({ ...current, [matchId]: 'error' }))
+      return
+    }
     const matchWithDetails = matches.find(m => m.match.id === matchId)
     if (!matchWithDetails) return
 
@@ -262,6 +286,7 @@ export default function Scorekeeper() {
     }
 
     setSavingMatchId(matchId)
+    setSaveStates(current => ({ ...current, [matchId]: 'saving' }))
     try {
       const scores = editedScores[matchId] || { darkScore: 0, lightScore: 0 }
       try {
@@ -277,9 +302,11 @@ export default function Scorekeeper() {
       }
 
       await loadMatches()
+      setSaveStates(current => ({ ...current, [matchId]: 'saved' }))
     } catch (error) {
       console.error('Error updating match:', error)
       alert(`Failed to update match: ${error}`)
+      setSaveStates(current => ({ ...current, [matchId]: 'error' }))
     } finally {
       setSavingMatchId(null)
     }
@@ -347,6 +374,36 @@ export default function Scorekeeper() {
     </th>
   )
 
+  const renderOperationalCard = (item: MatchWithDetails) => {
+    const { match, division, pool } = item
+    const scores = editedScores[match.id] || { darkScore: 0, lightScore: 0 }
+    const isSaving = savingMatchId === match.id
+    const adjust = (side: 'dark' | 'light', amount: number) => {
+      const key = side === 'dark' ? 'darkScore' : 'lightScore'
+      setEditedScores(current => ({ ...current, [match.id]: { ...scores, [key]: Math.max(0, scores[key] + amount) } }))
+    }
+    return <article key={match.id} className={`rounded-xl border bg-white p-4 shadow-sm ${match.status === 'in_progress' ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
+        <div className="flex items-center gap-2"><span className="text-lg font-bold text-gray-950">Game {match.matchNumber}</span>{getStatusBadge(match.status)}</div>
+        <div className="text-right text-sm text-gray-600"><strong>{getDayOfWeek(match.scheduledDate)} {match.scheduledTime}</strong><br />{pool.name} · {division.name}</div>
+      </div>
+      <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        {(['dark', 'light'] as const).map((side, index) => <div key={side} className={index ? 'text-right' : ''}>
+          <p className="min-h-12 text-base font-bold leading-tight text-gray-950">{participantName(item, side)}</p>
+          <div className={`mt-3 flex items-center gap-2 ${index ? 'justify-end' : ''}`}>
+            <button type="button" aria-label={`Decrease ${side} score for Game ${match.matchNumber}`} onClick={() => adjust(side, -1)} disabled={match.status === 'final' || isSaving} className="h-11 w-11 rounded-lg border border-gray-300 text-2xl font-bold text-gray-700 disabled:opacity-30">−</button>
+            <input aria-label={`${side} score for Game ${match.matchNumber}`} type="number" min="0" step="1" value={side === 'dark' ? scores.darkScore : scores.lightScore} onChange={event => handleScoreChange(match.id, side, event.target.value)} disabled={match.status === 'final' || isSaving} className="h-14 w-20 rounded-lg border-2 border-gray-300 text-center text-3xl font-bold disabled:bg-gray-100" />
+            <button type="button" aria-label={`Increase ${side} score for Game ${match.matchNumber}`} onClick={() => adjust(side, 1)} disabled={match.status === 'final' || isSaving} className="h-11 w-11 rounded-lg border border-gray-300 text-2xl font-bold text-gray-700 disabled:opacity-30">+</button>
+          </div>
+        </div>).reduce<React.ReactNode[]>((nodes, node, index) => index === 0 ? [node, <span key="versus" className="text-sm font-semibold text-gray-400">VS</span>] : [...nodes, node], [])}
+      </div>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
+        <span className={`text-sm font-medium ${!isOnline || saveStates[match.id] === 'error' ? 'text-red-700' : saveStates[match.id] === 'saved' ? 'text-emerald-700' : 'text-gray-500'}`}>{!isOnline ? 'Offline — changes cannot be saved' : saveStates[match.id] === 'saving' ? 'Saving…' : saveStates[match.id] === 'saved' ? '✓ Saved' : saveStates[match.id] === 'error' ? 'Save failed — retry' : 'Not changed'}</span>
+        <div className="flex gap-2">{match.status === 'final' ? <button type="button" onClick={() => handleSetStatus(match.id, 'scheduled')} disabled={isSaving || !isOnline} className="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 disabled:opacity-40">Correct result</button> : <>{match.status !== 'in_progress' && <button type="button" onClick={() => handleSetStatus(match.id, 'in_progress')} disabled={isSaving || !isOnline} className="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Start game</button>}<button type="button" onClick={() => handleSetStatus(match.id, 'final')} disabled={isSaving || !isOnline || !item.darkTeam || !item.lightTeam} className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Finalize score</button></>}</div>
+      </div>
+    </article>
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -404,6 +461,8 @@ export default function Scorekeeper() {
             Enter scores and finalize matches
           </p>
         </div>
+
+        {!isOnline && <div className="mb-5 rounded-lg border border-red-300 bg-red-50 p-4 font-semibold text-red-900">Offline: scores remain visible, but Start, Finalize, and Correct are disabled until the connection returns.</div>}
 
         {/* Filters */}
         <div style={{
@@ -519,8 +578,24 @@ export default function Scorekeeper() {
           </div>
         </div>
 
+        {!loadingMatches && matches.length > 0 && <div className="mb-8 grid gap-8">
+          <section>
+            <div className="mb-3 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-blue-700">Now</p><h2 className="text-xl font-bold text-gray-950">Current games</h2></div><span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800">{queue.current.length} active</span></div>
+            {queue.current.length ? <div className="grid gap-4 xl:grid-cols-2">{queue.current.map(renderOperationalCard)}</div> : <div className="rounded-lg border border-dashed border-gray-300 bg-white p-5 text-gray-600">No game is currently in progress. Start the next game when its table reports ready.</div>}
+          </section>
+          <section>
+            <div className="mb-3"><p className="text-xs font-bold uppercase tracking-wider text-violet-700">Up next</p><h2 className="text-xl font-bold text-gray-950">Upcoming games</h2></div>
+            {queue.next.length ? <div className="grid gap-4 xl:grid-cols-2">{queue.next.map(renderOperationalCard)}</div> : <p className="rounded-lg border border-gray-200 bg-white p-5 text-gray-600">No future scheduled games in this view.</p>}
+          </section>
+          <section>
+            <div className="mb-3"><p className="text-xs font-bold uppercase tracking-wider text-emerald-700">Recently completed</p><h2 className="text-xl font-bold text-gray-950">Final scores</h2></div>
+            {queue.recent.length ? <div className="grid gap-4 xl:grid-cols-2">{queue.recent.map(renderOperationalCard)}</div> : <p className="rounded-lg border border-gray-200 bg-white p-5 text-gray-600">No completed games yet.</p>}
+          </section>
+        </div>}
+
+        <div className="mb-3 flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-gray-500">Full schedule</p><h2 className="text-xl font-bold text-gray-950">All games</h2></div><button type="button" onClick={() => setShowAllGames(current => !current)} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700">{showAllGames ? 'Hide table' : 'Show table'}</button></div>
         {/* Matches Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className={`bg-white rounded-lg shadow overflow-hidden ${showAllGames ? '' : 'hidden'}`}>
           {loadingMatches ? (
             <div className="p-8 text-center text-gray-500">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
@@ -568,7 +643,7 @@ export default function Scorekeeper() {
                 </thead>
                 <tbody>
                   {filteredAndSortedMatches.map((matchWithDetails, index) => {
-                    const { match, division, pool, darkTeam, lightTeam, darkTeamClub, lightTeamClub } = matchWithDetails
+                    const { match, division, pool } = matchWithDetails
                     const isSaving = savingMatchId === match.id
                     const scores = editedScores[match.id] || { darkScore: 0, lightScore: 0 }
 
@@ -615,7 +690,7 @@ export default function Scorekeeper() {
                           whiteSpace: showTeamNames ? 'nowrap' : 'normal',
                           fontFamily: 'system-ui, -apple-system, sans-serif'
                         }}>
-                          {showTeamNames ? teamPublicName(darkTeam, darkTeamClub) : teamCompactName(darkTeam, darkTeamClub, matches.flatMap(item => [item.darkTeam, item.lightTeam]))}
+                          {participantName(matchWithDetails, 'dark')}
                         </td>
                         <td style={{ padding: '6px 8px', borderRight: '1px solid #e5e7eb', textAlign: 'center' }}>
                           <input
@@ -648,7 +723,7 @@ export default function Scorekeeper() {
                           whiteSpace: showTeamNames ? 'nowrap' : 'normal',
                           fontFamily: 'system-ui, -apple-system, sans-serif'
                         }}>
-                          {showTeamNames ? teamPublicName(lightTeam, lightTeamClub) : teamCompactName(lightTeam, lightTeamClub, matches.flatMap(item => [item.darkTeam, item.lightTeam]))}
+                          {participantName(matchWithDetails, 'light')}
                         </td>
                         <td style={{ padding: '6px 8px', borderRight: '1px solid #e5e7eb', textAlign: 'center' }}>
                           <input

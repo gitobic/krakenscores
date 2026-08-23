@@ -85,14 +85,14 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 
 ## Phase 3 — Tournament-day operations
 
-**Status:** Not started
+**Status:** In progress
 
-- [ ] Redesign scorekeeper mode around current, next, and recently completed games.
-- [ ] Provide large, clear dark/light score controls.
-- [ ] Show unambiguous full team names for same-club teams.
-- [ ] Show saving, saved, offline, and error states clearly.
+- [x] Redesign scorekeeper mode around current, next, and recently completed games.
+- [x] Provide large, clear dark/light score controls.
+- [x] Show unambiguous full team names for same-club teams.
+- [x] Show saving, saved, offline, and error states clearly.
 - [ ] Finalize a match with a concise advancement summary.
-- [ ] Reopen/correct a match with an impact preview.
+- [x] Reopen/correct a match with an impact preview.
 - [ ] Move one match to a new time or pool safely.
 - [ ] Shift a selected block or all later matches in one pool by N minutes.
 - [ ] Re-run conflict validation before committing schedule changes.
