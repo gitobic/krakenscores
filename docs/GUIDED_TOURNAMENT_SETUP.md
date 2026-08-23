@@ -15,6 +15,8 @@ Setup always creates or edits a draft. Publishing remains a separate, deliberate
 
 The initial guided workflow supports creating missing clubs inline, entering multiple distinctly named teams per club/division, assigning preliminary group letters, configuring physical pools, and generating simultaneous pool slots in configurable rounds. The default cadence is 55 minutes. Each generated participant slot can be assigned a fixed team, group seed, winner of an earlier game, or loser of an earlier game. Only earlier games are offered as outcome sources, which prevents forward references and circular bracket paths. Friendly game-number labels are converted to preallocated document-ID dependencies during the atomic save.
 
+An organizer can also load a previous tournament as an in-memory template. The clone reuses clubs; copies its selected divisions, distinctly named teams, group assignments, physical pools, schedule structure, and advancement graph; shifts each game by its day offset from the new start date; and remaps every team, pool, and match dependency to new document IDs. Scores, live status, standings, announcements, and publication state are deliberately not copied.
+
 ## Canonical draft boundary
 
 The setup workspace owns one tournament and contains its selected division IDs, clubs referenced by its teams, tournament-scoped teams, tournament-scoped pools, matches, and schedule breaks. Existing legacy records remain readable, but all newly created teams and pools require a `tournamentId`.

@@ -3,9 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import { getAllDivisions } from '../../services/divisions'
 import { getAllClubs } from '../../services/clubs'
-import { createTournamentSetupDraft, type SetupParticipantInput } from '../../services/tournaments'
-import type { Club, Division } from '../../types/index'
+import { createTournamentSetupDraft, getAllTournaments, type SetupParticipantInput } from '../../services/tournaments'
+import { getAllTeams } from '../../services/teams'
+import { getAllPools } from '../../services/pools'
+import { getMatchesByTournament } from '../../services/matches'
+import type { Club, Division, MatchParticipantSlot, Tournament } from '../../types/index'
 import { generateScheduleSlots, type GeneratedScheduleSlot } from '../../utils/scheduleGenerator'
+import { parseParticipantLabel } from '../../utils/participantSlots'
 
 const steps = ['Tournament', 'Divisions', 'Teams', 'Pools', 'Schedule', 'Review']
 
@@ -34,6 +38,7 @@ export default function TournamentSetup() {
   const [step, setStep] = useState(0)
   const [divisions, setDivisions] = useState<Division[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -45,12 +50,15 @@ export default function TournamentSetup() {
   const [slots, setSlots] = useState<SlotDraft[]>([])
   const [clubForm, setClubForm] = useState({ name: '', abbreviation: '' })
   const [generator, setGenerator] = useState({ date: '', startTime: '07:00', rounds: 1, firstMatchNumber: 1, intervalMinutes: 55 })
+  const [templateId, setTemplateId] = useState('')
+  const [loadingTemplate, setLoadingTemplate] = useState(false)
 
   useEffect(() => {
-    Promise.all([getAllDivisions(), getAllClubs()])
-      .then(([divisionData, clubData]) => {
+    Promise.all([getAllDivisions(), getAllClubs(), getAllTournaments()])
+      .then(([divisionData, clubData, tournamentData]) => {
         setDivisions(divisionData)
         setClubs(clubData)
+        setTournaments(tournamentData)
       })
       .catch(() => setError('Could not load divisions and clubs.'))
       .finally(() => setLoading(false))
@@ -106,6 +114,67 @@ export default function TournamentSetup() {
     duration: details.defaultMatchDuration,
     divisionId: divisionIds[0] || '',
   }))
+
+  const loadTemplate = async () => {
+    const source = tournaments.find(tournament => tournament.id === templateId)
+    if (!source || !details.startDate) return
+    setLoadingTemplate(true)
+    setError('')
+    try {
+      const [sourceMatches, allTeams, allPools] = await Promise.all([
+        getMatchesByTournament(source.id), getAllTeams(), getAllPools(),
+      ])
+      const sourceTeamIds = new Set(sourceMatches.flatMap(match => [match.darkTeamId, match.lightTeamId]).filter(Boolean))
+      const sourcePoolIds = new Set(sourceMatches.map(match => match.poolId))
+      const sourceTeams = allTeams.filter(team => team.tournamentId === source.id || sourceTeamIds.has(team.id))
+      const sourcePools = allPools.filter(pool => pool.tournamentId === source.id || sourcePoolIds.has(pool.id))
+      const teamKeys = new Map(sourceTeams.map(team => [team.id, `clone-team-${crypto.randomUUID()}`]))
+      const poolKeys = new Map(sourcePools.map(pool => [pool.id, `clone-pool-${crypto.randomUUID()}`]))
+      const matchKeys = new Map(sourceMatches.map(match => [match.id, `clone-match-${crypto.randomUUID()}`]))
+      const selectedIds = source.divisionIds?.length
+        ? source.divisionIds
+        : [...new Set([...sourceTeams.map(team => team.divisionId), ...sourceMatches.map(match => match.divisionId)])]
+      const sourceStart = new Date(source.startDate)
+      const targetStart = parseLocalDate(details.startDate)
+      const shiftedDate = (date: string) => {
+        const original = parseLocalDate(date)
+        const dayOffset = Math.round((original.getTime() - sourceStart.getTime()) / 86400000)
+        const shifted = new Date(targetStart)
+        shifted.setDate(shifted.getDate() + dayOffset)
+        return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}-${String(shifted.getDate()).padStart(2, '0')}`
+      }
+      const cloneParticipant = (participant: MatchParticipantSlot | undefined, fallbackTeamId: string, fallbackLabel?: string): SetupParticipantInput | undefined => {
+        const sourceParticipant = participant || (fallbackLabel ? parseParticipantLabel(fallbackLabel, sourceMatches) || undefined : undefined)
+        if (!sourceParticipant) return fallbackTeamId ? { source: 'team', teamKey: teamKeys.get(fallbackTeamId) || fallbackTeamId } : undefined
+        if (sourceParticipant.source === 'team') return { source: 'team', teamKey: teamKeys.get(sourceParticipant.teamId) || sourceParticipant.teamId }
+        if (sourceParticipant.source === 'groupSeed') return sourceParticipant
+        return { source: 'matchOutcome', matchKey: matchKeys.get(sourceParticipant.matchId) || sourceParticipant.matchId, outcome: sourceParticipant.outcome }
+      }
+      setDivisionIds(selectedIds)
+      setTeams(sourceTeams.map(team => ({ id: teamKeys.get(team.id)!, clubKey: team.clubId, divisionId: team.divisionId, name: team.name, bracket: team.bracket || '' })))
+      setPools(sourcePools.map(pool => ({ key: poolKeys.get(pool.id)!, name: pool.name, location: pool.location, defaultStartTime: pool.defaultStartTime })))
+      setSlots(sourceMatches.map(match => ({
+        id: matchKeys.get(match.id)!, matchNumber: match.matchNumber, poolKey: poolKeys.get(match.poolId) || match.poolId,
+        poolName: sourcePools.find(pool => pool.id === match.poolId)?.name || 'Pool', divisionId: match.divisionId,
+        scheduledDate: shiftedDate(match.scheduledDate), scheduledTime: match.scheduledTime, duration: match.duration,
+        darkParticipant: cloneParticipant(match.darkParticipant, match.darkTeamId, match.darkTeamLabel),
+        lightParticipant: cloneParticipant(match.lightParticipant, match.lightTeamId, match.lightTeamLabel),
+      })))
+      const sourceDays = Math.max(0, Math.round((new Date(source.endDate).getTime() - sourceStart.getTime()) / 86400000))
+      const targetEnd = new Date(targetStart)
+      targetEnd.setDate(targetEnd.getDate() + sourceDays)
+      setDetails(current => ({
+        ...current,
+        endDate: `${targetEnd.getFullYear()}-${String(targetEnd.getMonth() + 1).padStart(2, '0')}-${String(targetEnd.getDate()).padStart(2, '0')}`,
+        defaultMatchDuration: source.defaultMatchDuration || 55,
+      }))
+    } catch (templateError) {
+      console.error('Error loading tournament template:', templateError)
+      setError('The previous tournament could not be loaded as a template.')
+    } finally {
+      setLoadingTemplate(false)
+    }
+  }
 
   const saveDraft = async () => {
     setSaving(true)
@@ -178,6 +247,15 @@ export default function TournamentSetup() {
                   Default game slot
                   <span className="flex items-center gap-3"><input type="number" min="10" max="120" value={details.defaultMatchDuration} onChange={event => setDetails({ ...details, defaultMatchDuration: Number(event.target.value) })} className="w-28 rounded-md border border-gray-300 px-3 py-3 text-base font-normal" /><span className="font-normal text-gray-600">minutes (55 recommended)</span></span>
                 </label>
+                <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+                  <h3 className="font-semibold text-indigo-950">Use a previous tournament as a template</h3>
+                  <p className="mt-1 text-sm text-indigo-800">Copies divisions, teams, groups, pools, game times, and advancement paths. Dates shift to the new start date; scores and publication status are never copied.</p>
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                    <select value={templateId} onChange={event => setTemplateId(event.target.value)} className="min-w-0 flex-1 rounded-md border border-indigo-200 bg-white px-3 py-2.5 text-sm"><option value="">Choose a previous tournament…</option>{tournaments.map(tournament => <option key={tournament.id} value={tournament.id}>{tournament.name}</option>)}</select>
+                    <button type="button" onClick={loadTemplate} disabled={!templateId || !details.startDate || loadingTemplate} className="rounded-md bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{loadingTemplate ? 'Loading…' : 'Load template'}</button>
+                  </div>
+                  {!details.startDate && <p className="mt-2 text-xs text-indigo-700">Choose the new start date first.</p>}
+                </div>
               </div>
             </div>
           )}

@@ -64,7 +64,7 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 **Status:** In progress
 
 - [x] Design a guided setup workflow around Coach's real source material.
-- [ ] Add tournament cloning from a previous event.
+- [x] Add tournament cloning from a previous event.
 - [x] Select only the divisions participating in the new tournament.
 - [x] Add clubs with one or more division-specific teams.
 - [x] Assign teams to pool/group brackets.
