@@ -1,6 +1,7 @@
 import { useTableSort, getSortIndicator } from '../hooks/useTableSort'
 import type { Match, Division, Team, Club, Pool } from '../types/index'
 import { teamCompactName, teamPublicName } from '../utils/teamIdentity'
+import { accessibleTextColor } from '../utils/colorContrast'
 
 interface MatchWithDetails {
   match: Match
@@ -163,7 +164,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
               <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                 <div style={{
                   backgroundColor: division.colorHex,
-                  color: '#000000',
+                  color: accessibleTextColor(division.colorHex),
                   padding: '2px 6px',
                   borderRadius: '3px',
                   fontSize: '10px',

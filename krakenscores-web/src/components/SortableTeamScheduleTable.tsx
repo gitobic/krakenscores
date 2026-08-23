@@ -2,6 +2,7 @@ import { useTableSort, getSortIndicator } from '../hooks/useTableSort'
 import { colors, typography, tableStyles, columnWidths, containerStyles } from '../styles/theme'
 import type { Match, Division, Team, Club, Pool } from '../types/index'
 import { teamPublicName } from '../utils/teamIdentity'
+import { accessibleTextColor } from '../utils/colorContrast'
 
 interface MatchWithDetails {
   match: Match
@@ -165,7 +166,7 @@ export default function SortableTeamScheduleTable({ matches, selectedClubId, sel
 
               {/* Division (colored badge) */}
               <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                <div style={containerStyles.divisionBadge(division.colorHex)}>
+                <div style={containerStyles.divisionBadge(division.colorHex, accessibleTextColor(division.colorHex))}>
                   {division.name}
                 </div>
               </td>

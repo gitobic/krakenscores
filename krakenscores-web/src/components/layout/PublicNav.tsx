@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTheme, type ThemePreference } from '../../contexts/ThemeContext'
 
 export default function PublicNav() {
   const [isOpen, setIsOpen] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const { preference, resolvedTheme, setPreference } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+  const nextTheme: Record<ThemePreference, ThemePreference> = { system: 'light', light: 'dark', dark: 'system' }
 
   const menuItems = [
     { path: '/', label: 'Tournament Home', icon: '🌊' },
@@ -30,7 +34,7 @@ export default function PublicNav() {
           top: '16px',
           right: '16px',
           zIndex: 10001,
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
           border: '2px solid #2563eb',
           borderRadius: '8px',
           padding: '10px 12px',
@@ -100,7 +104,7 @@ export default function PublicNav() {
             bottom: 0,
             width: '280px',
             maxWidth: '80vw',
-            backgroundColor: 'white',
+            backgroundColor: isDark ? '#0f172a' : 'white',
             zIndex: 10000,
             boxShadow: '-2px 0 8px rgba(0,0,0,0.15)',
             padding: '80px 0 20px 0',
@@ -116,7 +120,7 @@ export default function PublicNav() {
               <h2 style={{
                 fontSize: '20px',
                 fontWeight: '700',
-                color: '#111827',
+                color: isDark ? '#f8fafc' : '#111827',
                 margin: 0
               }}>
                 Navigation
@@ -140,10 +144,10 @@ export default function PublicNav() {
                       gap: '12px',
                       width: '100%',
                       padding: '16px 20px',
-                      backgroundColor: isActive ? '#eff6ff' : 'transparent',
+                      backgroundColor: isActive ? (isDark ? '#172554' : '#eff6ff') : 'transparent',
                       border: 'none',
                       borderLeft: isActive ? '4px solid #2563eb' : '4px solid transparent',
-                      color: isActive ? '#2563eb' : '#374151',
+                      color: isActive ? (isDark ? '#7dd3fc' : '#2563eb') : (isDark ? '#e2e8f0' : '#374151'),
                       fontSize: '16px',
                       fontWeight: isActive ? '600' : '500',
                       cursor: 'pointer',
@@ -167,6 +171,12 @@ export default function PublicNav() {
                 )
               })}
             </nav>
+
+            <div style={{ padding: '12px 20px', borderTop: `1px solid ${isDark ? '#334155' : '#e5e7eb'}` }}>
+              <button type="button" onClick={() => setPreference(nextTheme[preference])} style={{ width: '100%', border: `1px solid ${isDark ? '#475569' : '#cbd5e1'}`, borderRadius: '8px', padding: '10px 12px', background: isDark ? '#1e293b' : '#f8fafc', color: isDark ? '#f8fafc' : '#1e293b', cursor: 'pointer', fontWeight: 700 }}>
+                Theme: {preference === 'system' ? 'Auto' : preference === 'dark' ? 'Dark' : 'Light'}
+              </button>
+            </div>
 
             {/* Feedback Link */}
             <div style={{ padding: '8px 0', borderTop: '1px solid #e5e7eb' }}>

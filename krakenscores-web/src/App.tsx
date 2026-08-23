@@ -1,32 +1,36 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
-import Login from './pages/admin/Login'
-import Dashboard from './pages/admin/Dashboard'
-import Tournaments from './pages/admin/Tournaments'
-import TournamentSetup from './pages/admin/TournamentSetup'
-import Clubs from './pages/admin/Clubs'
-import Divisions from './pages/admin/Divisions'
-import Teams from './pages/admin/Teams'
-import Pools from './pages/admin/Pools'
-import Matches from './pages/admin/Matches'
-import ScheduleBreaks from './pages/admin/ScheduleBreaks'
-import Scorekeeper from './pages/admin/Scorekeeper'
-import Standings from './pages/admin/Standings'
-import AdminAnnouncements from './pages/admin/Announcements'
 
-import MasterSchedule from './pages/public/MasterSchedule'
-import PublicStandings from './pages/public/PublicStandings'
-import TeamSchedule from './pages/public/TeamSchedule'
-import Announcements from './pages/public/Announcements'
-import Brackets from './pages/public/Brackets'
-import TournamentHome from './pages/public/TournamentHome'
+const Login = lazy(() => import('./pages/admin/Login'))
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'))
+const Tournaments = lazy(() => import('./pages/admin/Tournaments'))
+const TournamentSetup = lazy(() => import('./pages/admin/TournamentSetup'))
+const Clubs = lazy(() => import('./pages/admin/Clubs'))
+const Divisions = lazy(() => import('./pages/admin/Divisions'))
+const Teams = lazy(() => import('./pages/admin/Teams'))
+const Pools = lazy(() => import('./pages/admin/Pools'))
+const Matches = lazy(() => import('./pages/admin/Matches'))
+const ScheduleBreaks = lazy(() => import('./pages/admin/ScheduleBreaks'))
+const Scorekeeper = lazy(() => import('./pages/admin/Scorekeeper'))
+const Standings = lazy(() => import('./pages/admin/Standings'))
+const AdminAnnouncements = lazy(() => import('./pages/admin/Announcements'))
+const MasterSchedule = lazy(() => import('./pages/public/MasterSchedule'))
+const PublicStandings = lazy(() => import('./pages/public/PublicStandings'))
+const TeamSchedule = lazy(() => import('./pages/public/TeamSchedule'))
+const Announcements = lazy(() => import('./pages/public/Announcements'))
+const Brackets = lazy(() => import('./pages/public/Brackets'))
+const TournamentHome = lazy(() => import('./pages/public/TournamentHome'))
 
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
+      <ThemeProvider>
+        <AuthProvider>
+          <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-100 font-bold text-slate-700 dark:bg-slate-950 dark:text-slate-200">Loading KrakenScores…</div>}>
+            <Routes>
           {/* Public routes */}
           <Route path="/" element={<TournamentHome />} />
           <Route path="/schedule" element={<MasterSchedule />} />
@@ -139,8 +143,10 @@ function App() {
 
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AuthProvider>
+            </Routes>
+          </Suspense>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

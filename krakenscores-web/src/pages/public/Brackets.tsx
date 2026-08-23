@@ -1,599 +1,111 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
-import { db } from '../../lib/firebase'
-import type { Match, Tournament, Division, Team, Club } from '../../types/index'
+import { useEffect, useMemo, useState } from 'react'
 import PublicNav from '../../components/layout/PublicNav'
+import { getAllTournaments } from '../../services/tournaments'
+import { getAllMatches } from '../../services/matches'
+import { getAllTeams } from '../../services/teams'
+import { getAllClubs } from '../../services/clubs'
+import { getAllDivisions } from '../../services/divisions'
+import { getAllPools } from '../../services/pools'
+import type { Club, Division, Match, Pool, Team, Tournament } from '../../types'
+import { bracketColumns, bracketEdges, provisionalParticipantLabel } from '../../utils/bracketGraph'
+import { teamPublicName } from '../../utils/teamIdentity'
 
-interface MatchWithDetails {
-  match: Match
-  division: Division
-  darkTeam: Team
-  lightTeam: Team
-  darkTeamClub: Club
-  lightTeamClub: Club
+const isBracketMatch = (match: Match) => match.roundType === 'semi' || match.roundType === 'final' || match.roundType === 'placement'
+const formatTime = (time: string) => new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(`2026-01-01T${time}:00`))
+
+function roundTitle(matches: Match[], index: number, total: number): string {
+  if (matches.every(match => match.roundType === 'semi')) return 'Semifinals'
+  if (matches.every(match => match.roundType === 'final')) return 'Finals'
+  if (matches.every(match => match.roundType === 'placement')) return total === 1 ? 'Placement games' : index === total - 1 ? 'Final placements' : 'Placement round'
+  return index === total - 1 ? 'Final round' : `Round ${index + 1}`
 }
 
-interface BracketRound {
-  name: string
-  matches: MatchWithDetails[]
+interface MatchCardProps {
+  match: Match
+  allMatches: Match[]
+  teams: Team[]
+  clubs: Club[]
+  pools: Pool[]
+  outgoing: ReturnType<typeof bracketEdges>
+}
+
+function MatchCard({ match, allMatches, teams, clubs, pools, outgoing }: MatchCardProps) {
+  const teamById = new Map(teams.map(team => [team.id, team]))
+  const clubById = new Map(clubs.map(club => [club.id, club]))
+  const final = match.status === 'final' || match.status === 'forfeit'
+  const darkWon = final && (match.darkTeamScore ?? 0) > (match.lightTeamScore ?? 0)
+  const lightWon = final && (match.lightTeamScore ?? 0) > (match.darkTeamScore ?? 0)
+  const participant = (side: 'dark' | 'light') => {
+    const team = teamById.get(side === 'dark' ? match.darkTeamId : match.lightTeamId)
+    const provisional = provisionalParticipantLabel(match, side, allMatches)
+    return { name: team ? teamPublicName(team, clubById.get(team.clubId)) : provisional, provisional: team && provisional && provisional !== 'To be determined' ? provisional : '' }
+  }
+  const dark = participant('dark')
+  const light = participant('light')
+  const purpose = match.bracketRef || (match.roundType === 'semi' ? 'Semifinal' : match.roundType === 'final' ? 'Championship' : 'Placement')
+
+  return <article className="relative rounded-xl border-2 border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="flex items-center justify-between rounded-t-[10px] bg-slate-100 px-3 py-2 text-xs font-black uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"><span>{purpose}</span><span>Game {match.matchNumber}</span></div>
+    {([{ data: dark, score: match.darkTeamScore, won: darkWon }, { data: light, score: match.lightTeamScore, won: lightWon }] as const).map((row, index) => <div key={index} className={`flex min-h-16 items-center justify-between gap-3 px-4 py-3 ${index === 0 ? 'border-b border-slate-200 dark:border-slate-700' : ''} ${row.won ? 'bg-blue-50 dark:bg-blue-950' : ''}`}><div className="min-w-0"><div className={`truncate text-sm ${row.won ? 'font-black text-blue-950 dark:text-blue-100' : 'font-bold text-slate-900 dark:text-white'}`}>{row.data.name}</div>{row.data.provisional && <div className="mt-0.5 truncate text-xs font-semibold text-slate-500 dark:text-slate-400">{row.data.provisional}</div>}</div><div className={`text-2xl font-black tabular-nums ${row.won ? 'text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-200'}`}>{final || match.status === 'in_progress' ? row.score ?? '–' : '–'}</div></div>)}
+    <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"><span>{match.status === 'in_progress' ? '● Live' : final ? 'Final' : `${match.scheduledDate} · ${formatTime(match.scheduledTime)}`}</span><span>{pools.find(pool => pool.id === match.poolId)?.name}</span></div>
+    {outgoing.length > 0 && <div className="rounded-b-[10px] border-t border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-900">{outgoing.map(edge => { const target = allMatches.find(candidate => candidate.id === edge.targetMatchId); return <div key={`${edge.targetMatchId}-${edge.outcome}`}>{edge.outcome === 'winner' ? 'Winner' : 'Loser'} → Game {target?.matchNumber ?? '?'}</div> })}</div>}
+  </article>
+}
+
+function DivisionBracket({ division, matches, teams, clubs, pools }: { division: Division; matches: Match[]; teams: Team[]; clubs: Club[]; pools: Pool[] }) {
+  const columns = bracketColumns(matches)
+  const edges = bracketEdges(matches)
+  return <section className="mb-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700"><span className="h-8 w-3 rounded-full" style={{ backgroundColor: division.colorHex }} /><div><h2 className="text-xl font-black text-slate-950 dark:text-white">{division.name}</h2><p className="text-sm text-slate-600 dark:text-slate-300">Follow each winner and loser arrow to the next game.</p></div></div>
+    <div className="overflow-x-auto p-5"><div className="grid min-w-max auto-cols-[280px] grid-flow-col gap-10">
+      {columns.map((column, columnIndex) => <div key={columnIndex} className="relative"><h3 className="mb-4 text-center text-xs font-black uppercase tracking-[0.16em] text-slate-500">{roundTitle(column, columnIndex, columns.length)}</h3><div className="space-y-5">{column.map(match => <MatchCard key={match.id} match={match} allMatches={matches} teams={teams} clubs={clubs} pools={pools} outgoing={edges.filter(edge => edge.sourceMatchId === match.id)} />)}</div>{columnIndex < columns.length - 1 && <div aria-hidden="true" className="absolute -right-8 top-1/2 text-3xl font-black text-blue-300">→</div>}</div>)}
+    </div></div>
+  </section>
 }
 
 export default function Brackets() {
-  const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [tournaments, setTournaments] = useState<Tournament[]>([])
+  const [matches, setMatches] = useState<Match[]>([])
+  const [teams, setTeams] = useState<Team[]>([])
+  const [clubs, setClubs] = useState<Club[]>([])
   const [divisions, setDivisions] = useState<Division[]>([])
+  const [pools, setPools] = useState<Pool[]>([])
+  const [selectedTournamentId, setSelectedTournamentId] = useState('')
+  const [selectedDivisionId, setSelectedDivisionId] = useState('all')
   const [loading, setLoading] = useState(true)
-  const [selectedTournamentId, setSelectedTournamentId] = useState<string>('')
-  const [selectedDivisionId, setSelectedDivisionId] = useState<string>('all')
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    loadData()
+    const load = async () => {
+      try {
+        const [allTournaments, allMatches, allTeams, allClubs, allDivisions, allPools] = await Promise.all([getAllTournaments(), getAllMatches(), getAllTeams(), getAllClubs(), getAllDivisions(), getAllPools()])
+        const published = allTournaments.filter(tournament => tournament.isPublished)
+        setTournaments(published); setMatches(allMatches); setTeams(allTeams); setClubs(allClubs); setDivisions(allDivisions); setPools(allPools)
+        const today = new Date()
+        const active = published.find(tournament => tournament.startDate <= today && tournament.endDate >= today) || published[0]
+        setSelectedTournamentId(active?.id || '')
+      } catch (loadError) { console.error('Unable to load brackets:', loadError); setError('Brackets could not be loaded. Please try again shortly.') } finally { setLoading(false) }
+    }
+    void load()
   }, [])
 
   useEffect(() => {
-    // Auto-select first published tournament
-    if (tournaments.length > 0 && !selectedTournamentId) {
-      const firstPublished = tournaments.find(t => t.isPublished)
-      if (firstPublished) {
-        setSelectedTournamentId(firstPublished.id)
-      }
-    }
-  }, [tournaments, selectedTournamentId])
+    const refresh = window.setInterval(() => { void getAllMatches().then(setMatches).catch(refreshError => console.error('Unable to refresh brackets:', refreshError)) }, 30_000)
+    return () => window.clearInterval(refresh)
+  }, [])
 
-  const loadData = async () => {
-    try {
-      // Load published tournaments
-      const tournamentsSnapshot = await getDocs(
-        query(collection(db, 'tournaments'), where('isPublished', '==', true))
-      )
-      const tournamentsData = tournamentsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        startDate: (doc.data().startDate as Timestamp)?.toDate() || new Date(),
-        endDate: (doc.data().endDate as Timestamp)?.toDate() || new Date(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Tournament))
-      setTournaments(tournamentsData)
+  const tournamentMatches = useMemo(() => matches.filter(match => match.tournamentId === selectedTournamentId && isBracketMatch(match) && match.status !== 'cancelled'), [matches, selectedTournamentId])
+  const divisionIds = new Set(tournamentMatches.map(match => match.divisionId))
+  const visibleDivisions = divisions.filter(division => divisionIds.has(division.id) && (selectedDivisionId === 'all' || selectedDivisionId === division.id)).sort((a, b) => a.name.localeCompare(b.name))
 
-      // Load all divisions
-      const divisionsSnapshot = await getDocs(collection(db, 'divisions'))
-      const divisionsData = divisionsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Division))
-      setDivisions(divisionsData)
-    } catch (error) {
-      console.error('Error loading data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadMatches = useCallback(async () => {
-    if (!selectedTournamentId) return
-
-    try {
-      setLoading(true)
-
-      // Load playoff/bracket matches only (semi, final, placement)
-      const matchesSnapshot = await getDocs(
-        query(
-          collection(db, 'matches'),
-          where('tournamentId', '==', selectedTournamentId)
-        )
-      )
-
-      const matchesData = matchesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Match))
-
-      // Filter to only bracket matches
-      const bracketMatches = matchesData.filter(
-        m => m.roundType === 'semi' || m.roundType === 'final' || m.roundType === 'placement'
-      )
-
-      // Load teams and clubs
-      const teamsSnapshot = await getDocs(collection(db, 'teams'))
-      const teams = teamsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Team))
-
-      const clubsSnapshot = await getDocs(collection(db, 'clubs'))
-      const clubs = clubsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Club))
-
-      const divisionsSnapshot = await getDocs(collection(db, 'divisions'))
-      const divsData = divisionsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Division))
-
-      // Combine data
-      const matchesWithDetails: MatchWithDetails[] = bracketMatches.map(match => {
-        const division = divsData.find(d => d.id === match.divisionId)!
-        const darkTeam = teams.find(t => t.id === match.darkTeamId)!
-        const lightTeam = teams.find(t => t.id === match.lightTeamId)!
-        const darkTeamClub = clubs.find(c => c.id === darkTeam?.clubId)!
-        const lightTeamClub = clubs.find(c => c.id === lightTeam?.clubId)!
-
-        return {
-          match,
-          division,
-          darkTeam,
-          lightTeam,
-          darkTeamClub,
-          lightTeamClub
-        }
-      })
-
-      setMatches(matchesWithDetails)
-    } catch (error) {
-      console.error('Error loading matches:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [selectedTournamentId])
-
-  useEffect(() => {
-    if (selectedTournamentId) {
-      void loadMatches()
-    }
-  }, [selectedTournamentId, loadMatches])
-
-  // Filter matches by selected division
-  const filteredMatches = useMemo(() => {
-    if (selectedDivisionId === 'all') return matches
-    return matches.filter(m => m.match.divisionId === selectedDivisionId)
-  }, [matches, selectedDivisionId])
-
-  // Group matches by division
-  const divisionBrackets = useMemo(() => {
-    const grouped: Record<string, MatchWithDetails[]> = {}
-
-    filteredMatches.forEach(m => {
-      const divId = m.match.divisionId
-      if (!grouped[divId]) {
-        grouped[divId] = []
-      }
-      grouped[divId].push(m)
-    })
-
-    return grouped
-  }, [filteredMatches])
-
-  // Get divisions that have brackets
-  const divisionsWithBrackets = useMemo(() => {
-    return divisions.filter(d => divisionBrackets[d.id]?.length > 0)
-  }, [divisions, divisionBrackets])
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#f9fafb',
-      fontFamily: 'system-ui, -apple-system, sans-serif'
-    }}>
-      <PublicNav />
-
-      {/* Header */}
-      <header style={{
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e5e7eb',
-        padding: '24px 16px',
-        marginBottom: '24px'
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto'
-        }}>
-          <h1 style={{
-            fontSize: '30px',
-            fontWeight: 'bold',
-            color: '#111827',
-            marginBottom: '8px',
-            margin: 0
-          }}>
-            Tournament Brackets
-          </h1>
-          <p style={{
-            fontSize: '14px',
-            color: '#6b7280',
-            margin: 0
-          }}>
-            Playoff and championship matches
-          </p>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '0 16px 40px 16px'
-      }}>
-        {/* Filters */}
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          padding: '20px',
-          marginBottom: '24px',
-          border: '1px solid #e5e7eb'
-        }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '16px'
-          }}>
-            {/* Tournament Filter */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>
-                Tournament
-              </label>
-              <select
-                value={selectedTournamentId}
-                onChange={(e) => setSelectedTournamentId(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  fontSize: '14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  backgroundColor: 'white',
-                  color: '#111827'
-                }}
-              >
-                <option value="">Select Tournament</option>
-                {tournaments.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Division Filter */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '8px'
-              }}>
-                Division
-              </label>
-              <select
-                value={selectedDivisionId}
-                onChange={(e) => setSelectedDivisionId(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  fontSize: '14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  backgroundColor: 'white',
-                  color: '#111827'
-                }}
-              >
-                <option value="all">All Divisions</option>
-                {divisionsWithBrackets.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Loading State */}
-        {loading && (
-          <div style={{
-            textAlign: 'center',
-            padding: '60px 20px',
-            color: '#6b7280',
-            fontSize: '16px'
-          }}>
-            Loading brackets...
-          </div>
-        )}
-
-        {/* No Brackets Message */}
-        {!loading && filteredMatches.length === 0 && selectedTournamentId && (
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '60px 20px',
-            textAlign: 'center',
-            border: '1px solid #e5e7eb'
-          }}>
-            <p style={{
-              fontSize: '16px',
-              color: '#6b7280',
-              margin: 0
-            }}>
-              No playoff brackets found for this tournament.
-            </p>
-            <p style={{
-              fontSize: '14px',
-              color: '#9ca3af',
-              marginTop: '8px'
-            }}>
-              Brackets will appear once playoff matches are scheduled.
-            </p>
-          </div>
-        )}
-
-        {/* Brackets by Division */}
-        {!loading && Object.entries(divisionBrackets).map(([divisionId, divMatches]) => {
-          const division = divisions.find(d => d.id === divisionId)
-          if (!division) return null
-
-          return (
-            <DivisionBracket
-              key={divisionId}
-              division={division}
-              matches={divMatches}
-            />
-          )
-        })}
-      </main>
-    </div>
-  )
-}
-
-interface DivisionBracketProps {
-  division: Division
-  matches: MatchWithDetails[]
-}
-
-function DivisionBracket({ division, matches }: DivisionBracketProps) {
-  // Organize matches by round
-  const rounds: BracketRound[] = useMemo(() => {
-    const semis = matches.filter(m => m.match.roundType === 'semi')
-    const finals = matches.filter(m => m.match.roundType === 'final' && !m.match.bracketRef?.includes('rd'))
-    const placements = matches.filter(m => m.match.roundType === 'placement')
-
-    const result: BracketRound[] = []
-
-    if (semis.length > 0) {
-      result.push({ name: 'Semi-Finals', matches: semis })
-    }
-    if (finals.length > 0) {
-      result.push({ name: 'Finals', matches: finals })
-    }
-    if (placements.length > 0) {
-      result.push({ name: 'Placement', matches: placements })
-    }
-
-    return result
-  }, [matches])
-
-  if (rounds.length === 0) return null
-
-  return (
-    <div style={{
-      backgroundColor: 'white',
-      borderRadius: '8px',
-      padding: '24px',
-      marginBottom: '24px',
-      border: '1px solid #e5e7eb'
-    }}>
-      {/* Division Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        marginBottom: '24px',
-        paddingBottom: '16px',
-        borderBottom: '2px solid #e5e7eb'
-      }}>
-        <div style={{
-          width: '24px',
-          height: '24px',
-          borderRadius: '4px',
-          backgroundColor: division.colorHex
-        }} />
-        <h2 style={{
-          fontSize: '24px',
-          fontWeight: '600',
-          color: '#111827',
-          margin: 0
-        }}>
-          {division.name}
-        </h2>
-      </div>
-
-      {/* Rounds */}
-      <div style={{
-        display: 'flex',
-        gap: '32px',
-        overflowX: 'auto',
-        paddingBottom: '8px'
-      }}>
-        {rounds.map(round => (
-          <BracketRoundColumn key={round.name} round={round} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-interface BracketRoundColumnProps {
-  round: BracketRound
-}
-
-function BracketRoundColumn({ round }: BracketRoundColumnProps) {
-  return (
-    <div style={{
-      minWidth: '280px',
-      flex: '0 0 auto'
-    }}>
-      {/* Round Title */}
-      <h3 style={{
-        fontSize: '14px',
-        fontWeight: '600',
-        color: '#6b7280',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-        marginBottom: '16px',
-        textAlign: 'center'
-      }}>
-        {round.name}
-      </h3>
-
-      {/* Matches */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px'
-      }}>
-        {round.matches.map(m => (
-          <BracketMatchCard key={m.match.id} matchWithDetails={m} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-interface BracketMatchCardProps {
-  matchWithDetails: MatchWithDetails
-}
-
-function BracketMatchCard({ matchWithDetails }: BracketMatchCardProps) {
-  const { match, darkTeam, lightTeam, darkTeamClub, lightTeamClub } = matchWithDetails
-
-  const darkWon = match.status === 'final' && (match.darkTeamScore || 0) > (match.lightTeamScore || 0)
-  const lightWon = match.status === 'final' && (match.lightTeamScore || 0) > (match.darkTeamScore || 0)
-
-  return (
-    <div style={{
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      overflow: 'hidden',
-      backgroundColor: 'white'
-    }}>
-      {/* Match Info Header */}
-      {match.bracketRef && (
-        <div style={{
-          backgroundColor: '#f9fafb',
-          padding: '8px 12px',
-          borderBottom: '1px solid #e5e7eb',
-          textAlign: 'center'
-        }}>
-          <span style={{
-            fontSize: '12px',
-            fontWeight: '600',
-            color: '#6b7280',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}>
-            {match.bracketRef}
-          </span>
-        </div>
-      )}
-
-      {/* Dark Team */}
-      <div style={{
-        padding: '12px 16px',
-        backgroundColor: darkWon ? '#eff6ff' : 'white',
-        borderBottom: '1px solid #e5e7eb',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div style={{ flex: 1 }}>
-          <div style={{
-            fontSize: '14px',
-            fontWeight: darkWon ? '700' : '600',
-            color: '#111827'
-          }}>
-            {darkTeamClub?.abbreviation || 'TBD'}
-          </div>
-          <div style={{
-            fontSize: '12px',
-            color: '#6b7280'
-          }}>
-            {darkTeam?.name || 'To Be Determined'}
-          </div>
-        </div>
-        <div style={{
-          fontSize: '20px',
-          fontWeight: 'bold',
-          color: darkWon ? '#2563eb' : '#6b7280',
-          minWidth: '32px',
-          textAlign: 'right'
-        }}>
-          {match.status === 'final' ? (match.darkTeamScore ?? '-') : '-'}
-        </div>
-      </div>
-
-      {/* Light Team */}
-      <div style={{
-        padding: '12px 16px',
-        backgroundColor: lightWon ? '#eff6ff' : 'white',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div style={{ flex: 1 }}>
-          <div style={{
-            fontSize: '14px',
-            fontWeight: lightWon ? '700' : '600',
-            color: '#111827'
-          }}>
-            {lightTeamClub?.abbreviation || 'TBD'}
-          </div>
-          <div style={{
-            fontSize: '12px',
-            color: '#6b7280'
-          }}>
-            {lightTeam?.name || 'To Be Determined'}
-          </div>
-        </div>
-        <div style={{
-          fontSize: '20px',
-          fontWeight: 'bold',
-          color: lightWon ? '#2563eb' : '#6b7280',
-          minWidth: '32px',
-          textAlign: 'right'
-        }}>
-          {match.status === 'final' ? (match.lightTeamScore ?? '-') : '-'}
-        </div>
-      </div>
-
-      {/* Match Status Footer */}
-      <div style={{
-        backgroundColor: '#f9fafb',
-        padding: '8px 12px',
-        borderTop: '1px solid #e5e7eb',
-        textAlign: 'center'
-      }}>
-        <span style={{
-          fontSize: '11px',
-          color: '#6b7280'
-        }}>
-          {match.status === 'final' ? 'Final' :
-           match.status === 'in_progress' ? 'In Progress' :
-           `${match.scheduledDate} ${match.scheduledTime}`}
-        </span>
-      </div>
-    </div>
-  )
+  return <div className="min-h-screen bg-slate-100 pb-12 dark:bg-slate-950"><PublicNav />
+    <header className="border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"><div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8"><p className="text-sm font-black uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">Tournament paths</p><h1 className="mt-1 text-3xl font-black text-slate-950 sm:text-4xl dark:text-white">Brackets & placement</h1><p className="mt-2 max-w-2xl text-slate-600 dark:text-slate-300">These paths reflect KrakenScores’ hybrid pool, seed, placement, and elimination format—not a one-size-fits-all bracket.</p></div></header>
+    <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 dark:border-slate-700 dark:bg-slate-900"><label className="text-sm font-bold text-slate-800 dark:text-slate-200">Tournament<select value={selectedTournamentId} onChange={event => { setSelectedTournamentId(event.target.value); setSelectedDivisionId('all') }} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2.5 dark:border-slate-600 dark:bg-slate-800">{tournaments.map(tournament => <option key={tournament.id} value={tournament.id}>{tournament.name}</option>)}</select></label><label className="text-sm font-bold text-slate-800 dark:text-slate-200">Division<select value={selectedDivisionId} onChange={event => setSelectedDivisionId(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2.5 dark:border-slate-600 dark:bg-slate-800"><option value="all">All divisions</option>{divisions.filter(division => divisionIds.has(division.id)).sort((a, b) => a.name.localeCompare(b.name)).map(division => <option key={division.id} value={division.id}>{division.name}</option>)}</select></label></div>
+      {loading && <div className="rounded-xl bg-white p-10 text-center font-bold text-slate-600">Loading brackets…</div>}
+      {error && <div className="rounded-xl border border-red-300 bg-red-50 p-4 font-bold text-red-900">{error}</div>}
+      {!loading && !error && visibleDivisions.length === 0 && <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-600"><div className="font-bold text-slate-900">No playoff or placement games yet.</div><p className="mt-1">Bracket paths appear when those games are scheduled.</p></div>}
+      {!loading && visibleDivisions.map(division => <DivisionBracket key={division.id} division={division} matches={tournamentMatches.filter(match => match.divisionId === division.id)} teams={teams} clubs={clubs} pools={pools} />)}
+    </main>
+  </div>
 }

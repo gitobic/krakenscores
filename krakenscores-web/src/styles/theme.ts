@@ -258,9 +258,9 @@ export const containerStyles = {
     gap: spacing.gap.filter,
   }),
 
-  divisionBadge: (divisionColor: string) => ({
+  divisionBadge: (divisionColor: string, textColor = '#000000') => ({
     backgroundColor: divisionColor,
-    color: colors.gray.black,
+    color: textColor,
     padding: '2px 6px',
     borderRadius: spacing.borderRadius.small,
     fontSize: typography.fontSize.badgeText,
