@@ -23,8 +23,8 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 - [x] Fix ESLint errors; triage remaining warnings explicitly.
 - [x] Select and configure the automated test framework.
 - [x] Add a GitHub Actions workflow for install, lint, type-check, tests, and build.
-- [ ] Establish a Firebase Emulator or isolated non-production test workflow.
-- [ ] Review Firestore rules against public, scorekeeper, and admin roles.
+- [x] Establish a Firebase Emulator or isolated non-production test workflow.
+- [x] Review Firestore rules against public, scorekeeper, and admin roles.
 - [ ] Remove or update stale dependency and phase documentation.
 
 ### Phase 0 exit criteria

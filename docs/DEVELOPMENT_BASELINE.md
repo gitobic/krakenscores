@@ -46,3 +46,5 @@ The clean install reports that the resolved ESLint 9 release is unsupported. Pla
 Run `npm run test:rules` from `krakenscores-web/`. The command uses Firebase project ID `demo-krakenscores`, starts only the local Firestore emulator, executes the rules suite, and shuts the emulator down. Firebase's `rules-unit-testing` environment is emulator-only and does not access production.
 
 The Firestore emulator requires Java. GitHub Actions provides Java and runs the rules suite on every push and pull request. Local execution is currently unavailable on the development Mac until a Java runtime is installed.
+
+The initial suite contains 10 passing access-control tests. It was verified in [GitHub Actions run 32609613093](https://github.com/gitobic/krakenscores/actions/runs/32609613093).
