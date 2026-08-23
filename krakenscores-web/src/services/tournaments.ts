@@ -9,11 +9,19 @@ import {
   deleteField,
   query,
   orderBy,
+  writeBatch,
   Timestamp
 } from 'firebase/firestore'
 import type { DocumentData } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { Tournament } from '../types'
+
+export interface SetupTeamInput {
+  clubId: string
+  divisionId: string
+  name: string
+  bracket?: string
+}
 
 const COLLECTION_NAME = 'tournaments'
 
@@ -87,6 +95,43 @@ export async function createTournament(
     console.error('Error creating tournament:', error)
     throw error
   }
+}
+
+export async function createTournamentSetupDraft(
+  data: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt'>,
+  teams: SetupTeamInput[]
+): Promise<string> {
+  const now = Timestamp.now()
+  const tournamentRef = doc(collection(db, COLLECTION_NAME))
+  const batch = writeBatch(db)
+  const tournamentData: Record<string, unknown> = {
+    name: data.name,
+    startDate: Timestamp.fromDate(new Date(data.startDate)),
+    endDate: Timestamp.fromDate(new Date(data.endDate)),
+    defaultMatchDuration: data.defaultMatchDuration || 55,
+    divisionIds: data.divisionIds || [],
+    isPublished: false,
+    createdAt: now,
+    updatedAt: now,
+  }
+  if (data.logoUrl?.trim()) tournamentData.logoUrl = data.logoUrl
+  batch.set(tournamentRef, tournamentData)
+
+  teams.forEach(team => {
+    const teamRef = doc(collection(db, 'teams'))
+    batch.set(teamRef, {
+      tournamentId: tournamentRef.id,
+      clubId: team.clubId,
+      divisionId: team.divisionId,
+      name: team.name.trim(),
+      ...(team.bracket?.trim() ? { bracket: team.bracket.trim().toUpperCase() } : {}),
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  await batch.commit()
+  return tournamentRef.id
 }
 
 export async function updateTournament(
