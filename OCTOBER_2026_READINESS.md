@@ -72,7 +72,7 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 - [ ] Define one canonical import/export format.
 - [ ] Provide import preview, normalization, and row-level validation errors.
 - [ ] Resolve team references using explicit team abbreviations and safe fallbacks.
-- [ ] Configure seed/winner/loser dependencies without raw database editing.
+- [x] Configure seed/winner/loser dependencies without raw database editing.
 - [ ] Validate pool conflicts, team conflicts, breaks, and insufficient rest time.
 - [ ] Provide a complete public preview before publishing.
 

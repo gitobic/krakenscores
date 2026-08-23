@@ -17,6 +17,7 @@ import { db } from '../lib/firebase'
 import type { Tournament } from '../types'
 
 export interface SetupTeamInput {
+  key: string
   clubKey: string
   divisionId: string
   name: string
@@ -37,13 +38,21 @@ export interface SetupPoolInput {
 }
 
 export interface SetupSlotInput {
+  key: string
   matchNumber: number
   poolKey: string
   divisionId: string
   scheduledDate: string
   scheduledTime: string
   duration: number
+  darkParticipant?: SetupParticipantInput
+  lightParticipant?: SetupParticipantInput
 }
+
+export type SetupParticipantInput =
+  | { source: 'team'; teamKey: string }
+  | { source: 'groupSeed'; groupId: string; rank: number }
+  | { source: 'matchOutcome'; matchKey: string; outcome: 'winner' | 'loser' }
 
 const COLLECTION_NAME = 'tournaments'
 
@@ -156,8 +165,10 @@ export async function createTournamentSetupDraft(
     })
   })
 
+  const teamIds = new Map<string, string>()
   teams.forEach(team => {
     const teamRef = doc(collection(db, 'teams'))
+    teamIds.set(team.key, teamRef.id)
     batch.set(teamRef, {
       tournamentId: tournamentRef.id,
       clubId: clubIds.get(team.clubKey) || team.clubKey,
@@ -183,8 +194,25 @@ export async function createTournamentSetupDraft(
     })
   })
 
+  const matchIds = new Map(slots.map(slot => [slot.key, doc(collection(db, 'matches'))]))
+  const slotByKey = new Map(slots.map(slot => [slot.key, slot]))
+  const participant = (input: SetupParticipantInput | undefined) => {
+    if (!input) return undefined
+    if (input.source === 'team') return { source: 'team' as const, teamId: teamIds.get(input.teamKey) || input.teamKey }
+    if (input.source === 'groupSeed') return input
+    return { source: 'matchOutcome' as const, matchId: matchIds.get(input.matchKey)?.id || input.matchKey, outcome: input.outcome }
+  }
   slots.forEach(slot => {
-    const matchRef = doc(collection(db, 'matches'))
+    const darkParticipant = participant(slot.darkParticipant)
+    const lightParticipant = participant(slot.lightParticipant)
+    const label = (input: SetupParticipantInput | undefined) => {
+      if (!input || input.source === 'team') return undefined
+      if (input.source === 'groupSeed') return `${input.rank}${input.groupId}`
+      return `${input.outcome === 'winner' ? 'Winner' : 'Loser'} of Game ${slotByKey.get(input.matchKey)?.matchNumber ?? '?'}`
+    }
+    const darkTeamLabel = label(slot.darkParticipant)
+    const lightTeamLabel = label(slot.lightParticipant)
+    const matchRef = matchIds.get(slot.key)!
     batch.set(matchRef, {
       tournamentId: tournamentRef.id,
       divisionId: slot.divisionId,
@@ -193,10 +221,12 @@ export async function createTournamentSetupDraft(
       scheduledDate: slot.scheduledDate,
       scheduledTime: slot.scheduledTime,
       duration: slot.duration,
-      darkTeamId: '',
-      lightTeamId: '',
-      darkTeamLabel: 'TBD',
-      lightTeamLabel: 'TBD',
+      darkTeamId: darkParticipant?.source === 'team' ? darkParticipant.teamId : '',
+      lightTeamId: lightParticipant?.source === 'team' ? lightParticipant.teamId : '',
+      ...(darkParticipant ? { darkParticipant } : { darkTeamLabel: 'TBD' }),
+      ...(lightParticipant ? { lightParticipant } : { lightTeamLabel: 'TBD' }),
+      ...(darkTeamLabel ? { darkTeamLabel } : {}),
+      ...(lightTeamLabel ? { lightTeamLabel } : {}),
       status: 'scheduled',
       roundType: 'pool',
       isSemiFinal: false,

@@ -13,7 +13,7 @@ Phase 2 replaces the current collection-by-collection workflow with one unpublis
 
 Setup always creates or edits a draft. Publishing remains a separate, deliberate action after preview.
 
-The initial guided workflow supports creating missing clubs inline, entering multiple distinctly named teams per club/division, assigning preliminary group letters, configuring physical pools, and generating simultaneous pool slots in configurable rounds. The default cadence is 55 minutes. Generated matches remain `TBD vs TBD` until the participant-source step assigns fixed teams, group seeds, winners, or losers.
+The initial guided workflow supports creating missing clubs inline, entering multiple distinctly named teams per club/division, assigning preliminary group letters, configuring physical pools, and generating simultaneous pool slots in configurable rounds. The default cadence is 55 minutes. Each generated participant slot can be assigned a fixed team, group seed, winner of an earlier game, or loser of an earlier game. Only earlier games are offered as outcome sources, which prevents forward references and circular bracket paths. Friendly game-number labels are converted to preallocated document-ID dependencies during the atomic save.
 
 ## Canonical draft boundary
 

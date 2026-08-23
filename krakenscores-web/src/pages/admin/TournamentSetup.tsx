@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import { getAllDivisions } from '../../services/divisions'
 import { getAllClubs } from '../../services/clubs'
-import { createTournamentSetupDraft } from '../../services/tournaments'
+import { createTournamentSetupDraft, type SetupParticipantInput } from '../../services/tournaments'
 import type { Club, Division } from '../../types/index'
 import { generateScheduleSlots, type GeneratedScheduleSlot } from '../../utils/scheduleGenerator'
 
@@ -19,6 +19,10 @@ interface TeamDraft {
 
 interface ClubDraft { key: string; name: string; abbreviation: string }
 interface PoolDraft { key: string; name: string; location: string; defaultStartTime: string }
+interface SlotDraft extends GeneratedScheduleSlot {
+  darkParticipant?: SetupParticipantInput
+  lightParticipant?: SetupParticipantInput
+}
 
 function parseLocalDate(value: string): Date {
   const [year, month, day] = value.split('-').map(Number)
@@ -38,7 +42,7 @@ export default function TournamentSetup() {
   const [teams, setTeams] = useState<TeamDraft[]>([])
   const [newClubs, setNewClubs] = useState<ClubDraft[]>([])
   const [pools, setPools] = useState<PoolDraft[]>([])
-  const [slots, setSlots] = useState<GeneratedScheduleSlot[]>([])
+  const [slots, setSlots] = useState<SlotDraft[]>([])
   const [clubForm, setClubForm] = useState({ name: '', abbreviation: '' })
   const [generator, setGenerator] = useState({ date: '', startTime: '07:00', rounds: 1, firstMatchNumber: 1, intervalMinutes: 55 })
 
@@ -62,7 +66,8 @@ export default function TournamentSetup() {
   const hasDuplicateTeamNames = new Set(teamIdentityKeys).size !== teamIdentityKeys.length
   const teamsValid = teams.length > 0 && !hasDuplicateTeamNames && teams.every(team => team.clubKey && team.divisionId && team.name.trim())
   const poolsValid = pools.length > 0 && pools.every(pool => pool.name.trim() && pool.defaultStartTime)
-  const canContinue = step === 0 ? detailsValid : step === 1 ? divisionIds.length > 0 : step === 2 ? teamsValid : step === 3 ? poolsValid : true
+  const slotsValid = slots.length === 0 || slots.every(slot => slot.darkParticipant && slot.lightParticipant && JSON.stringify(slot.darkParticipant) !== JSON.stringify(slot.lightParticipant))
+  const canContinue = step === 0 ? detailsValid : step === 1 ? divisionIds.length > 0 : step === 2 ? teamsValid : step === 3 ? poolsValid : step === 4 ? slotsValid : true
 
   const toggleDivision = (id: string) => {
     setDivisionIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])
@@ -113,7 +118,17 @@ export default function TournamentSetup() {
         defaultMatchDuration: details.defaultMatchDuration,
         divisionIds,
         isPublished: false,
-      }, teams.map(({ clubKey, divisionId, name, bracket }) => ({ clubKey, divisionId, name, bracket })), newClubs, pools, slots)
+      }, teams.map(({ id, clubKey, divisionId, name, bracket }) => ({ key: id, clubKey, divisionId, name, bracket })), newClubs, pools, slots.map(slot => ({
+        key: slot.id,
+        matchNumber: slot.matchNumber,
+        poolKey: slot.poolKey,
+        divisionId: slot.divisionId,
+        scheduledDate: slot.scheduledDate,
+        scheduledTime: slot.scheduledTime,
+        duration: slot.duration,
+        darkParticipant: slot.darkParticipant,
+        lightParticipant: slot.lightParticipant,
+      })))
       navigate('/admin/tournaments')
     } catch (saveError) {
       console.error('Error creating tournament setup draft:', saveError)
@@ -243,8 +258,9 @@ export default function TournamentSetup() {
                 <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">Cadence<input type="number" min="10" value={generator.intervalMinutes} onChange={event => setGenerator({ ...generator, intervalMinutes: Number(event.target.value) })} className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-normal" /></label>
                 <button type="button" onClick={buildSlots} disabled={!generator.date || generator.rounds < 1} className="rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40">Generate</button>
               </div>
-              {slots.length > 0 && <div className="mt-6 overflow-x-auto rounded-lg border border-gray-200"><table className="min-w-full divide-y divide-gray-200 text-sm"><thead className="bg-gray-50"><tr><th className="p-3 text-left">Game</th><th className="p-3 text-left">Date / time</th><th className="p-3 text-left">Pool</th><th className="p-3 text-left">Division</th></tr></thead><tbody className="divide-y divide-gray-100">{slots.map(slot => <tr key={slot.id}><td className="p-3 font-semibold">{slot.matchNumber}</td><td className="p-3">{slot.scheduledDate} · {slot.scheduledTime}</td><td className="p-3">{slot.poolName}</td><td className="p-3"><select value={slot.divisionId} onChange={event => setSlots(current => current.map(item => item.id === slot.id ? { ...item, divisionId: event.target.value } : item))} className="rounded border border-gray-300 bg-white px-2 py-1">{selectedDivisions.map(division => <option key={division.id} value={division.id}>{division.name}</option>)}</select></td></tr>)}</tbody></table></div>}
-              <p className="mt-4 text-sm text-gray-500">Generated slots are unpublished placeholders. Dark/light participants will be configured in the next setup slice.</p>
+              {slots.length > 0 && <div className="mt-6 overflow-x-auto rounded-lg border border-gray-200"><table className="min-w-full divide-y divide-gray-200 text-sm"><thead className="bg-gray-50"><tr><th className="p-3 text-left">Game</th><th className="p-3 text-left">Date / time</th><th className="p-3 text-left">Pool</th><th className="p-3 text-left">Division</th><th className="min-w-52 p-3 text-left">Dark</th><th className="min-w-52 p-3 text-left">Light</th></tr></thead><tbody className="divide-y divide-gray-100">{slots.map(slot => <tr key={slot.id}><td className="p-3 font-semibold">{slot.matchNumber}</td><td className="p-3">{slot.scheduledDate} · {slot.scheduledTime}</td><td className="p-3">{slot.poolName}</td><td className="p-3"><select value={slot.divisionId} onChange={event => setSlots(current => current.map(item => item.id === slot.id ? { ...item, divisionId: event.target.value, darkParticipant: undefined, lightParticipant: undefined } : item))} className="rounded border border-gray-300 bg-white px-2 py-1">{selectedDivisions.map(division => <option key={division.id} value={division.id}>{division.name}</option>)}</select></td><td className="p-3"><ParticipantSelect value={slot.darkParticipant} slot={slot} teams={teams} slots={slots} onChange={participant => setSlots(current => current.map(item => item.id === slot.id ? { ...item, darkParticipant: participant } : item))} /></td><td className="p-3"><ParticipantSelect value={slot.lightParticipant} slot={slot} teams={teams} slots={slots} onChange={participant => setSlots(current => current.map(item => item.id === slot.id ? { ...item, lightParticipant: participant } : item))} /></td></tr>)}</tbody></table></div>}
+              {slots.length > 0 && !slotsValid && <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Assign two different participant sources to every generated game before continuing.</div>}
+              <p className="mt-4 text-sm text-gray-500">Dependencies only offer earlier game numbers, preventing forward references and circular bracket paths.</p>
             </div>
           )}
 
@@ -274,4 +290,40 @@ export default function TournamentSetup() {
       </main>
     </AdminLayout>
   )
+}
+
+function participantValue(participant: SetupParticipantInput | undefined): string {
+  if (!participant) return ''
+  if (participant.source === 'team') return `team|${participant.teamKey}`
+  if (participant.source === 'groupSeed') return `seed|${participant.groupId}|${participant.rank}`
+  return `outcome|${participant.matchKey}|${participant.outcome}`
+}
+
+function parseParticipant(value: string): SetupParticipantInput | undefined {
+  const [source, key, detail] = value.split('|')
+  if (source === 'team' && key) return { source: 'team', teamKey: key }
+  if (source === 'seed' && key && Number(detail) > 0) return { source: 'groupSeed', groupId: key, rank: Number(detail) }
+  if (source === 'outcome' && key && (detail === 'winner' || detail === 'loser')) return { source: 'matchOutcome', matchKey: key, outcome: detail }
+  return undefined
+}
+
+function ParticipantSelect({ value, slot, teams, slots, onChange }: {
+  value?: SetupParticipantInput
+  slot: SlotDraft
+  teams: TeamDraft[]
+  slots: SlotDraft[]
+  onChange: (participant: SetupParticipantInput | undefined) => void
+}) {
+  const divisionTeams = teams.filter(team => team.divisionId === slot.divisionId)
+  const groups = [...new Set(divisionTeams.map(team => team.bracket).filter(Boolean))]
+  const earlierSlots = slots.filter(candidate => candidate.matchNumber < slot.matchNumber)
+  return <select aria-label={`Game ${slot.matchNumber} participant`} value={participantValue(value)} onChange={event => onChange(parseParticipant(event.target.value))} className="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm">
+    <option value="">Choose participant…</option>
+    <optgroup label="Fixed team">{divisionTeams.map(team => <option key={team.id} value={`team|${team.id}`}>{team.name}</option>)}</optgroup>
+    {groups.map(group => <optgroup key={group} label={`Group ${group} seed`}>{divisionTeams.filter(team => team.bracket === group).map((_, index) => <option key={`${group}-${index + 1}`} value={`seed|${group}|${index + 1}`}>{index + 1}{group}</option>)}</optgroup>)}
+    {earlierSlots.length > 0 && <optgroup label="Earlier game result">{earlierSlots.flatMap(source => [
+      <option key={`${source.id}-winner`} value={`outcome|${source.id}|winner`}>Winner of Game {source.matchNumber}</option>,
+      <option key={`${source.id}-loser`} value={`outcome|${source.id}|loser`}>Loser of Game {source.matchNumber}</option>,
+    ])}</optgroup>}
+  </select>
 }
