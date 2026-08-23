@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Match, Tournament, Pool, Division, Team, Club } from '../../types/index'
 import { createMatch } from '../../services/matches'
 import { fixedTeamSlot, parseGroupSeed, parseParticipantLabel, participantLabel } from '../../utils/participantSlots'
+import { resolveTeamIdentifier } from '../../utils/teamIdentity'
 
 interface BulkImportModalProps {
   matches: Match[]
@@ -115,31 +116,6 @@ export default function BulkImportModal({
       )
     }
 
-    const findTeam = (identifier: string, divisionId: string) => {
-      // Try club abbreviation first (preferred format)
-      const club = clubs.find(c => c.abbreviation.toLowerCase() === identifier.toLowerCase())
-      if (club) {
-        const team = teams.find(t => t.divisionId === divisionId && t.clubId === club.id)
-        if (team) return team
-      }
-
-      // Fall back to exact team name match
-      let team = teams.find(t =>
-        t.divisionId === divisionId &&
-        t.name.toLowerCase() === identifier.toLowerCase()
-      )
-
-      // Last resort: partial team name match
-      if (!team) {
-        team = teams.find(t =>
-          t.divisionId === divisionId &&
-          t.name.toLowerCase().includes(identifier.toLowerCase())
-        )
-      }
-
-      return team
-    }
-
     // Parse each line
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim()
@@ -187,8 +163,10 @@ export default function BulkImportModal({
       const pool = findPool(poolName)
       const division = findDivision(divisionName)
       // Try real team lookup first, then fall back to bracket label detection
-      const darkTeam = division ? findTeam(darkTeamName, division.id) : undefined
-      const lightTeam = division ? findTeam(lightTeamName, division.id) : undefined
+      const darkLookup = division ? resolveTeamIdentifier(darkTeamName, division.id, teams, clubs) : { status: 'notFound' as const }
+      const lightLookup = division ? resolveTeamIdentifier(lightTeamName, division.id, teams, clubs) : { status: 'notFound' as const }
+      const darkTeam = darkLookup.status === 'found' ? darkLookup.team : undefined
+      const lightTeam = lightLookup.status === 'found' ? lightLookup.team : undefined
       const darkIsBracket = !darkTeam && isBracketLabel(darkTeamName)
       const lightIsBracket = !lightTeam && isBracketLabel(lightTeamName)
       const isBracketGame = darkIsBracket || lightIsBracket
@@ -209,12 +187,20 @@ export default function BulkImportModal({
         newErrors.push(`Line ${lineNum}: Division "${divisionName}" not found`)
       }
       if (division && !darkIsBracket && !darkTeam) {
+        if (darkLookup.status === 'ambiguous') {
+          newErrors.push(`Line ${lineNum}: Dark identifier "${darkTeamName}" is ambiguous. Use one of these exact team names: ${darkLookup.teams.map(team => team.name).join(', ')}`)
+          continue
+        }
         const availableClubs = teams
           .filter(t => t.divisionId === division.id)
           .map(t => clubs.find(c => c.id === t.clubId)?.abbreviation || t.name)
         newErrors.push(`Line ${lineNum}: Dark team "${darkTeamName}" not found in ${divisionName}. Available club abbreviations: ${availableClubs.join(', ')}`)
       }
       if (division && !lightIsBracket && !lightTeam) {
+        if (lightLookup.status === 'ambiguous') {
+          newErrors.push(`Line ${lineNum}: Light identifier "${lightTeamName}" is ambiguous. Use one of these exact team names: ${lightLookup.teams.map(team => team.name).join(', ')}`)
+          continue
+        }
         const availableClubs = teams
           .filter(t => t.divisionId === division.id)
           .map(t => clubs.find(c => c.id === t.clubId)?.abbreviation || t.name)

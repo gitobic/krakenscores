@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import type { Club, Division } from '../../types'
+import type { Club, Division, Team } from '../../types'
 import { createTeam } from '../../services/teams'
 
 interface BulkImportTeamsModalProps {
   clubs: Club[]
   divisions: Division[]
+  existingTeams: Team[]
   onClose: () => void
   onImportComplete: () => void
 }
@@ -21,6 +22,7 @@ interface ParsedTeam {
 export default function BulkImportTeamsModal({
   clubs,
   divisions,
+  existingTeams,
   onClose,
   onImportComplete
 }: BulkImportTeamsModalProps) {
@@ -51,11 +53,14 @@ export default function BulkImportTeamsModal({
         : line.split(',').map(p => p.trim().replace(/^["']|["']$/g, ''))
 
       if (parts.length < 2) {
-        errors.push(`Line ${i + 1}: Invalid format. Expected: Club Abbreviation, Division Name[, Bracket]`)
+        errors.push(`Line ${i + 1}: Invalid format. Expected: Club Abbreviation, Division Name[, Team Name][, Bracket]`)
         continue
       }
 
-      const [clubAbbr, divisionName, bracket] = parts
+      const [clubAbbr, divisionName] = parts
+      const thirdColumnIsLegacyBracket = parts.length === 3 && /^[A-Za-z]$/.test(parts[2])
+      const teamName = thirdColumnIsLegacyBracket ? '' : parts[2]
+      const bracket = thirdColumnIsLegacyBracket ? parts[2] : parts[3]
 
       // Find matching club (case-insensitive abbreviation match)
       const club = clubs.find(c =>
@@ -75,18 +80,36 @@ export default function BulkImportTeamsModal({
         continue
       }
 
-      // Auto-generate team name: "Division Club"
-      const autoTeamName = `${division.name} ${club.name}`
+      const resolvedTeamName = teamName || `${division.name} ${club.name}`
 
       teams.push({
         clubAbbreviation: clubAbbr,
         divisionName: divisionName,
-        teamName: autoTeamName,
+        teamName: resolvedTeamName,
         bracket: bracket?.toUpperCase() || undefined,
         clubId: club.id,
         divisionId: division.id
       })
     }
+
+    const duplicateGroups = new Map<string, ParsedTeam[]>()
+    teams.forEach(team => {
+      const key = `${team.clubId}:${team.divisionId}`
+      duplicateGroups.set(key, [...(duplicateGroups.get(key) || []), team])
+    })
+    duplicateGroups.forEach(group => {
+      if (group.length > 1 && new Set(group.map(team => team.teamName.toLowerCase())).size !== group.length) {
+        errors.push(`${group[0].clubAbbreviation} has multiple teams in ${group[0].divisionName}. Give each row a distinct Team Name, such as Black or Blue.`)
+      }
+    })
+    teams.forEach(team => {
+      const duplicate = existingTeams.find(existing =>
+        existing.clubId === team.clubId &&
+        existing.divisionId === team.divisionId &&
+        existing.name.toLowerCase() === team.teamName.toLowerCase()
+      )
+      if (duplicate) errors.push(`${team.teamName} already exists for this club and division.`)
+    })
 
     setValidationErrors(errors)
     setParsedTeams(teams)
@@ -177,15 +200,15 @@ export default function BulkImportTeamsModal({
                   📋 CSV Format Instructions
                 </h3>
                 <p style={{ fontSize: '14px', color: '#1e3a8a', marginBottom: '8px' }}>
-                  Paste CSV data with 2-3 columns:
+                  Paste CSV data with 2-4 columns:
                 </p>
                 <code style={{ display: 'block', padding: '12px', backgroundColor: 'white', border: '1px solid #bfdbfe', borderRadius: '4px', fontSize: '13px', fontFamily: 'monospace', marginBottom: '12px' }}>
-                  TOWPC, 12u CoEd, A<br/>
-                  ORL, 14u CoEd, B<br/>
-                  TOWPC, 16u Boys
+                  TO, Masters, Team Orlando Black, P<br/>
+                  TO, Masters, Team Orlando Blue, P<br/>
+                  ORL, 14u CoEd, B
                 </code>
                 <ul style={{ fontSize: '13px', color: '#1e3a8a', marginLeft: '20px', marginTop: '8px' }}>
-                  <li>Team names will be auto-generated as "Division Club" (e.g., "12u CoEd Team Orlando")</li>
+                  <li>Team Name is optional for a club with one team in the division and required for same-club variants</li>
                   <li>Club abbreviations must match existing clubs exactly</li>
                   <li>Division names must match existing divisions exactly</li>
                   <li><strong>Bracket column is optional</strong> - use letters (A, B, C, etc.) for playoff seeding</li>
@@ -201,7 +224,7 @@ export default function BulkImportTeamsModal({
                 <textarea
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
-                  placeholder="Club Abbreviation, Division Name, Bracket (optional)&#10;TOWPC, 12u CoEd, A&#10;ORL, 14u CoEd, B"
+                  placeholder="Club Abbreviation, Division Name, Team Name (optional), Bracket (optional)&#10;TO, Masters, Team Orlando Black, P&#10;TO, Masters, Team Orlando Blue, P"
                   rows={12}
                   style={{
                     width: '100%',

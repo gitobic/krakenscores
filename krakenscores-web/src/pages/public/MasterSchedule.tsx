@@ -328,7 +328,7 @@ export default function MasterSchedule() {
           </select>
         </div>
 
-        {/* Show Full Club Names Checkbox */}
+        {/* Show Full Team Names Checkbox */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <input
             type="checkbox"
@@ -350,7 +350,7 @@ export default function MasterSchedule() {
               userSelect: 'none'
             }}
           >
-            Show full club names
+            Show full team names
           </label>
         </div>
       </div>

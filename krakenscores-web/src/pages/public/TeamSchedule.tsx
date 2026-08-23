@@ -467,6 +467,7 @@ export default function TeamSchedule() {
                   <SortableTeamScheduleTable
                     matches={groupedMatches[date]}
                     selectedClubId={selectedClubId}
+                    selectedTeamId={selectedTeamId}
                   />
                 </div>
               </div>

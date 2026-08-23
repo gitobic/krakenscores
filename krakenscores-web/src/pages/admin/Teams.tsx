@@ -102,11 +102,11 @@ export default function Teams() {
   }
 
   const handleExportCSV = () => {
-    const header = 'Club Abbreviation,Division Name,Bracket'
+    const header = 'Club Abbreviation,Division Name,Team Name,Bracket'
     const rows = sortedTeams.map(team => {
       const club = clubs.find(c => c.id === team.clubId)
       const division = divisions.find(d => d.id === team.divisionId)
-      return `${club?.abbreviation || ''},${division?.name || ''},${team.bracket || ''}`
+      return `${club?.abbreviation || ''},${division?.name || ''},"${team.name.replaceAll('"', '""')}",${team.bracket || ''}`
     })
     const csv = [header, ...rows].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -474,6 +474,7 @@ export default function Teams() {
       {showModal && (
         <TeamModal
           team={editingTeam}
+          teams={teams}
           clubs={clubs}
           divisions={divisions}
           onClose={() => setShowModal(false)}
@@ -488,6 +489,7 @@ export default function Teams() {
         <BulkImportTeamsModal
           clubs={clubs}
           divisions={divisions}
+          existingTeams={teams}
           onClose={() => setShowBulkImportModal(false)}
           onImportComplete={async () => {
             await loadData()
@@ -501,13 +503,14 @@ export default function Teams() {
 
 interface TeamModalProps {
   team: Team | null
+  teams: Team[]
   clubs: Club[]
   divisions: Division[]
   onClose: () => void
   onSave: () => void
 }
 
-function TeamModal({ team, clubs, divisions, onClose, onSave }: TeamModalProps) {
+function TeamModal({ team, teams, clubs, divisions, onClose, onSave }: TeamModalProps) {
   const [formData, setFormData] = useState({
     clubId: team?.clubId || '',
     divisionId: team?.divisionId || '',
@@ -536,6 +539,16 @@ function TeamModal({ team, clubs, divisions, onClose, onSave }: TeamModalProps) 
     setSaving(true)
 
     try {
+      const duplicate = teams.find(candidate =>
+        candidate.id !== team?.id &&
+        candidate.clubId === formData.clubId &&
+        candidate.divisionId === formData.divisionId &&
+        candidate.name.trim().toLowerCase() === formData.name.trim().toLowerCase()
+      )
+      if (duplicate) {
+        setError('A team with this name already exists for the selected club and division.')
+        return
+      }
       if (team) {
         // Update existing team
         await updateTeam(team.id, {

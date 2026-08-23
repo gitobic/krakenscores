@@ -1,5 +1,6 @@
 import { useTableSort, getSortIndicator } from '../hooks/useTableSort'
 import type { Match, Division, Team, Club, Pool } from '../types/index'
+import { teamCompactName, teamPublicName } from '../utils/teamIdentity'
 
 interface MatchWithDetails {
   match: Match
@@ -24,6 +25,7 @@ interface SortableMatchTableProps {
 }
 
 export default function SortableMatchTable({ matches, showFullClubNames }: SortableMatchTableProps) {
+  const tournamentTeams = matches.flatMap(item => [item.darkTeam, item.lightTeam]).filter((team): team is Team => Boolean(team))
   // Add sortable properties
   const matchesWithSortKeys: SortableMatch[] = matches.map(m => ({
     ...m,
@@ -114,7 +116,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
       </thead>
       <tbody>
         {sortedData.map((item, idx) => {
-          const { match, division, pool, darkTeamClub, lightTeamClub } = item
+          const { match, division, pool, darkTeam, lightTeam, darkTeamClub, lightTeamClub } = item
           const isEven = idx % 2 === 0
 
           return (
@@ -178,17 +180,17 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
                 <span style={{ fontWeight: '600' }}>
                   {match.darkTeamLabel
                     ? match.darkTeamLabel
-                    : darkTeamClub
-                      ? (showFullClubNames ? darkTeamClub.name : darkTeamClub.abbreviation)
-                      : 'TBD'}
+                    : showFullClubNames
+                      ? teamPublicName(darkTeam, darkTeamClub)
+                      : teamCompactName(darkTeam, darkTeamClub, tournamentTeams)}
                 </span>
                 {' vs '}
                 <span style={{ fontWeight: '600' }}>
                   {match.lightTeamLabel
                     ? match.lightTeamLabel
-                    : lightTeamClub
-                      ? (showFullClubNames ? lightTeamClub.name : lightTeamClub.abbreviation)
-                      : 'TBD'}
+                    : showFullClubNames
+                      ? teamPublicName(lightTeam, lightTeamClub)
+                      : teamCompactName(lightTeam, lightTeamClub, tournamentTeams)}
                 </span>
               </td>
 

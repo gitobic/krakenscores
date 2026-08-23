@@ -1,6 +1,7 @@
 import { useTableSort, getSortIndicator } from '../hooks/useTableSort'
 import { colors, typography, tableStyles, columnWidths, containerStyles } from '../styles/theme'
 import type { Match, Division, Team, Club, Pool } from '../types/index'
+import { teamPublicName } from '../utils/teamIdentity'
 
 interface MatchWithDetails {
   match: Match
@@ -22,9 +23,10 @@ type SortableMatch = MatchWithDetails & {
 interface SortableTeamScheduleTableProps {
   matches: MatchWithDetails[]
   selectedClubId: string
+  selectedTeamId: string
 }
 
-export default function SortableTeamScheduleTable({ matches, selectedClubId }: SortableTeamScheduleTableProps) {
+export default function SortableTeamScheduleTable({ matches, selectedClubId, selectedTeamId }: SortableTeamScheduleTableProps) {
   // Add sortable properties
   const matchesWithSortKeys: SortableMatch[] = matches.map(m => ({
     ...m,
@@ -111,10 +113,13 @@ export default function SortableTeamScheduleTable({ matches, selectedClubId }: S
       </thead>
       <tbody>
         {sortedData.map((item, idx) => {
-          const { match, division, pool, darkTeamClub, lightTeamClub } = item
+          const { match, division, pool, darkTeam, lightTeam, darkTeamClub, lightTeamClub } = item
           const isEven = idx % 2 === 0
-          const isUserTeamDark = selectedClubId ? darkTeamClub.id === selectedClubId : false
-          const opponent = isUserTeamDark ? lightTeamClub : darkTeamClub
+          const isUserTeamDark = selectedTeamId
+            ? darkTeam.id === selectedTeamId
+            : selectedClubId ? darkTeamClub.id === selectedClubId : false
+          const opponent = isUserTeamDark ? lightTeam : darkTeam
+          const opponentClub = isUserTeamDark ? lightTeamClub : darkTeamClub
           const opponentCaps = isUserTeamDark ? 'Light' : 'Dark'
           const userScore = isUserTeamDark ? match.darkTeamScore : match.lightTeamScore
           const opponentScore = isUserTeamDark ? match.lightTeamScore : match.darkTeamScore
@@ -171,7 +176,7 @@ export default function SortableTeamScheduleTable({ matches, selectedClubId }: S
                   <div>
                     <span style={{ fontSize: '11px', color: colors.gray.medium }}>vs </span>
                     <span style={{ fontWeight: typography.fontWeight.semiBold }}>
-                      {opponent.name}
+                      {teamPublicName(opponent, opponentClub)}
                     </span>
                     <span style={{ fontSize: typography.fontSize.badgeText, color: colors.gray.medium, marginLeft: '4px' }}>
                       ({opponentCaps})

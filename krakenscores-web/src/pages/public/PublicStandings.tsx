@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Standing } from '../../types/index'
 import PublicNav from '../../components/layout/PublicNav'
+import { teamCompactName } from '../../utils/teamIdentity'
 
 interface MatchWithDetails {
   match: Match
@@ -249,9 +250,11 @@ export default function PublicStandings() {
     if (searchTerm) {
       filtered = filtered.filter(m => {
         const darkClubMatch = m.darkTeamClub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              m.darkTeamClub.abbreviation.toLowerCase().includes(searchTerm.toLowerCase())
+                              m.darkTeamClub.abbreviation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              m.darkTeam.name.toLowerCase().includes(searchTerm.toLowerCase())
         const lightClubMatch = m.lightTeamClub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                               m.lightTeamClub.abbreviation.toLowerCase().includes(searchTerm.toLowerCase())
+                               m.lightTeamClub.abbreviation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                               m.lightTeam.name.toLowerCase().includes(searchTerm.toLowerCase())
         return darkClubMatch || lightClubMatch
       })
     }
@@ -635,7 +638,7 @@ export default function PublicStandings() {
               border: '1px solid #e5e7eb'
             }}>
               {filteredMatches.map((item, idx) => {
-                const { match, division, darkTeamClub, lightTeamClub } = item
+                const { match, division, darkTeam, lightTeam, darkTeamClub, lightTeamClub } = item
                 const darkWon = (match.darkTeamScore ?? 0) > (match.lightTeamScore ?? 0)
                 const lightWon = (match.lightTeamScore ?? 0) > (match.darkTeamScore ?? 0)
 
@@ -669,7 +672,7 @@ export default function PublicStandings() {
                     <div style={{ flex: 1, fontSize: '13px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <span style={{ fontWeight: darkWon ? '700' : '500', color: darkWon ? '#111827' : '#6b7280' }}>
-                          {darkTeamClub.abbreviation}
+                          {teamCompactName(darkTeam, darkTeamClub, teams)}
                         </span>
                         <span style={{ fontWeight: '700', color: darkWon ? '#16a34a' : '#374151' }}>
                           {match.darkTeamScore}
@@ -677,7 +680,7 @@ export default function PublicStandings() {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: lightWon ? '700' : '500', color: lightWon ? '#111827' : '#6b7280' }}>
-                          {lightTeamClub.abbreviation}
+                          {teamCompactName(lightTeam, lightTeamClub, teams)}
                         </span>
                         <span style={{ fontWeight: '700', color: lightWon ? '#16a34a' : '#374151' }}>
                           {match.lightTeamScore}

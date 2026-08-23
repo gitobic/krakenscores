@@ -6,6 +6,7 @@ import MatchModal from '../../components/matches/MatchModal'
 import BulkImportModal from '../../components/matches/BulkImportModal'
 import MatchTable from '../../components/matches/MatchTable'
 import ScheduleGrid from '../../components/matches/ScheduleGrid'
+import { teamCompactName, teamPublicName } from '../../utils/teamIdentity'
 
 type ViewMode = 'table' | 'grid'
 
@@ -102,13 +103,15 @@ export default function Matches() {
       .map(match => {
         const pool = pools.find(p => p.id === match.poolId)
         const division = divisions.find(d => d.id === match.divisionId)
-        const darkClub = clubs.find(c => c.id === teams.find(t => t.id === match.darkTeamId)?.clubId)
-        const lightClub = clubs.find(c => c.id === teams.find(t => t.id === match.lightTeamId)?.clubId)
-        const darkAbbrev = match.darkTeamLabel || darkClub?.abbreviation || ''
-        const lightAbbrev = match.lightTeamLabel || lightClub?.abbreviation || ''
+        const darkTeam = teams.find(t => t.id === match.darkTeamId)
+        const lightTeam = teams.find(t => t.id === match.lightTeamId)
+        const darkClub = clubs.find(c => c.id === darkTeam?.clubId)
+        const lightClub = clubs.find(c => c.id === lightTeam?.clubId)
+        const darkAbbrev = match.darkTeamLabel || teamCompactName(darkTeam, darkClub, teams)
+        const lightAbbrev = match.lightTeamLabel || teamCompactName(lightTeam, lightClub, teams)
         if (includeFullNames) {
-          const darkName = darkClub?.name || match.darkTeamLabel || ''
-          const lightName = lightClub?.name || match.lightTeamLabel || ''
+          const darkName = match.darkTeamLabel || teamPublicName(darkTeam, darkClub)
+          const lightName = match.lightTeamLabel || teamPublicName(lightTeam, lightClub)
           return `${match.matchNumber},${pool?.name || ''},${division?.name || ''},${match.scheduledDate},${match.scheduledTime},${darkAbbrev},"${darkName}",${lightAbbrev},"${lightName}"`
         }
         return `${match.matchNumber},${pool?.name || ''},${division?.name || ''},${match.scheduledDate},${match.scheduledTime},${darkAbbrev},${lightAbbrev}`

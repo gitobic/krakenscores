@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, Timestamp, doc, updateDoc, serverTim
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Pool } from '../../types/index'
 import { recalculateStandingsForDivision } from '../../services/standings'
+import { teamCompactName, teamPublicName } from '../../utils/teamIdentity'
 
 interface MatchWithDetails {
   match: Match
@@ -517,7 +518,7 @@ export default function Scorekeeper() {
                 fontSize: '14px',
                 color: '#374151'
               }}>
-                Show full club names
+                Show full team names
               </span>
             </label>
           </div>
@@ -572,7 +573,7 @@ export default function Scorekeeper() {
                 </thead>
                 <tbody>
                   {filteredAndSortedMatches.map((matchWithDetails, index) => {
-                    const { match, division, pool, darkTeamClub, lightTeamClub } = matchWithDetails
+                    const { match, division, pool, darkTeam, lightTeam, darkTeamClub, lightTeamClub } = matchWithDetails
                     const isSaving = savingMatchId === match.id
                     const scores = editedScores[match.id] || { darkScore: 0, lightScore: 0 }
 
@@ -619,7 +620,7 @@ export default function Scorekeeper() {
                           whiteSpace: showTeamNames ? 'nowrap' : 'normal',
                           fontFamily: 'system-ui, -apple-system, sans-serif'
                         }}>
-                          {showTeamNames ? darkTeamClub.name : darkTeamClub.abbreviation}
+                          {showTeamNames ? teamPublicName(darkTeam, darkTeamClub) : teamCompactName(darkTeam, darkTeamClub, matches.flatMap(item => [item.darkTeam, item.lightTeam]))}
                         </td>
                         <td style={{ padding: '6px 8px', borderRight: '1px solid #e5e7eb', textAlign: 'center' }}>
                           <input
@@ -652,7 +653,7 @@ export default function Scorekeeper() {
                           whiteSpace: showTeamNames ? 'nowrap' : 'normal',
                           fontFamily: 'system-ui, -apple-system, sans-serif'
                         }}>
-                          {showTeamNames ? lightTeamClub.name : lightTeamClub.abbreviation}
+                          {showTeamNames ? teamPublicName(lightTeam, lightTeamClub) : teamCompactName(lightTeam, lightTeamClub, matches.flatMap(item => [item.darkTeam, item.lightTeam]))}
                         </td>
                         <td style={{ padding: '6px 8px', borderRight: '1px solid #e5e7eb', textAlign: 'center' }}>
                           <input

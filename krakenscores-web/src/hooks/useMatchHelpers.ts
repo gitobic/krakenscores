@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { Pool, Division, Team, Club } from '../types/index'
+import { teamCompactName } from '../utils/teamIdentity'
 
 /**
  * Custom hook that provides helper functions for displaying match data
@@ -36,7 +37,7 @@ export function useMatchHelpers(
       if (!team) return 'Unknown'
 
       const club = clubs.find(c => c.id === team.clubId)
-      return club?.abbreviation || team.name
+      return teamCompactName(team, club, teams)
     }
 
     return {
