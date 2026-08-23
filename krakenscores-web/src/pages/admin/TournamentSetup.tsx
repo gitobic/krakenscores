@@ -5,16 +5,20 @@ import { getAllDivisions } from '../../services/divisions'
 import { getAllClubs } from '../../services/clubs'
 import { createTournamentSetupDraft } from '../../services/tournaments'
 import type { Club, Division } from '../../types/index'
+import { generateScheduleSlots, type GeneratedScheduleSlot } from '../../utils/scheduleGenerator'
 
-const steps = ['Tournament', 'Divisions', 'Teams', 'Review']
+const steps = ['Tournament', 'Divisions', 'Teams', 'Pools', 'Schedule', 'Review']
 
 interface TeamDraft {
   id: string
-  clubId: string
+  clubKey: string
   divisionId: string
   name: string
   bracket: string
 }
+
+interface ClubDraft { key: string; name: string; abbreviation: string }
+interface PoolDraft { key: string; name: string; location: string; defaultStartTime: string }
 
 function parseLocalDate(value: string): Date {
   const [year, month, day] = value.split('-').map(Number)
@@ -32,6 +36,11 @@ export default function TournamentSetup() {
   const [details, setDetails] = useState({ name: '', startDate: '', endDate: '', defaultMatchDuration: 55 })
   const [divisionIds, setDivisionIds] = useState<string[]>([])
   const [teams, setTeams] = useState<TeamDraft[]>([])
+  const [newClubs, setNewClubs] = useState<ClubDraft[]>([])
+  const [pools, setPools] = useState<PoolDraft[]>([])
+  const [slots, setSlots] = useState<GeneratedScheduleSlot[]>([])
+  const [clubForm, setClubForm] = useState({ name: '', abbreviation: '' })
+  const [generator, setGenerator] = useState({ date: '', startTime: '07:00', rounds: 1, firstMatchNumber: 1, intervalMinutes: 55 })
 
   useEffect(() => {
     Promise.all([getAllDivisions(), getAllClubs()])
@@ -48,24 +57,50 @@ export default function TournamentSetup() {
     [divisions, divisionIds]
   )
   const detailsValid = Boolean(details.name.trim() && details.startDate && details.endDate && details.endDate >= details.startDate && details.defaultMatchDuration >= 10)
+  const availableClubs = [...clubs.map(club => ({ key: club.id, name: club.name, abbreviation: club.abbreviation })), ...newClubs]
   const teamIdentityKeys = teams.map(team => `${team.divisionId}:${team.name.trim().toLocaleLowerCase()}`)
   const hasDuplicateTeamNames = new Set(teamIdentityKeys).size !== teamIdentityKeys.length
-  const teamsValid = teams.length > 0 && !hasDuplicateTeamNames && teams.every(team => team.clubId && team.divisionId && team.name.trim())
-  const canContinue = step === 0 ? detailsValid : step === 1 ? divisionIds.length > 0 : step === 2 ? teamsValid : true
+  const teamsValid = teams.length > 0 && !hasDuplicateTeamNames && teams.every(team => team.clubKey && team.divisionId && team.name.trim())
+  const poolsValid = pools.length > 0 && pools.every(pool => pool.name.trim() && pool.defaultStartTime)
+  const canContinue = step === 0 ? detailsValid : step === 1 ? divisionIds.length > 0 : step === 2 ? teamsValid : step === 3 ? poolsValid : true
 
   const toggleDivision = (id: string) => {
     setDivisionIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])
     setTeams(current => current.filter(team => team.divisionId !== id || !divisionIds.includes(id)))
+    if (divisionIds.includes(id)) setSlots(current => current.filter(slot => slot.divisionId !== id))
   }
 
   const addTeam = () => setTeams(current => [...current, {
     id: crypto.randomUUID(),
-    clubId: clubs[0]?.id || '',
+    clubKey: availableClubs[0]?.key || '',
     divisionId: divisionIds[0] || '',
     name: '',
     bracket: '',
   }])
   const updateTeam = (id: string, patch: Partial<TeamDraft>) => setTeams(current => current.map(team => team.id === id ? { ...team, ...patch } : team))
+  const addClub = () => {
+    if (!clubForm.name.trim() || !clubForm.abbreviation.trim()) return
+    if (availableClubs.some(club => club.abbreviation.toLocaleLowerCase() === clubForm.abbreviation.trim().toLocaleLowerCase())) {
+      setError('That club abbreviation is already in use. Choose the existing club or enter a different abbreviation.')
+      return
+    }
+    const club = { key: `new-club-${crypto.randomUUID()}`, name: clubForm.name.trim(), abbreviation: clubForm.abbreviation.trim().toUpperCase() }
+    setNewClubs(current => [...current, club])
+    setClubForm({ name: '', abbreviation: '' })
+    setError('')
+  }
+  const addPool = () => setPools(current => [...current, { key: `new-pool-${crypto.randomUUID()}`, name: `Pool ${current.length + 1}`, location: '', defaultStartTime: '07:00' }])
+  const updatePool = (key: string, patch: Partial<PoolDraft>) => setPools(current => current.map(pool => pool.key === key ? { ...pool, ...patch } : pool))
+  const buildSlots = () => setSlots(generateScheduleSlots({
+    date: generator.date,
+    startTime: generator.startTime,
+    pools: pools.map(pool => ({ id: pool.key, name: pool.name })),
+    rounds: generator.rounds,
+    firstMatchNumber: generator.firstMatchNumber,
+    intervalMinutes: generator.intervalMinutes,
+    duration: details.defaultMatchDuration,
+    divisionId: divisionIds[0] || '',
+  }))
 
   const saveDraft = async () => {
     setSaving(true)
@@ -78,7 +113,7 @@ export default function TournamentSetup() {
         defaultMatchDuration: details.defaultMatchDuration,
         divisionIds,
         isPublished: false,
-      }, teams.map(({ clubId, divisionId, name, bracket }) => ({ clubId, divisionId, name, bracket })))
+      }, teams.map(({ clubKey, divisionId, name, bracket }) => ({ clubKey, divisionId, name, bracket })), newClubs, pools, slots)
       navigate('/admin/tournaments')
     } catch (saveError) {
       console.error('Error creating tournament setup draft:', saveError)
@@ -100,7 +135,7 @@ export default function TournamentSetup() {
           <button type="button" onClick={() => navigate('/admin/tournaments')} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Exit setup</button>
         </div>
 
-        <ol className="mb-8 grid grid-cols-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <ol className="mb-8 grid grid-cols-3 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm sm:grid-cols-6">
           {steps.map((label, index) => (
             <li key={label} className={`border-r border-gray-200 px-3 py-4 text-center text-sm last:border-r-0 ${index === step ? 'bg-blue-50 font-semibold text-blue-800' : index < step ? 'text-emerald-700' : 'text-gray-500'}`}>
               <span className="mr-2">{index < step ? '✓' : index + 1}</span>{label}
@@ -158,13 +193,19 @@ export default function TournamentSetup() {
                   <h2 className="text-xl font-semibold text-gray-950">Add the actual teams</h2>
                   <p className="mt-1 text-sm text-gray-600">Use distinct names for multiple teams from one club, such as Team Orlando Black and Team Orlando Blue.</p>
                 </div>
-                <button type="button" onClick={addTeam} disabled={!clubs.length} className="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">+ Add team</button>
+                <button type="button" onClick={addTeam} disabled={!availableClubs.length} className="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">+ Add team</button>
               </div>
-              {!clubs.length ? <div className="mt-7 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">No clubs are available yet. Exit setup and add at least one club, then return here.</div>
+              <div className="mt-6 grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 sm:grid-cols-[1.5fr_0.7fr_auto] sm:items-end">
+                <label className="grid gap-1 text-xs font-semibold uppercase tracking-wide text-blue-900">Missing club name<input value={clubForm.name} onChange={event => setClubForm({ ...clubForm, name: event.target.value })} placeholder="Wolverines Water Polo" className="rounded-md border border-blue-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-900" /></label>
+                <label className="grid gap-1 text-xs font-semibold uppercase tracking-wide text-blue-900">Abbreviation<input value={clubForm.abbreviation} maxLength={10} onChange={event => setClubForm({ ...clubForm, abbreviation: event.target.value.toUpperCase() })} placeholder="WOLV" className="rounded-md border border-blue-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-900" /></label>
+                <button type="button" onClick={addClub} disabled={!clubForm.name.trim() || !clubForm.abbreviation.trim()} className="rounded-md border border-blue-700 bg-white px-4 py-2.5 text-sm font-semibold text-blue-800 disabled:opacity-40">Add club</button>
+              </div>
+              {newClubs.length > 0 && <p className="mt-3 text-sm text-blue-800">New in this draft: {newClubs.map(club => `${club.name} (${club.abbreviation})`).join(', ')}</p>}
+              {!availableClubs.length ? <div className="mt-7 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Add the first club above, then add its teams.</div>
                 : teams.length === 0 ? <button type="button" onClick={addTeam} className="mt-7 w-full rounded-lg border-2 border-dashed border-gray-300 p-10 text-center text-gray-600 hover:border-blue-400 hover:text-blue-700">Add the first team</button>
                   : <div className="mt-7 grid gap-4">
                     {teams.map((team, index) => <div key={team.id} className="grid gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 lg:grid-cols-[1fr_1fr_1.3fr_7rem_auto] lg:items-end">
-                      <label className="grid gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Club<select value={team.clubId} onChange={event => updateTeam(team.id, { clubId: event.target.value })} className="rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-900">{clubs.map(club => <option key={club.id} value={club.id}>{club.name}</option>)}</select></label>
+                      <label className="grid gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Club<select value={team.clubKey} onChange={event => updateTeam(team.id, { clubKey: event.target.value })} className="rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-900">{availableClubs.map(club => <option key={club.key} value={club.key}>{club.name}</option>)}</select></label>
                       <label className="grid gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Division<select value={team.divisionId} onChange={event => updateTeam(team.id, { divisionId: event.target.value })} className="rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-900">{selectedDivisions.map(division => <option key={division.id} value={division.id}>{division.name}</option>)}</select></label>
                       <label className="grid gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Public team name<input value={team.name} onChange={event => updateTeam(team.id, { name: event.target.value })} placeholder={index === 0 ? 'Team Orlando Black' : 'Wolverines Yellow'} className="rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-900" /></label>
                       <label className="grid gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Group<input maxLength={4} value={team.bracket} onChange={event => updateTeam(team.id, { bracket: event.target.value.toUpperCase() })} placeholder="A" className="rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-900" /></label>
@@ -178,6 +219,37 @@ export default function TournamentSetup() {
 
           {step === 3 && (
             <div>
+              <div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold text-gray-950">Configure the physical pools</h2><p className="mt-1 text-sm text-gray-600">These are simultaneous playing areas, not preliminary team groups.</p></div><button type="button" onClick={addPool} className="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white">+ Add pool</button></div>
+              {pools.length === 0 ? <button type="button" onClick={addPool} className="mt-7 w-full rounded-lg border-2 border-dashed border-gray-300 p-10 text-gray-600 hover:border-blue-400">Add Pool 1</button> : <div className="mt-7 grid gap-4">
+                {pools.map(pool => <div key={pool.key} className="grid gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-[1fr_1.5fr_10rem_auto] sm:items-end">
+                  <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">Pool name<input value={pool.name} onChange={event => updatePool(pool.key, { name: event.target.value })} className="rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-900" /></label>
+                  <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">Location / notes<input value={pool.location} onChange={event => updatePool(pool.key, { location: event.target.value })} placeholder="Main competition pool" className="rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-normal normal-case text-gray-900" /></label>
+                  <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">First start<input type="time" value={pool.defaultStartTime} onChange={event => updatePool(pool.key, { defaultStartTime: event.target.value })} className="rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-normal text-gray-900" /></label>
+                  <button type="button" onClick={() => setPools(current => current.filter(item => item.key !== pool.key))} className="rounded-md px-3 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50">Remove</button>
+                </div>)}
+              </div>}
+            </div>
+          )}
+
+          {step === 4 && (
+            <div>
+              <h2 className="text-xl font-semibold text-gray-950">Generate the master schedule grid</h2>
+              <p className="mt-1 text-sm text-gray-600">One round creates one simultaneous slot in every pool. You can assign teams and advancement sources afterward.</p>
+              <div className="mt-7 grid gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-3 lg:grid-cols-6 lg:items-end">
+                <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">Date<input type="date" min={details.startDate} max={details.endDate} value={generator.date} onChange={event => setGenerator({ ...generator, date: event.target.value })} className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-normal" /></label>
+                <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">First time<input type="time" value={generator.startTime} onChange={event => setGenerator({ ...generator, startTime: event.target.value })} className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-normal" /></label>
+                <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">Rounds<input type="number" min="1" value={generator.rounds} onChange={event => setGenerator({ ...generator, rounds: Number(event.target.value) })} className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-normal" /></label>
+                <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">First game #<input type="number" min="1" value={generator.firstMatchNumber} onChange={event => setGenerator({ ...generator, firstMatchNumber: Number(event.target.value) })} className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-normal" /></label>
+                <label className="grid gap-1 text-xs font-semibold uppercase text-gray-500">Cadence<input type="number" min="10" value={generator.intervalMinutes} onChange={event => setGenerator({ ...generator, intervalMinutes: Number(event.target.value) })} className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm font-normal" /></label>
+                <button type="button" onClick={buildSlots} disabled={!generator.date || generator.rounds < 1} className="rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-40">Generate</button>
+              </div>
+              {slots.length > 0 && <div className="mt-6 overflow-x-auto rounded-lg border border-gray-200"><table className="min-w-full divide-y divide-gray-200 text-sm"><thead className="bg-gray-50"><tr><th className="p-3 text-left">Game</th><th className="p-3 text-left">Date / time</th><th className="p-3 text-left">Pool</th><th className="p-3 text-left">Division</th></tr></thead><tbody className="divide-y divide-gray-100">{slots.map(slot => <tr key={slot.id}><td className="p-3 font-semibold">{slot.matchNumber}</td><td className="p-3">{slot.scheduledDate} · {slot.scheduledTime}</td><td className="p-3">{slot.poolName}</td><td className="p-3"><select value={slot.divisionId} onChange={event => setSlots(current => current.map(item => item.id === slot.id ? { ...item, divisionId: event.target.value } : item))} className="rounded border border-gray-300 bg-white px-2 py-1">{selectedDivisions.map(division => <option key={division.id} value={division.id}>{division.name}</option>)}</select></td></tr>)}</tbody></table></div>}
+              <p className="mt-4 text-sm text-gray-500">Generated slots are unpublished placeholders. Dark/light participants will be configured in the next setup slice.</p>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div>
               <h2 className="text-xl font-semibold text-gray-950">Review the starting point</h2>
               <p className="mt-1 text-sm text-gray-600">Saving creates a private draft. Spectators will not see it.</p>
               <dl className="mt-7 divide-y divide-gray-200 rounded-lg border border-gray-200">
@@ -186,6 +258,8 @@ export default function TournamentSetup() {
                 <div className="grid gap-1 p-4 sm:grid-cols-3"><dt className="text-sm font-medium text-gray-500">Game slot</dt><dd className="sm:col-span-2 text-gray-900">{details.defaultMatchDuration} minutes</dd></div>
                 <div className="grid gap-2 p-4 sm:grid-cols-3"><dt className="text-sm font-medium text-gray-500">Divisions</dt><dd className="sm:col-span-2 flex flex-wrap gap-2">{selectedDivisions.map(division => <span key={division.id} className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-800">{division.name}</span>)}</dd></div>
                 <div className="grid gap-2 p-4 sm:grid-cols-3"><dt className="text-sm font-medium text-gray-500">Teams</dt><dd className="sm:col-span-2 grid gap-1 text-gray-900">{teams.map(team => <span key={team.id}>{team.name} · {selectedDivisions.find(division => division.id === team.divisionId)?.name}{team.bracket ? ` · Group ${team.bracket}` : ''}</span>)}</dd></div>
+                <div className="grid gap-2 p-4 sm:grid-cols-3"><dt className="text-sm font-medium text-gray-500">Pools</dt><dd className="sm:col-span-2 text-gray-900">{pools.map(pool => pool.name).join(', ')}</dd></div>
+                <div className="grid gap-2 p-4 sm:grid-cols-3"><dt className="text-sm font-medium text-gray-500">Schedule slots</dt><dd className="sm:col-span-2 text-gray-900">{slots.length} generated</dd></div>
               </dl>
               <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>Next:</strong> add clubs and named teams, assign preliminary groups, configure pools, then build or import the schedule.</div>
             </div>
@@ -193,7 +267,7 @@ export default function TournamentSetup() {
 
           <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
             <button type="button" disabled={step === 0 || saving} onClick={() => setStep(current => current - 1)} className="rounded-md border border-gray-300 px-5 py-2.5 font-medium text-gray-700 disabled:cursor-not-allowed disabled:opacity-40">Back</button>
-            {step < 3 ? <button type="button" disabled={!canContinue || saving} onClick={() => setStep(current => current + 1)} className="rounded-md bg-blue-700 px-5 py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Continue</button>
+            {step < 5 ? <button type="button" disabled={!canContinue || saving} onClick={() => setStep(current => current + 1)} className="rounded-md bg-blue-700 px-5 py-2.5 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Continue</button>
               : <button type="button" disabled={saving} onClick={saveDraft} className="rounded-md bg-emerald-700 px-5 py-2.5 font-semibold text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save unpublished draft'}</button>}
           </div>
         </section>

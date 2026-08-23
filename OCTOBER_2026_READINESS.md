@@ -66,9 +66,9 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 - [x] Design a guided setup workflow around Coach's real source material.
 - [ ] Add tournament cloning from a previous event.
 - [x] Select only the divisions participating in the new tournament.
-- [~] Add clubs with one or more division-specific teams (existing-club team entry complete; inline club creation pending).
+- [x] Add clubs with one or more division-specific teams.
 - [x] Assign teams to pool/group brackets.
-- [ ] Generate configurable match slots with a 55-minute default cadence.
+- [x] Generate configurable match slots with a 55-minute default cadence.
 - [ ] Define one canonical import/export format.
 - [ ] Provide import preview, normalization, and row-level validation errors.
 - [ ] Resolve team references using explicit team abbreviations and safe fallbacks.

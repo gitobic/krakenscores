@@ -13,6 +13,8 @@ Phase 2 replaces the current collection-by-collection workflow with one unpublis
 
 Setup always creates or edits a draft. Publishing remains a separate, deliberate action after preview.
 
+The initial guided workflow supports creating missing clubs inline, entering multiple distinctly named teams per club/division, assigning preliminary group letters, configuring physical pools, and generating simultaneous pool slots in configurable rounds. The default cadence is 55 minutes. Generated matches remain `TBD vs TBD` until the participant-source step assigns fixed teams, group seeds, winners, or losers.
+
 ## Canonical draft boundary
 
 The setup workspace owns one tournament and contains its selected division IDs, clubs referenced by its teams, tournament-scoped teams, tournament-scoped pools, matches, and schedule breaks. Existing legacy records remain readable, but all newly created teams and pools require a `tournamentId`.

@@ -17,10 +17,32 @@ import { db } from '../lib/firebase'
 import type { Tournament } from '../types'
 
 export interface SetupTeamInput {
-  clubId: string
+  clubKey: string
   divisionId: string
   name: string
   bracket?: string
+}
+
+export interface SetupClubInput {
+  key: string
+  name: string
+  abbreviation: string
+}
+
+export interface SetupPoolInput {
+  key: string
+  name: string
+  location: string
+  defaultStartTime: string
+}
+
+export interface SetupSlotInput {
+  matchNumber: number
+  poolKey: string
+  divisionId: string
+  scheduledDate: string
+  scheduledTime: string
+  duration: number
 }
 
 const COLLECTION_NAME = 'tournaments'
@@ -99,8 +121,13 @@ export async function createTournament(
 
 export async function createTournamentSetupDraft(
   data: Omit<Tournament, 'id' | 'createdAt' | 'updatedAt'>,
-  teams: SetupTeamInput[]
+  teams: SetupTeamInput[],
+  newClubs: SetupClubInput[] = [],
+  pools: SetupPoolInput[] = [],
+  slots: SetupSlotInput[] = []
 ): Promise<string> {
+  const writeCount = 1 + teams.length + newClubs.length + pools.length + slots.length
+  if (writeCount > 500) throw new Error('This setup draft exceeds Firestore’s 500-record batch limit. Split the schedule into a later save.')
   const now = Timestamp.now()
   const tournamentRef = doc(collection(db, COLLECTION_NAME))
   const batch = writeBatch(db)
@@ -117,14 +144,63 @@ export async function createTournamentSetupDraft(
   if (data.logoUrl?.trim()) tournamentData.logoUrl = data.logoUrl
   batch.set(tournamentRef, tournamentData)
 
+  const clubIds = new Map<string, string>()
+  newClubs.forEach(club => {
+    const clubRef = doc(collection(db, 'clubs'))
+    clubIds.set(club.key, clubRef.id)
+    batch.set(clubRef, {
+      name: club.name.trim(),
+      abbreviation: club.abbreviation.trim().toUpperCase(),
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
   teams.forEach(team => {
     const teamRef = doc(collection(db, 'teams'))
     batch.set(teamRef, {
       tournamentId: tournamentRef.id,
-      clubId: team.clubId,
+      clubId: clubIds.get(team.clubKey) || team.clubKey,
       divisionId: team.divisionId,
       name: team.name.trim(),
       ...(team.bracket?.trim() ? { bracket: team.bracket.trim().toUpperCase() } : {}),
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  const poolIds = new Map<string, string>()
+  pools.forEach(pool => {
+    const poolRef = doc(collection(db, 'pools'))
+    poolIds.set(pool.key, poolRef.id)
+    batch.set(poolRef, {
+      tournamentId: tournamentRef.id,
+      name: pool.name.trim(),
+      location: pool.location.trim(),
+      defaultStartTime: pool.defaultStartTime,
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  slots.forEach(slot => {
+    const matchRef = doc(collection(db, 'matches'))
+    batch.set(matchRef, {
+      tournamentId: tournamentRef.id,
+      divisionId: slot.divisionId,
+      poolId: poolIds.get(slot.poolKey) || slot.poolKey,
+      matchNumber: slot.matchNumber,
+      scheduledDate: slot.scheduledDate,
+      scheduledTime: slot.scheduledTime,
+      duration: slot.duration,
+      darkTeamId: '',
+      lightTeamId: '',
+      darkTeamLabel: 'TBD',
+      lightTeamLabel: 'TBD',
+      status: 'scheduled',
+      roundType: 'pool',
+      isSemiFinal: false,
+      isFinal: false,
       createdAt: now,
       updatedAt: now,
     })
