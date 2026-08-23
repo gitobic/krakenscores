@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { isRehearsalEnvironment } from './lib/firebase'
 import ProtectedRoute from './components/ProtectedRoute'
 
 const Login = lazy(() => import('./pages/admin/Login'))
@@ -30,6 +31,7 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-100 font-bold text-slate-700 dark:bg-slate-950 dark:text-slate-200">Loading KrakenScores…</div>}>
+            {isRehearsalEnvironment && <div className="fixed bottom-3 left-1/2 z-[20000] -translate-x-1/2 rounded-full border-2 border-amber-300 bg-amber-950 px-4 py-2 text-xs font-black uppercase tracking-wider text-amber-100 shadow-xl">Local rehearsal · production protected</div>}
             <Routes>
           {/* Public routes */}
           <Route path="/" element={<TournamentHome />} />
