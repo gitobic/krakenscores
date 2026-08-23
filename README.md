@@ -85,6 +85,7 @@ cd .. && firebase deploy --only hosting:krakenscores
 
 ## Documentation
 
+- **[October 2026 Readiness](OCTOBER_2026_READINESS.md)** — Canonical phased checklist and decision log
 - **[AGENTS.md](AGENTS.md)** — Repository guidance, product priorities, domain model, and safety rules
 - **[PRD.md](PRD.md)** — Product requirements and user stories
 - **[TECHNICAL_SPEC_FIREBASE.md](TECHNICAL_SPEC_FIREBASE.md)** — Technical architecture details
