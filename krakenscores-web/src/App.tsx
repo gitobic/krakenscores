@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/admin/Login'
 import Dashboard from './pages/admin/Dashboard'
 import Tournaments from './pages/admin/Tournaments'
+import TournamentSetup from './pages/admin/TournamentSetup'
 import Clubs from './pages/admin/Clubs'
 import Divisions from './pages/admin/Divisions'
 import Teams from './pages/admin/Teams'
@@ -43,6 +44,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole="admin">
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/setup"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <TournamentSetup />
               </ProtectedRoute>
             }
           />

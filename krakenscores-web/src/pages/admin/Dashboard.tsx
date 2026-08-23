@@ -74,6 +74,9 @@ export default function Dashboard() {
           }}>
             Manage tournaments, teams, schedules, and scores for Team Orlando Water Polo Club.
           </p>
+          <a href="/admin/setup" style={{ display: 'inline-flex', marginTop: '20px', padding: '11px 18px', borderRadius: '6px', backgroundColor: '#1d4ed8', color: 'white', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}>
+            Start guided tournament setup →
+          </a>
         </div>
 
         {/* Recent Activity Section */}

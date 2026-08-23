@@ -140,8 +140,8 @@ export default function Tournaments() {
             <h1 className="text-3xl font-bold text-gray-900">Tournaments</h1>
             <p className="text-gray-600 mt-1">Manage tournament information and settings</p>
           </div>
-          <button
-            onClick={handleCreate}
+          <a
+            href="/admin/setup"
             style={{
               padding: '10px 20px',
               fontSize: '15px',
@@ -157,8 +157,8 @@ export default function Tournaments() {
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
           >
-            + Create Tournament
-          </button>
+            + Guided Setup
+          </a>
         </div>
 
         {error && (
@@ -174,7 +174,7 @@ export default function Tournaments() {
               onClick={handleCreate}
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
-              Create your first tournament
+              Quick-create a tournament
             </button>
           </div>
         ) : (

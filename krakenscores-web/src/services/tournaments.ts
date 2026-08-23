@@ -70,6 +70,7 @@ export async function createTournament(
       startDate: Timestamp.fromDate(new Date(data.startDate)),
       endDate: Timestamp.fromDate(new Date(data.endDate)),
       defaultMatchDuration: data.defaultMatchDuration || 55,
+      divisionIds: data.divisionIds || [],
       isPublished: data.isPublished,
       createdAt: now,
       updatedAt: now
@@ -102,6 +103,7 @@ export async function updateTournament(
     if (data.name !== undefined) updateData.name = data.name
     if (data.isPublished !== undefined) updateData.isPublished = data.isPublished
     if (data.defaultMatchDuration !== undefined) updateData.defaultMatchDuration = data.defaultMatchDuration
+    if (data.divisionIds !== undefined) updateData.divisionIds = data.divisionIds
 
     // Handle logoUrl - delete if empty, update if has value
     if (data.logoUrl !== undefined) {
