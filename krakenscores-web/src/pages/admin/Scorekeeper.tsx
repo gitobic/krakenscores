@@ -34,6 +34,7 @@ export default function Scorekeeper() {
   const [showAllGames, setShowAllGames] = useState(false)
   const [saveStates, setSaveStates] = useState<Record<string, 'saving' | 'saved' | 'error'>>({})
   const [isOnline, setIsOnline] = useState(() => navigator.onLine)
+  const [operationMessage, setOperationMessage] = useState('')
 
   // Track edited scores for each match
   const [editedScores, setEditedScores] = useState<Record<string, { darkScore: number; lightScore: number }>>({})
@@ -289,18 +290,21 @@ export default function Scorekeeper() {
     setSaveStates(current => ({ ...current, [matchId]: 'saving' }))
     try {
       const scores = editedScores[matchId] || { darkScore: 0, lightScore: 0 }
+      let result: Awaited<ReturnType<typeof saveMatchResult>>
       try {
-        await saveMatchResult(matchId, scores.darkScore, scores.lightScore, newStatus)
+        result = await saveMatchResult(matchId, scores.darkScore, scores.lightScore, newStatus)
       } catch (error) {
         if (!(error instanceof ResultImpactError)) throw error
         const affected = error.affectedMatches.map(match => `Game ${match.matchNumber}`).join(', ')
         if (!confirm(`${error.message}\n\nAffected: ${affected}\n\nContinuing will reopen the affected games and clear their scores. Continue?`)) return
-        const result = await saveMatchResult(matchId, scores.darkScore, scores.lightScore, newStatus, true)
-        if (result.invalidatedMatchIds.length > 0) {
-          alert(`Result saved. ${result.invalidatedMatchIds.length} downstream game${result.invalidatedMatchIds.length === 1 ? '' : 's'} reopened for review.`)
-        }
+        result = await saveMatchResult(matchId, scores.darkScore, scores.lightScore, newStatus, true)
       }
 
+      const messages: string[] = []
+      if (newStatus === 'final') messages.push(`Game ${matchWithDetails.match.matchNumber} finalized and standings updated.`)
+      if (result.advancedMatches.length > 0) messages.push(`Updated participant assignments in ${result.advancedMatches.map(match => `Game ${match.matchNumber}`).join(', ')}.`)
+      if (result.invalidatedMatchIds.length > 0) messages.push(`${result.invalidatedMatchIds.length} downstream game${result.invalidatedMatchIds.length === 1 ? '' : 's'} reopened and cleared for review.`)
+      setOperationMessage(messages.join(' '))
       await loadMatches()
       setSaveStates(current => ({ ...current, [matchId]: 'saved' }))
     } catch (error) {
@@ -463,6 +467,7 @@ export default function Scorekeeper() {
         </div>
 
         {!isOnline && <div className="mb-5 rounded-lg border border-red-300 bg-red-50 p-4 font-semibold text-red-900">Offline: scores remain visible, but Start, Finalize, and Correct are disabled until the connection returns.</div>}
+        {operationMessage && <div className="mb-5 flex items-start justify-between gap-4 rounded-lg border border-emerald-300 bg-emerald-50 p-4 font-medium text-emerald-900"><span>{operationMessage}</span><button type="button" onClick={() => setOperationMessage('')} className="text-sm font-bold text-emerald-800">Dismiss</button></div>}
 
         {/* Filters */}
         <div style={{

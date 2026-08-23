@@ -85,25 +85,25 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 
 ## Phase 3 — Tournament-day operations
 
-**Status:** In progress
+**Status:** Complete
 
 - [x] Redesign scorekeeper mode around current, next, and recently completed games.
 - [x] Provide large, clear dark/light score controls.
 - [x] Show unambiguous full team names for same-club teams.
 - [x] Show saving, saved, offline, and error states clearly.
-- [ ] Finalize a match with a concise advancement summary.
+- [x] Finalize a match with a concise advancement summary.
 - [x] Reopen/correct a match with an impact preview.
-- [ ] Move one match to a new time or pool safely.
-- [ ] Shift a selected block or all later matches in one pool by N minutes.
-- [ ] Re-run conflict validation before committing schedule changes.
-- [ ] Verify scorekeeper permissions with emulator-backed rules tests.
-- [ ] Write a short volunteer operating guide.
+- [x] Move one match to a new time or pool safely.
+- [x] Shift a selected block or all later matches in one pool by N minutes.
+- [x] Re-run conflict validation before committing schedule changes.
+- [x] Verify scorekeeper permissions with emulator-backed rules tests.
+- [x] Write a short volunteer operating guide.
 
 ### Phase 3 exit criteria
 
-- [ ] A new volunteer can learn score entry in approximately ten minutes.
-- [ ] Common delay and correction scenarios can be handled without database access.
-- [ ] Scorekeeper credentials cannot edit unrelated tournament configuration.
+- [x] A new volunteer can learn score entry in approximately ten minutes.
+- [x] Common delay and correction scenarios can be handled without database access.
+- [x] Scorekeeper credentials cannot edit unrelated tournament configuration.
 
 ## Phase 4 — Spectator experience
 
@@ -175,3 +175,4 @@ Record consequential scope or domain decisions here so later work does not silen
 - **2026-08-22:** Default standings use 2/1/0 points, tied-team mini-table points and goal difference, then overall goal difference, goals scored, goals conceded, and team name.
 - **2026-08-22:** Draws are supported unless a later match requires a winner or loser; those source matches must have a decisive final score.
 - **2026-08-22:** A confirmed correction reopens affected completed descendants and clears their scores atomically with participant advancement updates.
+- **2026-08-23:** Tournament-day schedule moves and pool-wide shifts are admin-only, require a conflict-free preview, and commit as one Firestore batch; scorekeepers remain limited to scores and app-derived advancement fields.

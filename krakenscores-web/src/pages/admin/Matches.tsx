@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import type { Match } from '../../types/index'
-import { deleteMatch, updateMatch } from '../../services/matches'
+import { deleteMatch, updateMatchSchedules } from '../../services/matches'
 import { useMatchData } from '../../hooks/useMatchData'
 import MatchModal from '../../components/matches/MatchModal'
 import BulkImportModal from '../../components/matches/BulkImportModal'
 import MatchTable from '../../components/matches/MatchTable'
 import ScheduleGrid from '../../components/matches/ScheduleGrid'
 import { teamCompactName, teamPublicName } from '../../utils/teamIdentity'
+import ScheduleAdjustments from '../../components/matches/ScheduleAdjustments'
+import type { ScheduleChange } from '../../utils/scheduleOperations'
 
 type ViewMode = 'table' | 'grid'
 
@@ -126,19 +128,14 @@ export default function Matches() {
     URL.revokeObjectURL(url)
   }
 
-  const handleMatchDrop = async (matchId: string, newPoolId: string, newTime: string) => {
+  const handleScheduleChanges = async (changes: ScheduleChange[]) => {
     try {
-      const match = matches.find(m => m.id === matchId)
-      if (!match) return
-
-      await updateMatch(matchId, {
-        poolId: newPoolId,
-        scheduledTime: newTime
-      })
+      await updateMatchSchedules(changes)
       await loadData()
     } catch (error) {
-      console.error('Error moving match:', error)
-      alert('Failed to move match. Please try again.')
+      console.error('Error updating schedule:', error)
+      alert('Failed to update the schedule. No partial changes were saved.')
+      throw error
     }
   }
 
@@ -297,6 +294,13 @@ export default function Matches() {
           </div>
         </div>
 
+        {selectedTournamentId && <ScheduleAdjustments
+          matches={filteredMatches}
+          pools={pools.filter(pool => pool.tournamentId === selectedTournamentId)}
+          scheduleBreaks={scheduleBreaks.filter(scheduleBreak => scheduleBreak.tournamentId === selectedTournamentId)}
+          onApply={handleScheduleChanges}
+        />}
+
         {/* Matches View */}
         {viewMode === 'table' ? (
           <MatchTable
@@ -317,7 +321,6 @@ export default function Matches() {
             clubs={clubs}
             scheduleBreaks={scheduleBreaks.filter(b => !selectedTournamentId || b.tournamentId === selectedTournamentId)}
             onEdit={handleEdit}
-            onMatchDrop={handleMatchDrop}
           />
         )}
 

@@ -19,6 +19,7 @@ import type { Match, Team } from '../types/index'
 import { recalculateStandingsForDivision } from './standings'
 import { changedParticipantMatchIds, downstreamMatchIds, resolveParticipantAssignments } from '../utils/tournamentEngine'
 import { referencedMatchIds } from '../utils/participantSlots'
+import type { ScheduleChange } from '../utils/scheduleOperations'
 
 const COLLECTION = 'matches'
 
@@ -119,6 +120,19 @@ export async function updateMatch(id: string, matchData: Partial<Omit<Match, 'id
   await updateDoc(docRef, updates)
 }
 
+export async function updateMatchSchedules(changes: ScheduleChange[]): Promise<void> {
+  const batch = writeBatch(db)
+  changes.forEach(change => {
+    batch.update(doc(db, COLLECTION, change.matchId), {
+      scheduledDate: change.scheduledDate,
+      scheduledTime: change.scheduledTime,
+      poolId: change.poolId,
+      updatedAt: serverTimestamp(),
+    })
+  })
+  await batch.commit()
+}
+
 export async function deleteMatch(id: string): Promise<void> {
   await deleteDoc(doc(db, COLLECTION, id))
 }
@@ -174,7 +188,7 @@ export async function saveMatchResult(
   lightTeamScore: number,
   status: Match['status'],
   allowInvalidation = false
-): Promise<{ invalidatedMatchIds: string[] }> {
+): Promise<{ invalidatedMatchIds: string[]; advancedMatches: Array<{ id: string; matchNumber: number }> }> {
   const matchRef = doc(db, COLLECTION, id)
   const matchSnapshot = await getDoc(matchRef)
   if (!matchSnapshot.exists()) throw new Error('Match not found')
@@ -214,6 +228,7 @@ export async function saveMatchResult(
   })
 
   const assignments = resolveParticipantAssignments(hypothetical, teams)
+  const advancedIds = changedParticipantMatchIds(matches, assignments).filter(matchId => matchId !== id)
   const batch = writeBatch(db)
   batch.update(matchRef, {
     darkTeamScore,
@@ -243,5 +258,8 @@ export async function saveMatchResult(
   })
   await batch.commit()
   await recalculateStandingsForDivision(source.divisionId, source.tournamentId)
-  return { invalidatedMatchIds: invalidatedIds }
+  return {
+    invalidatedMatchIds: invalidatedIds,
+    advancedMatches: matches.filter(match => advancedIds.includes(match.id)).map(match => ({ id: match.id, matchNumber: match.matchNumber })),
+  }
 }
