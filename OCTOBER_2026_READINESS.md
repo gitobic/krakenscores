@@ -61,9 +61,9 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 
 ## Phase 2 — Simplified tournament setup
 
-**Status:** Not started
+**Status:** In progress
 
-- [ ] Design a guided setup workflow around Coach's real source material.
+- [x] Design a guided setup workflow around Coach's real source material.
 - [ ] Add tournament cloning from a previous event.
 - [ ] Select only the divisions participating in the new tournament.
 - [ ] Add clubs with one or more division-specific teams.
