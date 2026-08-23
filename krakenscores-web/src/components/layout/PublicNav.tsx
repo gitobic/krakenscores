@@ -7,6 +7,7 @@ export default function PublicNav() {
   const location = useLocation()
 
   const menuItems = [
+    { path: '/', label: 'Tournament Home', icon: '🌊' },
     { path: '/schedule', label: 'Schedule', icon: '📅' },
     { path: '/standings', label: 'Standings', icon: '🏆' },
     { path: '/brackets', label: 'Brackets', icon: '🏅' },

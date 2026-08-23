@@ -107,15 +107,15 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 
 ## Phase 4 — Spectator experience
 
-**Status:** Not started
+**Status:** In progress
 
-- [ ] Create a tournament-day home view with live, recent, and up-next games.
-- [ ] Add quick team search and filtering.
-- [ ] Allow local device favorites without an account.
+- [x] Create a tournament-day home view with live, recent, and up-next games.
+- [x] Add quick team search and filtering.
+- [x] Allow local device favorites without an account.
 - [ ] Render connected brackets and placement paths by division.
 - [ ] Replace unresolved codes with actual teams as soon as results allow.
 - [ ] Keep useful provisional labels visible before teams are known.
-- [ ] Present delay and high-priority announcement banners prominently.
+- [x] Present delay and high-priority announcement banners prominently.
 - [ ] Add automatic light/dark mode with a local manual override.
 - [ ] Retain colorblind-aware division colors and validate contrast.
 - [ ] Add route-level code splitting and measure bundle improvements.

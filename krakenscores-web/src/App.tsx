@@ -20,6 +20,7 @@ import PublicStandings from './pages/public/PublicStandings'
 import TeamSchedule from './pages/public/TeamSchedule'
 import Announcements from './pages/public/Announcements'
 import Brackets from './pages/public/Brackets'
+import TournamentHome from './pages/public/TournamentHome'
 
 function App() {
   return (
@@ -27,7 +28,7 @@ function App() {
       <AuthProvider>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<MasterSchedule />} />
+          <Route path="/" element={<TournamentHome />} />
           <Route path="/schedule" element={<MasterSchedule />} />
           <Route path="/standings" element={<PublicStandings />} />
           <Route path="/scores" element={<PublicStandings />} />
