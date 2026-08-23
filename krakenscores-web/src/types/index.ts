@@ -67,6 +67,11 @@ export interface ScheduleBreak {
   updatedAt: Date;
 }
 
+export type MatchParticipantSlot =
+  | { source: 'team'; teamId: string }
+  | { source: 'groupSeed'; groupId: string; rank: number }
+  | { source: 'matchOutcome'; matchId: string; outcome: 'winner' | 'loser' };
+
 // Match represents a scheduled water polo game between two teams.
 // Matches can be pool play, semi-finals, finals, or placement games.
 export interface Match {
@@ -87,6 +92,8 @@ export interface Match {
   lightTeamId: string; // Empty string when team is TBD (bracket game)
   darkTeamLabel?: string;  // Display label for TBD teams (e.g. "3M", "Winner G47", "Loser 52")
   lightTeamLabel?: string;
+  darkParticipant?: MatchParticipantSlot;
+  lightParticipant?: MatchParticipantSlot;
 
   // Scoring (optional until match is finalized)
   darkTeamScore?: number;
@@ -99,7 +106,7 @@ export interface Match {
   // Bracket/Playoff Support
   roundType: 'pool' | 'semi' | 'final' | 'placement';
   bracketRef?: string; // "SF1", "SF2", "F", "3rd", "5th"
-  feedsFrom?: {
+  feedsFrom?: { // Legacy participant-source format; do not use for new records.
     // For automatic bracket progression
     darkFrom?: {
       type: 'seed' | 'place' | 'winnerOf' | 'loserOf';

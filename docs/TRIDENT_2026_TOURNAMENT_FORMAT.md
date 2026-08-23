@@ -62,6 +62,16 @@ The final published opponents show that these placeholders were resolved manuall
 - The engine must support both draws in preliminary/round-robin play and a decisive outcome where advancement requires a winner.
 - Reopening a source result must identify every downstream slot and completed match affected by the correction.
 
+## Implemented canonical participant shape
+
+New or edited matches now store `darkParticipant` and `lightParticipant` as one of:
+
+- `{ source: "team", teamId }`
+- `{ source: "groupSeed", groupId, rank }`
+- `{ source: "matchOutcome", matchId, outcome: "winner" | "loser" }`
+
+`matchId` is the permanent Firestore document ID. The editor and bulk importer may display or accept a game number, but resolve it to that ID before writing. Existing records without these fields remain readable through `darkTeamId`, `lightTeamId`, labels, and the legacy `feedsFrom` shape. Editing such a record writes the canonical slots and removes obsolete source metadata where appropriate; no production migration is required for this compatibility step.
+
 ## Unresolved rules requiring tournament-owner confirmation
 
 - The preliminary ranking tie-break order is not recoverable reliably from the workbook. The `16u Boys J` group, for example, contains a multi-team win tie.
@@ -69,4 +79,3 @@ The final published opponents show that these placeholders were resolved manuall
 - Whether the two 10u games are intentionally a two-game series and how a 1–1 split is ranked is not stated.
 - The final placement mapping for seed-tier mini-leagues must be confirmed, including whether preliminary results carry over or the placement mini-league starts fresh.
 - Masters gender configuration is not explicit in the 2026 sheet and should not be inferred from the generic division name.
-

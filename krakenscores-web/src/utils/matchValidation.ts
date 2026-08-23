@@ -1,4 +1,5 @@
 import type { Match, ScheduleBreak, Pool, Team } from '../types/index'
+import { createsDependencyCycle } from './participantSlots'
 
 /**
  * Convert time string (HH:MM) to minutes since midnight
@@ -140,6 +141,7 @@ export function checkScheduleBreakConflict(
 export function validateMatch(
   formData: {
     tournamentId: string
+    divisionId: string
     matchNumber: number
     poolId: string
     scheduledDate: string
@@ -147,6 +149,8 @@ export function validateMatch(
     duration: number
     darkTeamId: string
     lightTeamId: string
+    darkParticipant?: Match['darkParticipant']
+    lightParticipant?: Match['lightParticipant']
     feedsFrom?: Match['feedsFrom']
   },
   matches: Match[],
@@ -156,8 +160,24 @@ export function validateMatch(
   excludeMatchId?: string
 ): string | null {
   // Check if teams are TBD (empty with feedsFrom rules)
-  const darkTeamIsTBD = !formData.darkTeamId && formData.feedsFrom?.darkFrom
-  const lightTeamIsTBD = !formData.lightTeamId && formData.feedsFrom?.lightFrom
+  const darkTeamIsTBD = !formData.darkTeamId && (formData.darkParticipant || formData.feedsFrom?.darkFrom)
+  const lightTeamIsTBD = !formData.lightTeamId && (formData.lightParticipant || formData.feedsFrom?.lightFrom)
+
+  for (const participant of [formData.darkParticipant, formData.lightParticipant]) {
+    if (participant?.source !== 'matchOutcome') continue
+    const sourceMatch = matches.find(candidate => candidate.id === participant.matchId)
+    if (!sourceMatch) return 'A winner/loser participant references a match that does not exist'
+    if (sourceMatch.id === excludeMatchId) return 'A match cannot depend on its own result'
+    if (sourceMatch.tournamentId !== formData.tournamentId) return 'A participant source must come from the same tournament'
+    if (sourceMatch.divisionId !== formData.divisionId) return 'A participant source must come from the same division'
+  }
+
+  const sourceMatchIds = [formData.darkParticipant, formData.lightParticipant]
+    .filter((participant): participant is Extract<NonNullable<Match['darkParticipant']>, { source: 'matchOutcome' }> => participant?.source === 'matchOutcome')
+    .map(participant => participant.matchId)
+  if (excludeMatchId && createsDependencyCycle(excludeMatchId, sourceMatchIds, matches)) {
+    return 'This participant source would create a circular match dependency'
+  }
 
   // Check same team constraint (skip if either is TBD)
   if (formData.darkTeamId && formData.lightTeamId && formData.darkTeamId === formData.lightTeamId) {

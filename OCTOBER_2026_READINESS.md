@@ -40,8 +40,8 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 
 - [x] Document each 2026 division's pool, seeding, placement, and advancement rules.
 - [x] Create representative test fixtures from the May 2026 tournament.
-- [ ] Separate permanent match identity from editable `matchNumber` display/order.
-- [ ] Model each participant slot as fixed team, pool seed, match winner, or match loser.
+- [x] Separate permanent match identity from editable `matchNumber` display/order.
+- [x] Model each participant slot as fixed team, pool seed, match winner, or match loser.
 - [ ] Make club and team identity distinct throughout data loading and display.
 - [ ] Support multiple same-club teams in one division without ambiguous labels.
 - [ ] Implement pool/group seed resolution.

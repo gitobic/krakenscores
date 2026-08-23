@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   serverTimestamp,
+  deleteField,
   Timestamp
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
@@ -101,10 +102,18 @@ export async function createMatch(matchData: Omit<Match, 'id' | 'createdAt' | 'u
 
 export async function updateMatch(id: string, matchData: Partial<Omit<Match, 'id' | 'createdAt' | 'updatedAt'>>): Promise<void> {
   const docRef = doc(db, COLLECTION, id)
-  await updateDoc(docRef, {
+  const updates: Record<string, unknown> = {
     ...matchData,
     updatedAt: serverTimestamp(),
-  })
+  }
+
+  if (matchData.darkParticipant && matchData.lightParticipant) {
+    updates.feedsFrom = deleteField()
+  }
+  if (matchData.darkParticipant?.source === 'team') updates.darkTeamLabel = deleteField()
+  if (matchData.lightParticipant?.source === 'team') updates.lightTeamLabel = deleteField()
+
+  await updateDoc(docRef, updates)
 }
 
 export async function deleteMatch(id: string): Promise<void> {

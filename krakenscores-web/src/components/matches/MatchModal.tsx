@@ -1,7 +1,22 @@
 import { useState } from 'react'
-import type { Match, Tournament, Pool, Division, Team, ScheduleBreak } from '../../types/index'
+import type { Match, MatchParticipantSlot, Tournament, Pool, Division, Team, ScheduleBreak } from '../../types/index'
 import { createMatch, updateMatch } from '../../services/matches'
 import { validateMatch } from '../../utils/matchValidation'
+import { fixedTeamSlot, parseGroupSeed, participantLabel } from '../../utils/participantSlots'
+
+type ParticipantRuleType = 'groupSeed' | 'winnerOf' | 'loserOf'
+
+function initialParticipantRule(match: Match | null, side: 'dark' | 'light'): { type: ParticipantRuleType; value: string } {
+  const participant = side === 'dark' ? match?.darkParticipant : match?.lightParticipant
+  if (participant?.source === 'groupSeed') return { type: 'groupSeed', value: `${participant.rank}${participant.groupId}` }
+  if (participant?.source === 'matchOutcome') {
+    return { type: participant.outcome === 'winner' ? 'winnerOf' : 'loserOf', value: participant.matchId }
+  }
+
+  const legacy = side === 'dark' ? match?.feedsFrom?.darkFrom : match?.feedsFrom?.lightFrom
+  if (legacy?.type === 'winnerOf' || legacy?.type === 'loserOf') return { type: legacy.type, value: String(legacy.value) }
+  return { type: 'groupSeed', value: legacy ? String(legacy.value) : '' }
+}
 
 interface MatchModalProps {
   match: Match | null
@@ -64,28 +79,21 @@ export default function MatchModal({
     scheduledDate: getDefaultDate(),
     scheduledTime: match?.scheduledTime || '08:00',
     duration: getDefaultDuration(),
-    darkTeamId: match?.darkTeamId || '',
-    lightTeamId: match?.lightTeamId || '',
+    darkTeamId: match?.darkParticipant && match.darkParticipant.source !== 'team' ? 'TBD' : match?.darkTeamId || '',
+    lightTeamId: match?.lightParticipant && match.lightParticipant.source !== 'team' ? 'TBD' : match?.lightTeamId || '',
     darkTeamScore: match?.darkTeamScore,
     lightTeamScore: match?.lightTeamScore,
     status: match?.status || 'scheduled' as 'scheduled' | 'in_progress' | 'final' | 'forfeit' | 'cancelled',
     isSemiFinal: match?.isSemiFinal || false,
     roundType: match?.roundType || 'pool' as 'pool' | 'semi' | 'final' | 'placement',
     isFinal: match?.isFinal || false,
-    bracketRef: match?.bracketRef || '',
-    feedsFrom: match?.feedsFrom || undefined
+    bracketRef: match?.bracketRef || ''
   })
   const [saving, setSaving] = useState(false)
 
   // Bracket rule state for TBD teams
-  const [darkTeamRule, setDarkTeamRule] = useState<{type: string, value: string}>({
-    type: match?.feedsFrom?.darkFrom?.type || 'winnerOf',
-    value: match?.feedsFrom?.darkFrom?.value?.toString() || ''
-  })
-  const [lightTeamRule, setLightTeamRule] = useState<{type: string, value: string}>({
-    type: match?.feedsFrom?.lightFrom?.type || 'winnerOf',
-    value: match?.feedsFrom?.lightFrom?.value?.toString() || ''
-  })
+  const [darkTeamRule, setDarkTeamRule] = useState(() => initialParticipantRule(match, 'dark'))
+  const [lightTeamRule, setLightTeamRule] = useState(() => initialParticipantRule(match, 'light'))
 
   // Filter pools by selected tournament
   const availablePools = pools.filter(p => p.tournamentId === formData.tournamentId)
@@ -101,45 +109,42 @@ export default function MatchModal({
   // Filter teams to prevent selecting the same team twice
   const availableDarkTeams = availableTeams.filter(t => t.id !== formData.lightTeamId)
   const availableLightTeams = availableTeams.filter(t => t.id !== formData.darkTeamId)
+  const availableSourceMatches = matches.filter(candidate =>
+    candidate.id !== match?.id &&
+    candidate.tournamentId === formData.tournamentId &&
+    candidate.divisionId === formData.divisionId
+  )
+
+  const buildParticipant = (teamId: string, rule: { type: ParticipantRuleType; value: string }): MatchParticipantSlot | null => {
+    if (teamId !== 'TBD') return teamId ? fixedTeamSlot(teamId) : null
+    if (rule.type === 'groupSeed') return parseGroupSeed(rule.value)
+    if (!rule.value) return null
+    return { source: 'matchOutcome', matchId: rule.value, outcome: rule.type === 'winnerOf' ? 'winner' : 'loser' }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate TBD teams have bracket rules
-    if (formData.darkTeamId === 'TBD' && !darkTeamRule.value) {
-      alert('Please specify how the Dark Team will be determined (e.g., "3a" or "SF1")')
-      return
-    }
-    if (formData.lightTeamId === 'TBD' && !lightTeamRule.value) {
-      alert('Please specify how the Light Team will be determined (e.g., "4b" or "SF2")')
-      return
-    }
+    const darkParticipant = buildParticipant(formData.darkTeamId, darkTeamRule)
+    const lightParticipant = buildParticipant(formData.lightTeamId, lightTeamRule)
 
-    // Build feedsFrom object if teams are TBD
-    let feedsFromData = undefined
-    if (formData.darkTeamId === 'TBD' || formData.lightTeamId === 'TBD') {
-      feedsFromData = {
-        ...(formData.darkTeamId === 'TBD' && darkTeamRule.value && {
-          darkFrom: {
-            type: darkTeamRule.type as 'seed' | 'place' | 'winnerOf' | 'loserOf',
-            value: darkTeamRule.value
-          }
-        }),
-        ...(formData.lightTeamId === 'TBD' && lightTeamRule.value && {
-          lightFrom: {
-            type: lightTeamRule.type as 'seed' | 'place' | 'winnerOf' | 'loserOf',
-            value: lightTeamRule.value
-          }
-        })
-      }
+    if (!darkParticipant) {
+      alert('Please select or define the Dark Team participant')
+      return
+    }
+    if (!lightParticipant) {
+      alert('Please select or define the Light Team participant')
+      return
     }
 
     const submissionData = {
       ...formData,
-      ...(feedsFromData && { feedsFrom: feedsFromData }), // Only include if defined
-      // Set team IDs to empty string if TBD (validation will be updated to allow this)
+      darkParticipant,
+      lightParticipant,
       darkTeamId: formData.darkTeamId === 'TBD' ? '' : formData.darkTeamId,
-      lightTeamId: formData.lightTeamId === 'TBD' ? '' : formData.lightTeamId
+      lightTeamId: formData.lightTeamId === 'TBD' ? '' : formData.lightTeamId,
+      ...(participantLabel(darkParticipant, matches) && { darkTeamLabel: participantLabel(darkParticipant, matches) }),
+      ...(participantLabel(lightParticipant, matches) && { lightTeamLabel: participantLabel(lightParticipant, matches) })
     }
 
     // Validate match using centralized validation
@@ -161,12 +166,11 @@ export default function MatchModal({
 
     try {
       // Remove undefined score fields to prevent Firebase errors
-      const { darkTeamScore, lightTeamScore, feedsFrom, ...matchData } = submissionData
+      const { darkTeamScore, lightTeamScore, ...matchData } = submissionData
       const cleanedData = {
         ...matchData,
         ...(darkTeamScore !== undefined && { darkTeamScore }),
-        ...(lightTeamScore !== undefined && { lightTeamScore }),
-        ...(feedsFrom && { feedsFrom }) // Only include if defined
+        ...(lightTeamScore !== undefined && { lightTeamScore })
       }
 
       if (match) {
@@ -494,15 +498,14 @@ export default function MatchModal({
                       marginBottom: '8px',
                       margin: '0 0 8px 0'
                     }}>
-                      {darkTeamRule.type === 'winnerOf' && 'Enter match reference (e.g., "3a" for Match 3 Bracket A, or "SF1")'}
-                      {darkTeamRule.type === 'loserOf' && 'Enter match reference (e.g., "3a" for Match 3 Bracket A, or "SF1")'}
-                      {darkTeamRule.type === 'place' && 'Enter placement (e.g., "Bracket A 1st", "Pool 1 2nd")'}
-                      {darkTeamRule.type === 'seed' && 'Enter seed number (e.g., "1", "2", "3")'}
+                      {darkTeamRule.type === 'winnerOf' && 'Select the source match whose winner will play here.'}
+                      {darkTeamRule.type === 'loserOf' && 'Select the source match whose loser will play here.'}
+                      {darkTeamRule.type === 'groupSeed' && 'Enter the group rank and group code (for example, 1F or 3O).'}
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px' }}>
                       <select
                         value={darkTeamRule.type}
-                        onChange={(e) => setDarkTeamRule({ ...darkTeamRule, type: e.target.value })}
+                        onChange={(e) => setDarkTeamRule({ type: e.target.value as ParticipantRuleType, value: '' })}
                         style={{
                           padding: '8px',
                           fontSize: '14px',
@@ -513,26 +516,16 @@ export default function MatchModal({
                       >
                         <option value="winnerOf">Winner of</option>
                         <option value="loserOf">Loser of</option>
-                        <option value="place">Place</option>
-                        <option value="seed">Seed</option>
+                        <option value="groupSeed">Group seed</option>
                       </select>
-                      <input
-                        type="text"
-                        value={darkTeamRule.value}
-                        onChange={(e) => setDarkTeamRule({ ...darkTeamRule, value: e.target.value })}
-                        placeholder={
-                          darkTeamRule.type === 'winnerOf' ? '3a or SF1' :
-                          darkTeamRule.type === 'loserOf' ? '3a or SF1' :
-                          darkTeamRule.type === 'place' ? 'Bracket A 1st' :
-                          '1'
-                        }
-                        style={{
-                          padding: '8px',
-                          fontSize: '14px',
-                          border: '1px solid #bfdbfe',
-                          borderRadius: '4px'
-                        }}
-                      />
+                      {darkTeamRule.type === 'groupSeed' ? (
+                        <input type="text" value={darkTeamRule.value} onChange={(e) => setDarkTeamRule({ ...darkTeamRule, value: e.target.value })} placeholder="1F" style={{ padding: '8px', fontSize: '14px', border: '1px solid #bfdbfe', borderRadius: '4px' }} />
+                      ) : (
+                        <select value={darkTeamRule.value} onChange={(e) => setDarkTeamRule({ ...darkTeamRule, value: e.target.value })} style={{ padding: '8px', fontSize: '14px', border: '1px solid #bfdbfe', borderRadius: '4px', backgroundColor: 'white' }}>
+                          <option value="">Select source game</option>
+                          {availableSourceMatches.map(source => <option key={source.id} value={source.id}>Game {source.matchNumber}{source.bracketRef ? ` — ${source.bracketRef}` : ''}</option>)}
+                        </select>
+                      )}
                     </div>
                   </div>
                 )}
@@ -594,15 +587,14 @@ export default function MatchModal({
                       marginBottom: '8px',
                       margin: '0 0 8px 0'
                     }}>
-                      {lightTeamRule.type === 'winnerOf' && 'Enter match reference (e.g., "4b" for Match 4 Bracket B, or "SF2")'}
-                      {lightTeamRule.type === 'loserOf' && 'Enter match reference (e.g., "4b" for Match 4 Bracket B, or "SF2")'}
-                      {lightTeamRule.type === 'place' && 'Enter placement (e.g., "Bracket B 1st", "Pool 2 2nd")'}
-                      {lightTeamRule.type === 'seed' && 'Enter seed number (e.g., "1", "2", "3")'}
+                      {lightTeamRule.type === 'winnerOf' && 'Select the source match whose winner will play here.'}
+                      {lightTeamRule.type === 'loserOf' && 'Select the source match whose loser will play here.'}
+                      {lightTeamRule.type === 'groupSeed' && 'Enter the group rank and group code (for example, 1F or 3O).'}
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px' }}>
                       <select
                         value={lightTeamRule.type}
-                        onChange={(e) => setLightTeamRule({ ...lightTeamRule, type: e.target.value })}
+                        onChange={(e) => setLightTeamRule({ type: e.target.value as ParticipantRuleType, value: '' })}
                         style={{
                           padding: '8px',
                           fontSize: '14px',
@@ -613,26 +605,16 @@ export default function MatchModal({
                       >
                         <option value="winnerOf">Winner of</option>
                         <option value="loserOf">Loser of</option>
-                        <option value="place">Place</option>
-                        <option value="seed">Seed</option>
+                        <option value="groupSeed">Group seed</option>
                       </select>
-                      <input
-                        type="text"
-                        value={lightTeamRule.value}
-                        onChange={(e) => setLightTeamRule({ ...lightTeamRule, value: e.target.value })}
-                        placeholder={
-                          lightTeamRule.type === 'winnerOf' ? '4b or SF2' :
-                          lightTeamRule.type === 'loserOf' ? '4b or SF2' :
-                          lightTeamRule.type === 'place' ? 'Bracket B 1st' :
-                          '1'
-                        }
-                        style={{
-                          padding: '8px',
-                          fontSize: '14px',
-                          border: '1px solid #bfdbfe',
-                          borderRadius: '4px'
-                        }}
-                      />
+                      {lightTeamRule.type === 'groupSeed' ? (
+                        <input type="text" value={lightTeamRule.value} onChange={(e) => setLightTeamRule({ ...lightTeamRule, value: e.target.value })} placeholder="1G" style={{ padding: '8px', fontSize: '14px', border: '1px solid #bfdbfe', borderRadius: '4px' }} />
+                      ) : (
+                        <select value={lightTeamRule.value} onChange={(e) => setLightTeamRule({ ...lightTeamRule, value: e.target.value })} style={{ padding: '8px', fontSize: '14px', border: '1px solid #bfdbfe', borderRadius: '4px', backgroundColor: 'white' }}>
+                          <option value="">Select source game</option>
+                          {availableSourceMatches.map(source => <option key={source.id} value={source.id}>Game {source.matchNumber}{source.bracketRef ? ` — ${source.bracketRef}` : ''}</option>)}
+                        </select>
+                      )}
                     </div>
                   </div>
                 )}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Match, Tournament, Pool, Division, Team, Club } from '../../types/index'
 import { createMatch } from '../../services/matches'
+import { fixedTeamSlot, parseGroupSeed, parseParticipantLabel, participantLabel } from '../../utils/participantSlots'
 
 interface BulkImportModalProps {
   matches: Match[]
@@ -312,7 +313,28 @@ export default function BulkImportModal({
     const tournament = tournaments.find(t => t.id === selectedTournamentId)
     const defaultDuration = tournament?.defaultMatchDuration || 55
 
-    for (const match of parsedMatches) {
+    const knownMatches = [...matches]
+    const knownMatchNumbers = new Set(knownMatches.map(match => match.matchNumber))
+    const orderedMatches = [...parsedMatches].sort((a, b) => a.matchNum - b.matchNum)
+
+    for (const match of orderedMatches) {
+      for (const label of [match.darkTeamLabel, match.lightTeamLabel].filter((value): value is string => Boolean(value))) {
+        const outcome = label.match(/^(?:winner|loser)\s*(?:of\s*)?(?:game\s*)?-?\s*(\d+)$/i)
+        if (!parseGroupSeed(label) && (!outcome || !knownMatchNumbers.has(Number(outcome[1])))) {
+          creationErrors.push(`Line ${match.lineNum}: Bracket label "${label}" must be a group seed or reference an earlier game.`)
+        }
+      }
+      knownMatchNumbers.add(match.matchNum)
+    }
+
+    if (creationErrors.length > 0) {
+      setImporting(false)
+      setErrors(creationErrors)
+      setShowPreview(false)
+      return
+    }
+
+    for (const match of orderedMatches) {
       const teamsResolved = match.isBracketGame
         ? (match.darkTeamLabel || match.lightTeamLabel)  // bracket game only needs labels
         : (match.darkTeam && match.lightTeam)            // pool game needs real teams
@@ -322,7 +344,19 @@ export default function BulkImportModal({
       }
 
       try {
-        await createMatch({
+        const darkParticipant = match.darkTeam
+          ? fixedTeamSlot(match.darkTeam.id)
+          : parseParticipantLabel(match.darkTeamLabel || '', knownMatches)
+        const lightParticipant = match.lightTeam
+          ? fixedTeamSlot(match.lightTeam.id)
+          : parseParticipantLabel(match.lightTeamLabel || '', knownMatches)
+
+        if (!darkParticipant || !lightParticipant) {
+          creationErrors.push(`Line ${match.lineNum}: A bracket label could not be resolved. Winner/loser sources must reference an earlier game in this import or an existing game.`)
+          continue
+        }
+
+        const matchData: Omit<Match, 'id' | 'createdAt' | 'updatedAt'> = {
           tournamentId: selectedTournamentId,
           poolId: match.pool.id,
           divisionId: match.division.id,
@@ -332,12 +366,21 @@ export default function BulkImportModal({
           duration: defaultDuration,
           darkTeamId: match.darkTeam?.id || '',
           lightTeamId: match.lightTeam?.id || '',
-          ...(match.darkTeamLabel ? { darkTeamLabel: match.darkTeamLabel } : {}),
-          ...(match.lightTeamLabel ? { lightTeamLabel: match.lightTeamLabel } : {}),
+          darkParticipant,
+          lightParticipant,
+          ...(participantLabel(darkParticipant, knownMatches) ? { darkTeamLabel: participantLabel(darkParticipant, knownMatches) } : {}),
+          ...(participantLabel(lightParticipant, knownMatches) ? { lightTeamLabel: participantLabel(lightParticipant, knownMatches) } : {}),
           status: 'scheduled',
           roundType: match.roundType || 'pool',
           isSemiFinal: match.roundType === 'semi',
           isFinal: match.roundType === 'final'
+        }
+        const id = await createMatch(matchData)
+        knownMatches.push({
+          id,
+          ...matchData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         })
       } catch (error) {
         creationErrors.push(`Line ${match.lineNum}: Failed to create match - ${error}`)
