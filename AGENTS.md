@@ -129,9 +129,9 @@ Do not weaken lint, TypeScript, tests, or Firebase rules merely to make a check 
 
 ## Current known technical debt
 
-- ESLint has unresolved errors and warnings.
+- ESLint errors are resolved; eight hook-dependency warnings remain documented in `docs/DEVELOPMENT_BASELINE.md`.
 - The production bundle is approximately 1.07 MB and needs measurement plus route-level splitting.
-- There is no tracked package lockfile, pinned Node version, CI workflow, or automated test suite yet.
+- The lockfile, Node pin, initial Vitest suite, and CI workflow are now present; test coverage remains minimal.
 - Several page/components are large and contain explicit `any` values.
 - Head-to-head standings tie-breaking is not integrated.
 - `feedsFrom` exists in the Match type and editor, but score finalization does not currently advance downstream teams.

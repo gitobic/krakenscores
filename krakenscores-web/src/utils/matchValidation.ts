@@ -147,7 +147,7 @@ export function validateMatch(
     duration: number
     darkTeamId: string
     lightTeamId: string
-    feedsFrom?: any // Allow feedsFrom for TBD teams
+    feedsFrom?: Match['feedsFrom']
   },
   matches: Match[],
   pools: Pool[],

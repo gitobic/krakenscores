@@ -289,8 +289,7 @@ export function calculateStandings(teams: Team[], matches: Match[]): Omit<Standi
  * @internal - Reserved for future tie-breaker enhancement (Phase 2C)
  * TODO: Integrate this into the tie-breaker logic in calculateStandings()
  */
-// @ts-expect-error - Reserved for future use in tie-breaker implementation
-function calculateHeadToHead(teamAId: string, teamBId: string, matches: Match[]): {
+export function calculateHeadToHead(teamAId: string, teamBId: string, matches: Match[]): {
   teamAPoints: number
   teamBPoints: number
   teamAGoalDiff: number

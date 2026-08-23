@@ -311,15 +311,11 @@ function PoolModal({ pool, tournaments, onClose, onSave }: PoolModalProps) {
     setSaving(true)
 
     try {
-      const poolData: any = {
+      const poolData: Omit<Pool, 'id' | 'createdAt' | 'updatedAt'> = {
         name: formData.name,
         location: formData.location,
-        defaultStartTime: formData.defaultStartTime
-      }
-
-      // Only include tournamentId if it's set
-      if (formData.tournamentId) {
-        poolData.tournamentId = formData.tournamentId
+        defaultStartTime: formData.defaultStartTime,
+        ...(formData.tournamentId && { tournamentId: formData.tournamentId })
       }
 
       if (pool) {

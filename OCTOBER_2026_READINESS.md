@@ -15,14 +15,14 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 
 - [x] Establish working Git branch and GitHub push access.
 - [x] Replace legacy `CLAUDE.md` with repository-level `AGENTS.md` guidance.
-- [ ] Track `package-lock.json` and verify clean installation with `npm ci`.
-- [ ] Pin Node.js 22 for contributors and CI.
-- [ ] Add explicit `typecheck`, `test`, and combined `check` scripts.
-- [ ] Reproduce and record the current ESLint errors and warnings.
-- [ ] Reproduce and record the production build and bundle sizes.
-- [ ] Fix ESLint errors; triage remaining warnings explicitly.
-- [ ] Select and configure the automated test framework.
-- [ ] Add a GitHub Actions workflow for install, lint, type-check, tests, and build.
+- [x] Track `package-lock.json` and verify clean installation with `npm ci`.
+- [x] Pin Node.js 22 for contributors and CI.
+- [x] Add explicit `typecheck`, `test`, and combined `check` scripts.
+- [x] Reproduce and record the current ESLint errors and warnings.
+- [x] Reproduce and record the production build and bundle sizes.
+- [x] Fix ESLint errors; triage remaining warnings explicitly.
+- [x] Select and configure the automated test framework.
+- [x] Add a GitHub Actions workflow for install, lint, type-check, tests, and build.
 - [ ] Establish a Firebase Emulator or isolated non-production test workflow.
 - [ ] Review Firestore rules against public, scorekeeper, and admin roles.
 - [ ] Remove or update stale dependency and phase documentation.

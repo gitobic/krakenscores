@@ -704,7 +704,7 @@ export default function MatchModal({
                   </label>
                   <select
                     value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as Match['status'] })}
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -739,7 +739,7 @@ export default function MatchModal({
                   value={formData.roundType}
                   onChange={(e) => setFormData({
                     ...formData,
-                    roundType: e.target.value as any,
+                    roundType: e.target.value as Match['roundType'],
                     isSemiFinal: e.target.value === 'semi',
                     isFinal: e.target.value === 'final'
                   })}

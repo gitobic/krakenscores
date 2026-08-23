@@ -10,13 +10,14 @@ import {
   orderBy,
   Timestamp
 } from 'firebase/firestore'
+import type { DocumentData } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { Division } from '../types'
 
 const COLLECTION_NAME = 'divisions'
 
 // Convert Firestore Timestamp to Date
-function convertTimestamps(data: any): Division {
+function convertTimestamps(data: DocumentData): Division {
   return {
     ...data,
     createdAt: data.createdAt?.toDate() || new Date(),
@@ -82,7 +83,7 @@ export async function updateDivision(
 ): Promise<void> {
   try {
     const docRef = doc(db, COLLECTION_NAME, id)
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: Timestamp.now()
     }
 

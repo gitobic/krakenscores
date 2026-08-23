@@ -11,13 +11,14 @@ import {
   orderBy,
   Timestamp
 } from 'firebase/firestore'
+import type { DocumentData } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { Club } from '../types'
 
 const COLLECTION_NAME = 'clubs'
 
 // Convert Firestore Timestamp to Date
-function convertTimestamps(data: any): Club {
+function convertTimestamps(data: DocumentData): Club {
   return {
     ...data,
     createdAt: data.createdAt?.toDate() || new Date(),
@@ -62,7 +63,7 @@ export async function createClub(
 ): Promise<string> {
   try {
     const now = Timestamp.now()
-    const clubData: any = {
+    const clubData: Record<string, unknown> = {
       name: data.name,
       abbreviation: data.abbreviation,
       createdAt: now,
@@ -88,7 +89,7 @@ export async function updateClub(
 ): Promise<void> {
   try {
     const docRef = doc(db, COLLECTION_NAME, id)
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: Timestamp.now()
     }
 

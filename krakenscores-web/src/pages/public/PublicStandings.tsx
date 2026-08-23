@@ -13,6 +13,11 @@ interface MatchWithDetails {
   lightTeamClub: Club
 }
 
+interface StandingWithClub {
+  teamStanding: Standing['table'][number]
+  clubName: string
+}
+
 export default function PublicStandings() {
   const [standings, setStandings] = useState<Standing[]>([])
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
@@ -68,8 +73,8 @@ export default function PublicStandings() {
   }
 
   // Group team standings by bracket
-  const groupByBracket = (teamStandings: any[], teamsMap: Map<string, Team>): Map<string, any[]> => {
-    const groups = new Map<string, any[]>()
+  const groupByBracket = (teamStandings: StandingWithClub[], teamsMap: Map<string, Team>): Map<string, StandingWithClub[]> => {
+    const groups = new Map<string, StandingWithClub[]>()
 
     teamStandings.forEach(ts => {
       const team = teamsMap.get(ts.teamStanding.teamId)
@@ -544,7 +549,7 @@ export default function PublicStandings() {
                             </tr>
                           </thead>
                           <tbody>
-                            {bracketTeams.map((item: any, idx: number) => {
+                            {bracketTeams.map((item, idx) => {
                               const { teamStanding, clubName } = item
                               const isEven = idx % 2 === 0
                               return (

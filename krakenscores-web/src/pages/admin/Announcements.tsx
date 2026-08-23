@@ -163,36 +163,29 @@ export default function Announcements() {
   const sortedAnnouncements = useMemo(() => {
     const sorted = [...announcements]
     sorted.sort((a, b) => {
-      let aValue: any
-      let bValue: any
+      let comparison = 0
 
       switch (sortField) {
         case 'createdAt':
-          aValue = a.createdAt.getTime()
-          bValue = b.createdAt.getTime()
+          comparison = a.createdAt.getTime() - b.createdAt.getTime()
           break
         case 'status':
-          aValue = a.isActive ? 'active' : 'inactive'
-          bValue = b.isActive ? 'active' : 'inactive'
+          comparison = Number(b.isActive) - Number(a.isActive)
           break
-        case 'priority':
+        case 'priority': {
           const priorityOrder = { high: 0, normal: 1, low: 2 }
-          aValue = priorityOrder[a.priority]
-          bValue = priorityOrder[b.priority]
+          comparison = priorityOrder[a.priority] - priorityOrder[b.priority]
           break
+        }
         case 'title':
-          aValue = a.title.toLowerCase()
-          bValue = b.title.toLowerCase()
+          comparison = a.title.localeCompare(b.title)
           break
         case 'message':
-          aValue = a.message.toLowerCase()
-          bValue = b.message.toLowerCase()
+          comparison = a.message.localeCompare(b.message)
           break
       }
 
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
-      return 0
+      return sortDirection === 'asc' ? comparison : -comparison
     })
     return sorted
   }, [announcements, sortField, sortDirection])

@@ -51,7 +51,7 @@ export async function getPoolsByTournament(tournamentId: string): Promise<Pool[]
 }
 
 export async function createPool(poolData: Omit<Pool, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-  const data: any = {
+  const data: Record<string, unknown> = {
     name: poolData.name,
     location: poolData.location,
     defaultStartTime: poolData.defaultStartTime,

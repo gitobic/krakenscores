@@ -67,7 +67,7 @@ KrakenScores replaces a manual Google Sheets-based system with a dedicated web a
 3. **Install dependencies and start dev server**
    ```bash
    cd krakenscores-web
-   npm install
+   npm ci
    npm run dev
    ```
    App runs at http://localhost:5173
@@ -87,6 +87,7 @@ cd .. && firebase deploy --only hosting:krakenscores
 
 - **[October 2026 Readiness](OCTOBER_2026_READINESS.md)** — Canonical phased checklist and decision log
 - **[AGENTS.md](AGENTS.md)** — Repository guidance, product priorities, domain model, and safety rules
+- **[Development baseline](docs/DEVELOPMENT_BASELINE.md)** — Verified install, quality, and bundle measurements
 - **[PRD.md](PRD.md)** — Product requirements and user stories
 - **[TECHNICAL_SPEC_FIREBASE.md](TECHNICAL_SPEC_FIREBASE.md)** — Technical architecture details
 

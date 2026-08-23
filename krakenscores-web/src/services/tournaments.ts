@@ -11,13 +11,14 @@ import {
   orderBy,
   Timestamp
 } from 'firebase/firestore'
+import type { DocumentData } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { Tournament } from '../types'
 
 const COLLECTION_NAME = 'tournaments'
 
 // Convert Firestore Timestamp to Date
-function convertTimestamps(data: any): Tournament {
+function convertTimestamps(data: DocumentData): Tournament {
   return {
     ...data,
     startDate: data.startDate?.toDate() || new Date(),
@@ -64,7 +65,7 @@ export async function createTournament(
 ): Promise<string> {
   try {
     const now = Timestamp.now()
-    const tournamentData: any = {
+    const tournamentData: Record<string, unknown> = {
       name: data.name,
       startDate: Timestamp.fromDate(new Date(data.startDate)),
       endDate: Timestamp.fromDate(new Date(data.endDate)),
@@ -93,7 +94,7 @@ export async function updateTournament(
 ): Promise<void> {
   try {
     const docRef = doc(db, COLLECTION_NAME, id)
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: Timestamp.now()
     }
 
