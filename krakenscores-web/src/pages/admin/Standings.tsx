@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Standing, Tournament, Division, Team, TeamStanding } from '../../types/index'
 import { getStandingsByTournament, recalculateStandingsForDivision, deleteStandingsForTournament, recalculateAllStandingsForTournament } from '../../services/standings'
 import { getAllTournaments } from '../../services/tournaments'
@@ -26,13 +26,6 @@ export default function Standings() {
     }
   }, [tournaments, selectedTournamentId])
 
-  useEffect(() => {
-    // Load standings when tournament changes
-    if (selectedTournamentId) {
-      loadStandings()
-    }
-  }, [selectedTournamentId])
-
   const loadData = async () => {
     try {
       const [tournamentsData, divisionsData, teamsData] = await Promise.all([
@@ -50,7 +43,7 @@ export default function Standings() {
     }
   }
 
-  const loadStandings = async () => {
+  const loadStandings = useCallback(async () => {
     if (!selectedTournamentId) return
 
     try {
@@ -59,7 +52,14 @@ export default function Standings() {
     } catch (error) {
       console.error('Error loading standings:', error)
     }
-  }
+  }, [selectedTournamentId])
+
+  useEffect(() => {
+    // Load standings when tournament changes
+    if (selectedTournamentId) {
+      void loadStandings()
+    }
+  }, [selectedTournamentId, loadStandings])
 
   // Group team standings by bracket
   const groupByBracket = (teamStandings: TeamStanding[]): Map<string, TeamStanding[]> => {

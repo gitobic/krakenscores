@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Pool } from '../../types/index'
@@ -43,12 +43,6 @@ export default function MasterSchedule() {
     }
   }, [tournaments, selectedTournamentId])
 
-  useEffect(() => {
-    if (selectedTournamentId) {
-      loadMatches()
-    }
-  }, [selectedTournamentId])
-
   const loadData = async () => {
     try {
       // Only load published tournaments for public view
@@ -73,7 +67,7 @@ export default function MasterSchedule() {
     }
   }
 
-  const loadMatches = async () => {
+  const loadMatches = useCallback(async () => {
     if (!selectedTournamentId) return
 
     try {
@@ -156,7 +150,13 @@ export default function MasterSchedule() {
     } catch (error) {
       console.error('Error loading matches:', error)
     }
-  }
+  }, [selectedTournamentId])
+
+  useEffect(() => {
+    if (selectedTournamentId) {
+      void loadMatches()
+    }
+  }, [selectedTournamentId, loadMatches])
 
   // Filter matches (sorting is handled by SortableMatchTable component)
   const filteredMatches = useMemo(() => {

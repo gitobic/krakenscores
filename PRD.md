@@ -6,6 +6,8 @@
 **Product Owner:** Team Orlando Water Polo Club
 **Target Launch:** Before next tournament season
 
+> **Historical requirements document:** This file preserves the original product plan; its feature checkboxes are not current implementation status. Use `OCTOBER_2026_READINESS.md` as the canonical October 2026 delivery checklist.
+
 ---
 
 ## Table of Contents

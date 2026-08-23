@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Pool } from '../../types/index'
@@ -42,12 +42,6 @@ export default function TeamSchedule() {
   }, [tournaments, selectedTournamentId])
 
   useEffect(() => {
-    if (selectedTournamentId) {
-      loadMatches()
-    }
-  }, [selectedTournamentId])
-
-  useEffect(() => {
     // When club changes, reset team selection
     setSelectedTeamId('')
   }, [selectedClubId])
@@ -74,7 +68,7 @@ export default function TeamSchedule() {
     }
   }
 
-  const loadMatches = async () => {
+  const loadMatches = useCallback(async () => {
     if (!selectedTournamentId) return
 
     try {
@@ -171,7 +165,13 @@ export default function TeamSchedule() {
     } catch (error) {
       console.error('Error loading matches:', error)
     }
-  }
+  }, [selectedTournamentId])
+
+  useEffect(() => {
+    if (selectedTournamentId) {
+      void loadMatches()
+    }
+  }, [selectedTournamentId, loadMatches])
 
   // Get clubs that have teams in the selected tournament
   const availableClubs = useMemo(() => {

@@ -6,6 +6,8 @@
 **Target Architecture:** Firebase + Vite + React + TypeScript
 **Purpose:** Complete rebuild specification for clean-sheet development
 
+> **Historical design document:** This specification records the original intended architecture and includes features and dependencies that were not necessarily implemented. For the current stack and verified commands, use `README.md` and `docs/DEVELOPMENT_BASELINE.md`. For delivery status, use `OCTOBER_2026_READINESS.md`.
+
 ---
 
 ## Table of Contents
@@ -53,7 +55,7 @@ KrakenScores is a water polo tournament management system built for Team Orlando
 |-----------|-----------|-----------|
 | **Backend** | Firebase (Firestore + Auth + Hosting + Functions) | Free tier, real-time updates, zero server maintenance |
 | **Build Tool** | Vite | Lightning-fast HMR, optimized builds, native ESM |
-| **Frontend Framework** | React 18 + TypeScript | Component-based, large ecosystem, volunteer-friendly |
+| **Frontend Framework** | React 19 + TypeScript | Component-based, large ecosystem, volunteer-friendly |
 | **UI Components** | shadcn/ui + Radix UI | Beautiful, accessible, customizable components |
 | **Styling** | Tailwind CSS | Utility-first, mobile-first, fast development |
 | **State Management** | React Context + Firebase hooks | Simple, built-in, real-time Firebase integration |
@@ -105,7 +107,7 @@ KrakenScores is a water polo tournament management system built for Team Orlando
 │  │ - Stats      │  │ - Archive    │  │ - Forms      │     │
 │  └──────────────┘  └──────────────┘  └──────────────┘     │
 │                                                               │
-│         Built with: Vite + React 18 + TypeScript             │
+│         Built with: Vite + React 19 + TypeScript             │
 │         Styled with: Tailwind CSS + shadcn/ui                │
 └─────────────────────────────────────────────────────────────┘
                               ↓

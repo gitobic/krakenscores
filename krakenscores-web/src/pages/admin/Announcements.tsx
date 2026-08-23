@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import type { Announcement, Tournament } from '../../types/index'
 import {
   getAnnouncementsByTournament,
@@ -41,12 +41,6 @@ export default function Announcements() {
     }
   }, [tournaments, selectedTournamentId])
 
-  useEffect(() => {
-    if (selectedTournamentId) {
-      loadAnnouncements()
-    }
-  }, [selectedTournamentId])
-
   const loadData = async () => {
     try {
       const tournamentsData = await getAllTournaments()
@@ -58,7 +52,7 @@ export default function Announcements() {
     }
   }
 
-  const loadAnnouncements = async () => {
+  const loadAnnouncements = useCallback(async () => {
     if (!selectedTournamentId) return
 
     try {
@@ -67,7 +61,13 @@ export default function Announcements() {
     } catch (error) {
       console.error('Error loading announcements:', error)
     }
-  }
+  }, [selectedTournamentId])
+
+  useEffect(() => {
+    if (selectedTournamentId) {
+      void loadAnnouncements()
+    }
+  }, [selectedTournamentId, loadAnnouncements])
 
   const handleCreate = () => {
     setEditingAnnouncement(null)

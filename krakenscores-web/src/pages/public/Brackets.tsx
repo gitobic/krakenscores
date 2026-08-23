@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club } from '../../types/index'
@@ -40,12 +40,6 @@ export default function Brackets() {
     }
   }, [tournaments, selectedTournamentId])
 
-  useEffect(() => {
-    if (selectedTournamentId) {
-      loadMatches()
-    }
-  }, [selectedTournamentId])
-
   const loadData = async () => {
     try {
       // Load published tournaments
@@ -78,7 +72,7 @@ export default function Brackets() {
     }
   }
 
-  const loadMatches = async () => {
+  const loadMatches = useCallback(async () => {
     if (!selectedTournamentId) return
 
     try {
@@ -153,7 +147,13 @@ export default function Brackets() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedTournamentId])
+
+  useEffect(() => {
+    if (selectedTournamentId) {
+      void loadMatches()
+    }
+  }, [selectedTournamentId, loadMatches])
 
   // Filter matches by selected division
   const filteredMatches = useMemo(() => {

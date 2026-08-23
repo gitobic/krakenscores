@@ -12,18 +12,7 @@ Verified on 2026-08-22 with Node 22.23.2 and npm 10.9.8.
 
 ## Lint
 
-The initial baseline was 25 errors and 8 warnings. The errors were resolved without disabling the rules globally. Eight `react-hooks/exhaustive-deps` warnings remain in data-loading effects:
-
-- Admin Announcements
-- Admin Scorekeeper
-- Admin Standings
-- Public Announcements
-- Public Brackets
-- Public Master Schedule
-- Public Standings
-- Public Team Schedule
-
-These warnings must be addressed through stable callbacks or effect-local loading logic; do not silence the rule globally.
+The initial baseline was 25 errors and 8 warnings. ESLint now passes with zero errors and zero warnings. The data-loading effects use stable callbacks with explicit dependencies; no lint rules were disabled globally.
 
 ## Production build
 

@@ -11,7 +11,7 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 
 ## Phase 0 — Reproducible development baseline
 
-**Status:** In progress
+**Status:** Complete
 
 - [x] Establish working Git branch and GitHub push access.
 - [x] Replace legacy `CLAUDE.md` with repository-level `AGENTS.md` guidance.
@@ -21,17 +21,18 @@ This is the canonical delivery checklist for preparing KrakenScores for the Octo
 - [x] Reproduce and record the current ESLint errors and warnings.
 - [x] Reproduce and record the production build and bundle sizes.
 - [x] Fix ESLint errors; triage remaining warnings explicitly.
+- [x] Resolve all React hook dependency warnings without weakening lint rules.
 - [x] Select and configure the automated test framework.
 - [x] Add a GitHub Actions workflow for install, lint, type-check, tests, and build.
 - [x] Establish a Firebase Emulator or isolated non-production test workflow.
 - [x] Review Firestore rules against public, scorekeeper, and admin roles.
-- [ ] Remove or update stale dependency and phase documentation.
+- [x] Remove or update stale dependency and phase documentation.
 
 ### Phase 0 exit criteria
 
-- [ ] A fresh checkout succeeds with the documented Node version and `npm ci`.
-- [ ] Lint, type-check, tests, and build pass locally and in CI.
-- [ ] Development and test workflows do not require production writes.
+- [x] A fresh checkout succeeds with the documented Node version and `npm ci`.
+- [x] Lint, type-check, tests, and build pass locally and in CI.
+- [x] Development and test workflows do not require production writes.
 
 ## Phase 1 — Tournament engine and data integrity
 

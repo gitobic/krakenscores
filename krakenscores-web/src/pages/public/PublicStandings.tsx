@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Standing } from '../../types/index'
@@ -43,12 +43,6 @@ export default function PublicStandings() {
       }
     }
   }, [tournaments, selectedTournamentId])
-
-  useEffect(() => {
-    if (selectedTournamentId) {
-      loadTournamentData()
-    }
-  }, [selectedTournamentId])
 
   const loadData = async () => {
     try {
@@ -98,7 +92,7 @@ export default function PublicStandings() {
     return sorted
   }
 
-  const loadTournamentData = async () => {
+  const loadTournamentData = useCallback(async () => {
     if (!selectedTournamentId) return
 
     try {
@@ -199,7 +193,13 @@ export default function PublicStandings() {
     } catch (error) {
       console.error('Error loading tournament data:', error)
     }
-  }
+  }, [selectedTournamentId])
+
+  useEffect(() => {
+    if (selectedTournamentId) {
+      void loadTournamentData()
+    }
+  }, [selectedTournamentId, loadTournamentData])
 
   // Enrich standings with club names and filter
   const filteredStandings = useMemo(() => {

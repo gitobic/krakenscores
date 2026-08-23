@@ -97,7 +97,7 @@ npm run lint
 npm run build
 ```
 
-The repository does not yet have a complete automated test suite. Add and document the test command as part of the reproducibility work, then run relevant tests for every behavior change.
+The repository has a small Vitest unit suite and emulator-backed Firestore rules suite. Run `npm run check` for application quality gates and `npm run test:rules` where Java and the Firebase CLI are available. Add relevant tests for every behavior change.
 
 Do not weaken lint, TypeScript, tests, or Firebase rules merely to make a check pass. Fix or explicitly document the underlying issue.
 
@@ -129,13 +129,13 @@ Do not weaken lint, TypeScript, tests, or Firebase rules merely to make a check 
 
 ## Current known technical debt
 
-- ESLint errors are resolved; eight hook-dependency warnings remain documented in `docs/DEVELOPMENT_BASELINE.md`.
+- ESLint passes with zero errors and zero warnings.
 - The production bundle is approximately 1.07 MB and needs measurement plus route-level splitting.
 - The lockfile, Node pin, initial Vitest suite, and CI workflow are now present; test coverage remains minimal.
-- Several page/components are large and contain explicit `any` values.
+- Several page components remain large and combine data access, transformation, and rendering concerns.
 - Head-to-head standings tie-breaking is not integrated.
 - `feedsFrom` exists in the Match type and editor, but score finalization does not currently advance downstream teams.
 - The bracket page groups playoff matches but does not render a connected bracket.
-- Documentation contains stale React 18 and phase-status references.
+- `PRD.md` and `TECHNICAL_SPEC_FIREBASE.md` are historical design documents; current status is tracked in `OCTOBER_2026_READINESS.md` and `docs/DEVELOPMENT_BASELINE.md`.
 
 Reconfirm these items after the baseline is made reproducible; do not assume historical counts remain exact.

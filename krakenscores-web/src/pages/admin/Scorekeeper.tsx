@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { collection, query, where, getDocs, Timestamp, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Pool } from '../../types/index'
@@ -43,12 +43,6 @@ export default function Scorekeeper() {
     }
   }, [tournaments, selectedTournamentId])
 
-  useEffect(() => {
-    if (selectedTournamentId) {
-      loadMatches()
-    }
-  }, [selectedTournamentId])
-
   const loadData = async () => {
     try {
       const tournamentsSnapshot = await getDocs(collection(db, 'tournaments'))
@@ -68,7 +62,7 @@ export default function Scorekeeper() {
     }
   }
 
-  const loadMatches = async () => {
+  const loadMatches = useCallback(async () => {
     if (!selectedTournamentId) return
 
     setLoadingMatches(true)
@@ -171,7 +165,13 @@ export default function Scorekeeper() {
     } finally {
       setLoadingMatches(false)
     }
-  }
+  }, [selectedTournamentId, tournaments])
+
+  useEffect(() => {
+    if (selectedTournamentId) {
+      void loadMatches()
+    }
+  }, [selectedTournamentId, loadMatches])
 
   // Get day of week from date string (YYYY-MM-DD)
   const getDayOfWeek = (dateString: string): string => {

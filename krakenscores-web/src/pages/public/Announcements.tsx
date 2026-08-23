@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
 import type { Announcement, Tournament } from '../../types/index'
@@ -65,12 +65,6 @@ export default function Announcements() {
     }
   }, [tournaments, selectedTournamentId])
 
-  useEffect(() => {
-    if (selectedTournamentId) {
-      loadAnnouncements()
-    }
-  }, [selectedTournamentId])
-
   const loadTournaments = async () => {
     try {
       // Only load published tournaments for public view
@@ -93,7 +87,7 @@ export default function Announcements() {
     }
   }
 
-  const loadAnnouncements = async () => {
+  const loadAnnouncements = useCallback(async () => {
     if (!selectedTournamentId) return
 
     try {
@@ -123,7 +117,13 @@ export default function Announcements() {
     } catch (error) {
       console.error('Error loading announcements:', error)
     }
-  }
+  }, [selectedTournamentId])
+
+  useEffect(() => {
+    if (selectedTournamentId) {
+      void loadAnnouncements()
+    }
+  }, [selectedTournamentId, loadAnnouncements])
 
   const selectedTournament = useMemo(() => {
     return tournaments.find(t => t.id === selectedTournamentId)
