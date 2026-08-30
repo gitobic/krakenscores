@@ -1,4 +1,4 @@
-import type { Club, Match, Team } from '../types'
+import type { Club, Division, Match, Team } from '../types'
 
 export interface SpectatorMatch {
   match: Match
@@ -26,12 +26,14 @@ export function matchIncludesTeams(match: Match, teamIds: Set<string>): boolean 
   return teamIds.size === 0 || teamIds.has(match.darkTeamId) || teamIds.has(match.lightTeamId)
 }
 
-export function searchTeams(teams: Team[], clubs: Club[], query: string): Team[] {
+export function searchTeams(teams: Team[], clubs: Club[], query: string, divisions: Division[] = []): Team[] {
   const value = query.trim().toLocaleLowerCase()
   if (!value) return []
   const clubById = new Map(clubs.map(club => [club.id, club]))
+  const divisionById = new Map(divisions.map(division => [division.id, division]))
   return teams.filter(team => {
     const club = clubById.get(team.clubId)
-    return [team.name, club?.name, club?.abbreviation].some(candidate => candidate?.toLocaleLowerCase().includes(value))
+    const division = divisionById.get(team.divisionId)
+    return [team.name, club?.name, club?.abbreviation, division?.name].some(candidate => candidate?.toLocaleLowerCase().includes(value))
   }).sort((a, b) => a.name.localeCompare(b.name))
 }

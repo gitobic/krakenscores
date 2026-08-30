@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Club, Match, Team } from '../types'
+import type { Club, Division, Match, Team } from '../types'
 import { buildSpectatorQueue, matchIncludesTeams, searchTeams } from './spectatorHome'
 
 const match = (id: string, time: string, status: Match['status'], overrides: Partial<Match> = {}) => ({
@@ -26,10 +26,12 @@ describe('spectator home', () => {
     expect(matchIncludesTeams(match('1', '08:00', 'scheduled'), new Set(['c']))).toBe(false)
   })
 
-  it('finds teams by team, club, or abbreviation', () => {
+  it('finds teams by team, club, abbreviation, or division', () => {
     const clubs = [{ id: 'c1', name: 'Team Orlando Water Polo Club', abbreviation: 'TOWPC' }] as Club[]
-    const teams = [{ id: 'a', name: 'Team Orlando Blue', clubId: 'c1' }, { id: 'b', name: 'Wolverines Yellow', clubId: 'c2' }] as Team[]
-    expect(searchTeams(teams, clubs, 'blue').map(team => team.id)).toEqual(['a'])
-    expect(searchTeams(teams, clubs, 'towpc').map(team => team.id)).toEqual(['a'])
+    const divisions = [{ id: 'd1', name: '18u Boys' }] as Division[]
+    const teams = [{ id: 'a', name: 'Team Orlando Blue', clubId: 'c1', divisionId: 'd1' }, { id: 'b', name: 'Wolverines Yellow', clubId: 'c2', divisionId: 'd2' }] as Team[]
+    expect(searchTeams(teams, clubs, 'blue', divisions).map(team => team.id)).toEqual(['a'])
+    expect(searchTeams(teams, clubs, 'towpc', divisions).map(team => team.id)).toEqual(['a'])
+    expect(searchTeams(teams, clubs, '18u', divisions).map(team => team.id)).toEqual(['a'])
   })
 })
