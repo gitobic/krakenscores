@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Club, Team } from '../types/index'
-import { resolveTeamIdentifier, teamCompactName, teamPublicName } from './teamIdentity'
+import type { Club, Division, Team } from '../types/index'
+import { resolveTeamIdentifier, teamCompactName, teamOptionLabel, teamPublicName } from './teamIdentity'
 
 const teamOrlando = { id: 'club-to', name: 'Team Orlando', abbreviation: 'TO' } as Club
 const teams = [
@@ -16,6 +16,11 @@ describe('team identity', () => {
     expect(teamCompactName(teams[2], teamOrlando, teams)).toBe('TO')
     expect(teamCompactName(teams[2], teamOrlando, [teams[2], teams[2]])).toBe('TO')
     expect(teamPublicName(teams[0], teamOrlando)).toBe('Team Orlando Black')
+  })
+
+  it('includes the division in team selector labels', () => {
+    expect(teamOptionLabel(teams[2], { name: '16u Boys' } as Division)).toBe('Team Orlando — 16u Boys')
+    expect(teamOptionLabel(teams[2])).toBe('Team Orlando')
   })
 
   it('resolves an exact team name before considering its club', () => {

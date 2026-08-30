@@ -1,4 +1,4 @@
-import type { Club, Team } from '../types/index'
+import type { Club, Division, Team } from '../types/index'
 
 export type TeamLookupResult =
   | { status: 'found'; team: Team }
@@ -9,6 +9,11 @@ const normalized = (value: string) => value.trim().toLocaleLowerCase()
 
 export function teamPublicName(team: Team | undefined, club?: Club): string {
   return team?.name.trim() || club?.name.trim() || 'TBD'
+}
+
+export function teamOptionLabel(team: Team, division?: Division): string {
+  const divisionName = division?.name.trim()
+  return divisionName ? `${teamPublicName(team)} — ${divisionName}` : teamPublicName(team)
 }
 
 export function teamCompactName(team: Team | undefined, club: Club | undefined, teams: Team[]): string {

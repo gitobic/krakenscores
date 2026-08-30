@@ -7,6 +7,7 @@ import PublicNav from '../../components/layout/PublicNav'
 import PublicPageHero from '../../components/layout/PublicPageHero'
 import { typography } from '../../styles/theme'
 import SortableTeamScheduleTable from '../../components/SortableTeamScheduleTable'
+import { teamOptionLabel } from '../../utils/teamIdentity'
 
 interface MatchWithDetails {
   match: Match
@@ -180,11 +181,18 @@ export default function TeamSchedule() {
     return clubs.filter(c => clubIds.has(c.id)).sort((a, b) => a.name.localeCompare(b.name))
   }, [clubs, teams])
 
+  const divisionById = useMemo(() => new Map(
+    matches.map(match => [match.division.id, match.division])
+  ), [matches])
+
   // Get teams for the selected club
   const availableTeams = useMemo(() => {
     if (!selectedClubId) return []
-    return teams.filter(t => t.clubId === selectedClubId).sort((a, b) => a.name.localeCompare(b.name))
-  }, [teams, selectedClubId])
+    return teams.filter(t => t.clubId === selectedClubId).sort((a, b) => {
+      const divisionCompare = (divisionById.get(a.divisionId)?.name || '').localeCompare(divisionById.get(b.divisionId)?.name || '')
+      return divisionCompare || a.name.localeCompare(b.name)
+    })
+  }, [teams, selectedClubId, divisionById])
 
   // Filter matches by club or team
   const filteredMatches = useMemo(() => {
@@ -370,7 +378,7 @@ export default function TeamSchedule() {
               <option value="">All {selectedClub?.name} Teams</option>
               {availableTeams.map(t => (
                 <option key={t.id} value={t.id}>
-                  {t.name}
+                  {teamOptionLabel(t, divisionById.get(t.divisionId))}
                 </option>
               ))}
             </select>
