@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore
 import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Standing } from '../../types/index'
 import PublicNav from '../../components/layout/PublicNav'
+import PublicPageHero from '../../components/layout/PublicPageHero'
 import { teamCompactName } from '../../utils/teamIdentity'
 
 interface MatchWithDetails {
@@ -295,51 +296,23 @@ export default function PublicStandings() {
   return (
     <div style={{
       minHeight: '100vh',
+      overflowX: 'hidden',
       backgroundColor: 'var(--ks-page-bg)',
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
       {/* Public Navigation Menu */}
       <PublicNav />
 
-      {/* Header */}
-      <div style={{
-        backgroundColor: '#2563eb',
-        color: '#ffffff',
-        padding: '20px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '16px'
-      }}>
-        {/* Tournament Logo */}
-        {selectedTournament?.logoUrl && (
-          <img
-            src={selectedTournament.logoUrl}
-            alt={selectedTournament.name}
-            style={{
-              maxHeight: '60px',
-              maxWidth: '60px',
-              objectFit: 'contain'
-            }}
-          />
-        )}
-
-        {/* Title and Tournament Name */}
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 8px 0' }}>
-            Standings
-          </h1>
-          {selectedTournament && (
-            <p style={{ fontSize: '14px', margin: 0, opacity: 0.9 }}>
-              {selectedTournament.name}
-            </p>
-          )}
-        </div>
-      </div>
+      <PublicPageHero
+        eyebrow="Division race"
+        title="Standings"
+        subtitle="Pool records, points, and recent results as the tournament unfolds."
+        tournamentName={selectedTournament?.name}
+        logoUrl={selectedTournament?.logoUrl}
+      />
 
       {/* Filters */}
-      <div style={{
+      <div className="relative z-10 mx-auto -mt-4 max-w-7xl rounded-2xl shadow-xl sm:-mt-6" style={{
         padding: '16px',
         backgroundColor: 'var(--ks-surface)',
         borderBottom: '1px solid var(--ks-border-subtle)'
@@ -440,7 +413,7 @@ export default function PublicStandings() {
       </div>
 
       {/* Content */}
-      <div style={{ padding: '16px' }}>
+      <div className="mx-auto max-w-7xl" style={{ padding: '32px 16px' }}>
         {/* Standings Section */}
         <div style={{ marginBottom: '32px' }}>
           <h2 style={{
@@ -470,7 +443,7 @@ export default function PublicStandings() {
               const bracketGroups = groupByBracket(standing.tableWithClubs, teamsMap)
 
               return (
-                <div key={standing.divisionId} style={{ marginBottom: '24px' }}>
+                <div key={standing.divisionId} className="overflow-hidden rounded-xl shadow-md" style={{ marginBottom: '24px' }}>
                   {/* Division Header */}
                   <div style={{
                     backgroundColor: getDivisionColor(standing.divisionId),

@@ -4,7 +4,8 @@ import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Pool } from '../../types/index'
 import { parseISO, format } from 'date-fns'
 import PublicNav from '../../components/layout/PublicNav'
-import { colors, typography, layoutStyles } from '../../styles/theme'
+import PublicPageHero from '../../components/layout/PublicPageHero'
+import { typography } from '../../styles/theme'
 import SortableTeamScheduleTable from '../../components/SortableTeamScheduleTable'
 
 interface MatchWithDetails {
@@ -253,42 +254,23 @@ export default function TeamSchedule() {
   return (
     <div style={{
       minHeight: '100vh',
+      overflowX: 'hidden',
       backgroundColor: 'var(--ks-page-bg)',
       fontFamily: typography.fontFamily
     }}>
       {/* Public Navigation Menu */}
       <PublicNav />
 
-      {/* Header */}
-      <div style={layoutStyles.publicHeader}>
-        {/* Tournament Logo */}
-        {selectedTournament?.logoUrl && (
-          <img
-            src={selectedTournament.logoUrl}
-            alt={selectedTournament.name}
-            style={{
-              maxHeight: '60px',
-              maxWidth: '60px',
-              objectFit: 'contain'
-            }}
-          />
-        )}
-
-        {/* Title and Tournament Name */}
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 8px 0' }}>
-            Team Schedule
-          </h1>
-          {selectedTournament && (
-            <p style={{ fontSize: '14px', margin: 0, opacity: 0.9 }}>
-              {selectedTournament.name}
-            </p>
-          )}
-        </div>
-      </div>
+      <PublicPageHero
+        eyebrow="Follow a club"
+        title="Team Schedule"
+        subtitle="Choose a club to see every team and game across the weekend."
+        tournamentName={selectedTournament?.name}
+        logoUrl={selectedTournament?.logoUrl}
+      />
 
       {/* Filters */}
-      <div style={{
+      <div className="relative z-10 mx-auto -mt-4 max-w-7xl rounded-2xl shadow-xl sm:-mt-6" style={{
         padding: '16px',
         backgroundColor: 'var(--ks-surface)',
         borderBottom: `1px solid ${'var(--ks-border-subtle)'}`
@@ -404,10 +386,10 @@ export default function TeamSchedule() {
             borderRadius: '6px',
             border: '1px solid #bfdbfe'
           }}>
-            <div style={{ fontSize: typography.fontSize.smallText, color: colors.primary.blue, fontWeight: typography.fontWeight.semiBold }}>
+            <div style={{ fontSize: typography.fontSize.smallText, color: '#38bdf8', fontWeight: typography.fontWeight.semiBold }}>
               Showing schedule for:
             </div>
-            <div style={{ fontSize: '15px', color: colors.primary.darkBlue, fontWeight: typography.fontWeight.bold, marginTop: '4px' }}>
+            <div style={{ fontSize: '15px', color: 'var(--ks-text)', fontWeight: typography.fontWeight.bold, marginTop: '4px' }}>
               {selectedTeam ? selectedTeam.name : selectedClub?.name}
             </div>
           </div>
@@ -415,7 +397,7 @@ export default function TeamSchedule() {
       </div>
 
       {/* Content */}
-      <div style={{ padding: '16px' }}>
+      <div className="mx-auto max-w-7xl" style={{ padding: '32px 16px' }}>
         {!selectedClubId ? (
           <div style={{
             backgroundColor: 'var(--ks-surface)',
@@ -442,7 +424,7 @@ export default function TeamSchedule() {
           </div>
         ) : (
           Object.keys(groupedMatches).sort().map(date => (
-              <div key={date} style={{ marginBottom: '24px' }}>
+              <div key={date} className="overflow-hidden rounded-xl shadow-md" style={{ marginBottom: '24px' }}>
                 {/* Date Header */}
                 <div style={{
                   backgroundColor: '#1f2937',

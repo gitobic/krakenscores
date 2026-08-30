@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase'
 import type { Announcement, Tournament } from '../../types/index'
 import { format } from 'date-fns'
 import PublicNav from '../../components/layout/PublicNav'
+import PublicPageHero from '../../components/layout/PublicPageHero'
 
 // Helper function to convert URLs in text to clickable links
 const linkifyText = (text: string) => {
@@ -200,43 +201,22 @@ export default function Announcements() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--ks-page-bg)' }}>
+    <div style={{ minHeight: '100vh', overflowX: 'hidden', backgroundColor: 'var(--ks-page-bg)' }}>
       <PublicNav />
+
+      <PublicPageHero
+        eyebrow="Tournament updates"
+        title="Announcements"
+        subtitle="Schedule changes, pool notices, and important messages from tournament staff."
+        tournamentName={selectedTournament?.name}
+        logoUrl={selectedTournament?.logoUrl}
+      />
 
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
-        padding: '24px 16px'
+        padding: '32px 16px'
       }}>
-        {/* Header with tournament logo and name */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-          marginBottom: '24px'
-        }}>
-          {selectedTournament?.logoUrl && (
-            <img
-              src={selectedTournament.logoUrl}
-              alt={selectedTournament.name}
-              style={{
-                height: '48px',
-                width: 'auto',
-                objectFit: 'contain'
-              }}
-            />
-          )}
-          <h1 style={{
-            fontSize: '30px',
-            fontWeight: 'bold',
-            color: 'var(--ks-text)',
-            margin: 0,
-            fontFamily: 'system-ui, -apple-system, sans-serif'
-          }}>
-            Announcements
-          </h1>
-        </div>
-
         {/* Tournament selector (if multiple tournaments) */}
         {tournaments.length > 1 && (
           <div style={{ marginBottom: '24px' }}>
@@ -303,10 +283,11 @@ export default function Announcements() {
               return (
                 <div
                   key={announcement.id}
+                  className="shadow-md transition-transform hover:-translate-y-0.5 hover:shadow-lg"
                   style={{
                     ...styles.container,
                     padding: '16px',
-                    borderRadius: '8px',
+                    borderRadius: '14px',
                     backgroundColor: styles.container.backgroundColor,
                   }}
                 >
