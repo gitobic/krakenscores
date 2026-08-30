@@ -287,7 +287,7 @@ export default function PublicStandings() {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
         <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>No Tournaments Available</h2>
-        <p style={{ color: '#6b7280' }}>There are no published tournaments at this time.</p>
+        <p style={{ color: 'var(--ks-text-muted)' }}>There are no published tournaments at this time.</p>
       </div>
     )
   }
@@ -295,7 +295,7 @@ export default function PublicStandings() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: '#f9fafb',
+      backgroundColor: 'var(--ks-page-bg)',
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
       {/* Public Navigation Menu */}
@@ -304,7 +304,7 @@ export default function PublicStandings() {
       {/* Header */}
       <div style={{
         backgroundColor: '#2563eb',
-        color: 'white',
+        color: '#ffffff',
         padding: '20px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         display: 'flex',
@@ -341,8 +341,8 @@ export default function PublicStandings() {
       {/* Filters */}
       <div style={{
         padding: '16px',
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e5e7eb'
+        backgroundColor: 'var(--ks-surface)',
+        borderBottom: '1px solid var(--ks-border-subtle)'
       }}>
         {/* Tournament Selector (if multiple tournaments) */}
         {tournaments.length > 1 && (
@@ -351,7 +351,7 @@ export default function PublicStandings() {
               display: 'block',
               fontSize: '14px',
               fontWeight: '500',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               marginBottom: '8px'
             }}>
               Tournament
@@ -365,7 +365,7 @@ export default function PublicStandings() {
                 fontSize: '16px',
                 border: '1px solid #d1d5db',
                 borderRadius: '6px',
-                backgroundColor: 'white',
+                backgroundColor: 'var(--ks-surface)',
                 cursor: 'pointer'
               }}
             >
@@ -384,7 +384,7 @@ export default function PublicStandings() {
             display: 'block',
             fontSize: '14px',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--ks-text-secondary)',
             marginBottom: '8px'
           }}>
             Division
@@ -398,7 +398,7 @@ export default function PublicStandings() {
               fontSize: '16px',
               border: '1px solid #d1d5db',
               borderRadius: '6px',
-              backgroundColor: 'white',
+              backgroundColor: 'var(--ks-surface)',
               cursor: 'pointer'
             }}
           >
@@ -417,7 +417,7 @@ export default function PublicStandings() {
             display: 'block',
             fontSize: '14px',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--ks-text-secondary)',
             marginBottom: '8px'
           }}>
             Search Team or Club
@@ -433,7 +433,7 @@ export default function PublicStandings() {
               fontSize: '16px',
               border: '1px solid #d1d5db',
               borderRadius: '6px',
-              backgroundColor: 'white'
+              backgroundColor: 'var(--ks-surface)'
             }}
           />
         </div>
@@ -446,7 +446,7 @@ export default function PublicStandings() {
           <h2 style={{
             fontSize: '20px',
             fontWeight: '600',
-            color: '#111827',
+            color: 'var(--ks-text)',
             marginBottom: '16px'
           }}>
             Standings
@@ -454,13 +454,13 @@ export default function PublicStandings() {
 
           {filteredStandings.length === 0 ? (
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--ks-surface)',
               padding: '40px 20px',
               textAlign: 'center',
               borderRadius: '8px',
-              border: '1px solid #e5e7eb'
+              border: '1px solid var(--ks-border-subtle)'
             }}>
-              <p style={{ color: '#6b7280', fontSize: '16px' }}>
+              <p style={{ color: 'var(--ks-text-muted)', fontSize: '16px' }}>
                 No standings available yet.
               </p>
             </div>
@@ -474,7 +474,7 @@ export default function PublicStandings() {
                   {/* Division Header */}
                   <div style={{
                     backgroundColor: getDivisionColor(standing.divisionId),
-                    color: '#000000',
+                    color: 'var(--ks-text)',
                     padding: '12px 16px',
                     fontSize: '18px',
                     fontWeight: '600',
@@ -485,10 +485,10 @@ export default function PublicStandings() {
 
                   {/* Standings Tables Grouped by Bracket */}
                   <div style={{
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--ks-surface)',
                     borderRadius: '0 0 6px 6px',
                     overflow: 'hidden',
-                    border: '1px solid #e5e7eb',
+                    border: '1px solid var(--ks-border-subtle)',
                     borderTop: 'none'
                   }}>
                     {Array.from(bracketGroups.entries()).map(([bracket, bracketTeams], bracketIndex) => (
@@ -496,12 +496,12 @@ export default function PublicStandings() {
                         {/* Bracket Header */}
                         {bracketGroups.size > 1 && (
                           <div style={{
-                            backgroundColor: '#f3f4f6',
+                            backgroundColor: 'var(--ks-surface-subtle)',
                             padding: '8px 12px',
                             fontSize: '13px',
                             fontWeight: '600',
                             color: '#2563eb',
-                            borderTop: bracketIndex > 0 ? '2px solid #e5e7eb' : 'none'
+                            borderTop: bracketIndex > 0 ? '2px solid var(--ks-border-subtle)' : 'none'
                           }}>
                             {bracket === 'No Bracket' ? 'Pool Play' : `Bracket ${bracket}`}
                           </div>
@@ -521,32 +521,32 @@ export default function PublicStandings() {
                             <col style={{ width: '48px' }} />
                           </colgroup>
                           <thead>
-                            <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                            <tr style={{ backgroundColor: 'var(--ks-page-bg)', borderBottom: '1px solid var(--ks-border-subtle)' }}>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                 Rank
                               </th>
-                              <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'left', color: '#374151' }}>
+                              <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'left', color: 'var(--ks-text-secondary)' }}>
                                 Team
                               </th>
-                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                 GP
                               </th>
-                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                 W
                               </th>
-                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                 L
                               </th>
-                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                 GF
                               </th>
-                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                 GA
                               </th>
-                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                 GD
                               </th>
-                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+                              <th style={{ padding: '6px 2px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                 Pts
                               </th>
                             </tr>
@@ -559,17 +559,17 @@ export default function PublicStandings() {
                                 <tr
                                   key={teamStanding.teamId}
                                   style={{
-                                    backgroundColor: isEven ? '#ffffff' : '#f9fafb',
-                                    borderBottom: '1px solid #e5e7eb'
+                                    backgroundColor: isEven ? 'var(--ks-surface)' : 'var(--ks-page-bg)',
+                                    borderBottom: '1px solid var(--ks-border-subtle)'
                                   }}
                                 >
-                                  <td style={{ padding: '6px 2px', fontSize: '13px', textAlign: 'center', fontWeight: '600', color: '#111827' }}>
+                                  <td style={{ padding: '6px 2px', fontSize: '13px', textAlign: 'center', fontWeight: '600', color: 'var(--ks-text)' }}>
                                     {teamStanding.rank}
                                   </td>
-                                  <td style={{ padding: '6px 4px', fontSize: '13px', textAlign: 'left', fontWeight: '500', color: '#111827' }}>
+                                  <td style={{ padding: '6px 4px', fontSize: '13px', textAlign: 'left', fontWeight: '500', color: 'var(--ks-text)' }}>
                                     {clubName}
                                   </td>
-                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                     {teamStanding.games}
                                   </td>
                                   <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>
@@ -578,13 +578,13 @@ export default function PublicStandings() {
                                   <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#dc2626', fontWeight: '600' }}>
                                     {teamStanding.losses}
                                   </td>
-                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                     {Math.round(teamStanding.goalsFor * 100) / 100}
                                   </td>
-                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                                     {Math.round(teamStanding.goalsAgainst * 100) / 100}
                                   </td>
-                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151', fontWeight: '600' }}>
+                                  <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: 'var(--ks-text-secondary)', fontWeight: '600' }}>
                                     {(() => {
                                       const rounded = Math.round(teamStanding.goalDiff * 100) / 100
                                       return rounded > 0 ? `+${rounded}` : rounded
@@ -612,7 +612,7 @@ export default function PublicStandings() {
           <h2 style={{
             fontSize: '20px',
             fontWeight: '600',
-            color: '#111827',
+            color: 'var(--ks-text)',
             marginBottom: '16px'
           }}>
             Recent Results
@@ -620,22 +620,22 @@ export default function PublicStandings() {
 
           {filteredMatches.length === 0 ? (
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--ks-surface)',
               padding: '40px 20px',
               textAlign: 'center',
               borderRadius: '8px',
-              border: '1px solid #e5e7eb'
+              border: '1px solid var(--ks-border-subtle)'
             }}>
-              <p style={{ color: '#6b7280', fontSize: '16px' }}>
+              <p style={{ color: 'var(--ks-text-muted)', fontSize: '16px' }}>
                 No final results yet.
               </p>
             </div>
           ) : (
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--ks-surface)',
               borderRadius: '8px',
               overflow: 'hidden',
-              border: '1px solid #e5e7eb'
+              border: '1px solid var(--ks-border-subtle)'
             }}>
               {filteredMatches.map((item, idx) => {
                 const { match, division, darkTeam, lightTeam, darkTeamClub, lightTeamClub } = item
@@ -647,7 +647,7 @@ export default function PublicStandings() {
                     key={match.id}
                     style={{
                       padding: '12px 16px',
-                      borderBottom: idx < filteredMatches.length - 1 ? '1px solid #e5e7eb' : 'none',
+                      borderBottom: idx < filteredMatches.length - 1 ? '1px solid var(--ks-border-subtle)' : 'none',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '12px'
@@ -656,7 +656,7 @@ export default function PublicStandings() {
                     {/* Division Badge */}
                     <div style={{
                       backgroundColor: division.colorHex,
-                      color: '#000000',
+                      color: 'var(--ks-text)',
                       padding: '4px 8px',
                       borderRadius: '4px',
                       fontSize: '10px',
@@ -671,18 +671,18 @@ export default function PublicStandings() {
                     {/* Match Info */}
                     <div style={{ flex: 1, fontSize: '13px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                        <span style={{ fontWeight: darkWon ? '700' : '500', color: darkWon ? '#111827' : '#6b7280' }}>
+                        <span style={{ fontWeight: darkWon ? '700' : '500', color: darkWon ? 'var(--ks-text)' : 'var(--ks-text-muted)' }}>
                           {teamCompactName(darkTeam, darkTeamClub, teams)}
                         </span>
-                        <span style={{ fontWeight: '700', color: darkWon ? '#16a34a' : '#374151' }}>
+                        <span style={{ fontWeight: '700', color: darkWon ? '#16a34a' : 'var(--ks-text-secondary)' }}>
                           {match.darkTeamScore}
                         </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: lightWon ? '700' : '500', color: lightWon ? '#111827' : '#6b7280' }}>
+                        <span style={{ fontWeight: lightWon ? '700' : '500', color: lightWon ? 'var(--ks-text)' : 'var(--ks-text-muted)' }}>
                           {teamCompactName(lightTeam, lightTeamClub, teams)}
                         </span>
-                        <span style={{ fontWeight: '700', color: lightWon ? '#16a34a' : '#374151' }}>
+                        <span style={{ fontWeight: '700', color: lightWon ? '#16a34a' : 'var(--ks-text-secondary)' }}>
                           {match.lightTeamScore}
                         </span>
                       </div>
@@ -705,16 +705,16 @@ export default function PublicStandings() {
 
         {/* Legend / Notes Section */}
         <div style={{
-          backgroundColor: 'white',
+          backgroundColor: 'var(--ks-surface)',
           borderRadius: '8px',
-          border: '1px solid #e5e7eb',
+          border: '1px solid var(--ks-border-subtle)',
           padding: '20px',
           marginTop: '32px'
         }}>
           <h3 style={{
             fontSize: '16px',
             fontWeight: '600',
-            color: '#111827',
+            color: 'var(--ks-text)',
             marginBottom: '12px'
           }}>
             Legend
@@ -724,7 +724,7 @@ export default function PublicStandings() {
             gridTemplateColumns: 'repeat(2, 1fr)',
             gap: '12px',
             fontSize: '13px',
-            color: '#6b7280',
+            color: 'var(--ks-text-muted)',
             marginBottom: '16px'
           }}>
             <div><span style={{ fontWeight: '500' }}>GP:</span> Games Played</div>
@@ -739,9 +739,9 @@ export default function PublicStandings() {
           </div>
           <div style={{
             fontSize: '12px',
-            color: '#6b7280',
+            color: 'var(--ks-text-muted)',
             paddingTop: '12px',
-            borderTop: '1px solid #e5e7eb'
+            borderTop: '1px solid var(--ks-border-subtle)'
           }}>
             <p style={{ fontWeight: '500', marginBottom: '8px' }}>Tiebreaker Order:</p>
             <ol style={{
@@ -765,7 +765,7 @@ export default function PublicStandings() {
       <div style={{
         textAlign: 'center',
         padding: '20px',
-        color: '#6b7280',
+        color: 'var(--ks-text-muted)',
         fontSize: '12px'
       }}>
         <p>KrakenScores - Tournament Management System</p>

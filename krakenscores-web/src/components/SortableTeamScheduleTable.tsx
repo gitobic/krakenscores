@@ -138,7 +138,7 @@ export default function SortableTeamScheduleTable({ matches, selectedClubId, sel
                 fontSize: typography.fontSize.tableBody,
                 textAlign: 'center',
                 fontWeight: typography.fontWeight.semiBold,
-                color: colors.gray.black
+                color: 'var(--ks-text)'
               }}>
                 {match.matchNumber}
               </td>
@@ -148,7 +148,7 @@ export default function SortableTeamScheduleTable({ matches, selectedClubId, sel
                 padding: '6px 4px',
                 fontSize: typography.fontSize.tableStat,
                 textAlign: 'center',
-                color: colors.gray.dark,
+                color: 'var(--ks-text-secondary)',
                 whiteSpace: 'nowrap' as const
               }}>
                 {match.scheduledTime}
@@ -159,7 +159,7 @@ export default function SortableTeamScheduleTable({ matches, selectedClubId, sel
                 padding: '6px 4px',
                 fontSize: typography.fontSize.tableStat,
                 textAlign: 'center',
-                color: colors.gray.dark
+                color: 'var(--ks-text-secondary)'
               }}>
                 {pool.name}
               </td>
@@ -172,14 +172,14 @@ export default function SortableTeamScheduleTable({ matches, selectedClubId, sel
               </td>
 
               {/* Opponent */}
-              <td style={{ padding: '6px 4px', fontSize: typography.fontSize.tableStat, color: colors.gray.black }}>
+              <td style={{ padding: '6px 4px', fontSize: typography.fontSize.tableStat, color: 'var(--ks-text)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1px' }}>
                   <div>
-                    <span style={{ fontSize: '11px', color: colors.gray.medium }}>vs </span>
+                    <span style={{ fontSize: '11px', color: 'var(--ks-text-muted)' }}>vs </span>
                     <span style={{ fontWeight: typography.fontWeight.semiBold }}>
                       {teamPublicName(opponent, opponentClub)}
                     </span>
-                    <span style={{ fontSize: typography.fontSize.badgeText, color: colors.gray.medium, marginLeft: '4px' }}>
+                    <span style={{ fontSize: typography.fontSize.badgeText, color: 'var(--ks-text-muted)', marginLeft: '4px' }}>
                       ({opponentCaps})
                     </span>
                   </div>
@@ -195,12 +195,12 @@ export default function SortableTeamScheduleTable({ matches, selectedClubId, sel
               }}>
                 {match.status === 'final' && userScore !== undefined && opponentScore !== undefined ? (
                   <div style={{
-                    color: userScore > opponentScore ? colors.semantic.win : userScore < opponentScore ? colors.semantic.loss : colors.gray.medium
+                    color: userScore > opponentScore ? colors.semantic.win : userScore < opponentScore ? colors.semantic.loss : 'var(--ks-text-muted)'
                   }}>
                     {userScore} - {opponentScore}
                   </div>
                 ) : (
-                  <span style={{ color: colors.gray.light }}>-</span>
+                  <span style={{ color: 'var(--ks-text-muted)' }}>-</span>
                 )}
               </td>
             </tr>

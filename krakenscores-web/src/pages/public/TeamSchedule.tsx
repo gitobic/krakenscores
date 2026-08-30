@@ -236,7 +236,7 @@ export default function TeamSchedule() {
   if (loading) {
     return (
       <div style={{ padding: '20px', textAlign: 'center', fontFamily: typography.fontFamily }}>
-        <p style={{ color: colors.gray.medium }}>Loading...</p>
+        <p style={{ color: 'var(--ks-text-muted)' }}>Loading...</p>
       </div>
     )
   }
@@ -244,8 +244,8 @@ export default function TeamSchedule() {
   if (tournaments.length === 0) {
     return (
       <div style={{ padding: '20px', textAlign: 'center', fontFamily: typography.fontFamily }}>
-        <h2 style={{ fontSize: '24px', marginBottom: '16px', color: colors.gray.black }}>No Tournaments Available</h2>
-        <p style={{ color: colors.gray.medium }}>There are no published tournaments at this time.</p>
+        <h2 style={{ fontSize: '24px', marginBottom: '16px', color: 'var(--ks-text)' }}>No Tournaments Available</h2>
+        <p style={{ color: 'var(--ks-text-muted)' }}>There are no published tournaments at this time.</p>
       </div>
     )
   }
@@ -253,7 +253,7 @@ export default function TeamSchedule() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: colors.gray.bgPage,
+      backgroundColor: 'var(--ks-page-bg)',
       fontFamily: typography.fontFamily
     }}>
       {/* Public Navigation Menu */}
@@ -290,8 +290,8 @@ export default function TeamSchedule() {
       {/* Filters */}
       <div style={{
         padding: '16px',
-        backgroundColor: colors.white,
-        borderBottom: `1px solid ${colors.gray.borderLight}`
+        backgroundColor: 'var(--ks-surface)',
+        borderBottom: `1px solid ${'var(--ks-border-subtle)'}`
       }}>
         {/* Tournament Selector (if multiple tournaments) */}
         {tournaments.length > 1 && (
@@ -300,7 +300,7 @@ export default function TeamSchedule() {
               display: 'block',
               fontSize: typography.fontSize.formLabel,
               fontWeight: typography.fontWeight.medium,
-              color: colors.gray.dark,
+              color: 'var(--ks-text-secondary)',
               marginBottom: '8px'
             }}>
               Tournament
@@ -312,9 +312,9 @@ export default function TeamSchedule() {
                 width: '100%',
                 padding: '12px',
                 fontSize: '16px',
-                border: `1px solid ${colors.gray.border}`,
+                border: `1px solid ${'var(--ks-border)'}`,
                 borderRadius: '6px',
-                backgroundColor: colors.white,
+                backgroundColor: 'var(--ks-surface)',
                 cursor: 'pointer'
               }}
             >
@@ -333,7 +333,7 @@ export default function TeamSchedule() {
             display: 'block',
             fontSize: typography.fontSize.formLabel,
             fontWeight: typography.fontWeight.medium,
-            color: colors.gray.dark,
+            color: 'var(--ks-text-secondary)',
             marginBottom: '8px'
           }}>
             Select Club
@@ -345,9 +345,9 @@ export default function TeamSchedule() {
               width: '100%',
               padding: '12px',
               fontSize: '16px',
-              border: `1px solid ${colors.gray.border}`,
+              border: `1px solid ${'var(--ks-border)'}`,
               borderRadius: '6px',
-              backgroundColor: colors.white,
+              backgroundColor: 'var(--ks-surface)',
               cursor: 'pointer'
             }}
           >
@@ -367,7 +367,7 @@ export default function TeamSchedule() {
               display: 'block',
               fontSize: typography.fontSize.formLabel,
               fontWeight: typography.fontWeight.medium,
-              color: colors.gray.dark,
+              color: 'var(--ks-text-secondary)',
               marginBottom: '8px'
             }}>
               Select Team (Optional)
@@ -379,9 +379,9 @@ export default function TeamSchedule() {
                 width: '100%',
                 padding: '12px',
                 fontSize: '16px',
-                border: `1px solid ${colors.gray.border}`,
+                border: `1px solid ${'var(--ks-border)'}`,
                 borderRadius: '6px',
-                backgroundColor: colors.white,
+                backgroundColor: 'var(--ks-surface)',
                 cursor: 'pointer'
               }}
             >
@@ -400,7 +400,7 @@ export default function TeamSchedule() {
           <div style={{
             marginTop: '16px',
             padding: '12px',
-            backgroundColor: '#eff6ff',
+            backgroundColor: 'var(--ks-accent-soft)',
             borderRadius: '6px',
             border: '1px solid #bfdbfe'
           }}>
@@ -418,25 +418,25 @@ export default function TeamSchedule() {
       <div style={{ padding: '16px' }}>
         {!selectedClubId ? (
           <div style={{
-            backgroundColor: colors.white,
+            backgroundColor: 'var(--ks-surface)',
             padding: '40px 20px',
             textAlign: 'center',
             borderRadius: '8px',
-            border: `1px solid ${colors.gray.borderLight}`
+            border: `1px solid ${'var(--ks-border-subtle)'}`
           }}>
-            <p style={{ color: colors.gray.medium, fontSize: '16px' }}>
+            <p style={{ color: 'var(--ks-text-muted)', fontSize: '16px' }}>
               Please select a club to view their schedule.
             </p>
           </div>
         ) : filteredMatches.length === 0 ? (
           <div style={{
-            backgroundColor: colors.white,
+            backgroundColor: 'var(--ks-surface)',
             padding: '40px 20px',
             textAlign: 'center',
             borderRadius: '8px',
-            border: `1px solid ${colors.gray.borderLight}`
+            border: `1px solid ${'var(--ks-border-subtle)'}`
           }}>
-            <p style={{ color: colors.gray.medium, fontSize: '16px' }}>
+            <p style={{ color: 'var(--ks-text-muted)', fontSize: '16px' }}>
               No matches scheduled for {selectedTeam ? selectedTeam.name : selectedClub?.name}.
             </p>
           </div>
@@ -445,8 +445,8 @@ export default function TeamSchedule() {
               <div key={date} style={{ marginBottom: '24px' }}>
                 {/* Date Header */}
                 <div style={{
-                  backgroundColor: colors.gray.black,
-                  color: colors.white,
+                  backgroundColor: '#1f2937',
+                  color: '#ffffff',
                   padding: '12px 16px',
                   fontSize: typography.fontSize.sectionHeading,
                   fontWeight: typography.fontWeight.semiBold,
@@ -458,10 +458,10 @@ export default function TeamSchedule() {
 
                 {/* Matches Table */}
                 <div style={{
-                  backgroundColor: colors.white,
+                  backgroundColor: 'var(--ks-surface)',
                   borderRadius: '0 0 6px 6px',
                   overflow: 'hidden',
-                  border: `1px solid ${colors.gray.borderLight}`,
+                  border: `1px solid ${'var(--ks-border-subtle)'}`,
                   borderTop: 'none'
                 }}>
                   <SortableTeamScheduleTable
@@ -479,7 +479,7 @@ export default function TeamSchedule() {
       <div style={{
         textAlign: 'center',
         padding: '20px',
-        color: colors.gray.medium,
+        color: 'var(--ks-text-muted)',
         fontSize: typography.fontSize.smallText
       }}>
         <p>KrakenScores - Tournament Management System</p>

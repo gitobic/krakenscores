@@ -56,7 +56,7 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
         <col style={{ width: '48px' }} />
       </colgroup>
       <thead>
-        <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #e5e7eb' }}>
+        <tr style={{ backgroundColor: 'var(--ks-surface-subtle)', borderBottom: '2px solid #e5e7eb' }}>
           <th
             onClick={() => handleSort('rank')}
             style={{
@@ -64,7 +64,7 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -79,7 +79,7 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'left',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -94,7 +94,7 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -109,7 +109,7 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -124,7 +124,7 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -139,7 +139,7 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -154,7 +154,7 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -169,7 +169,7 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -184,7 +184,7 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -202,17 +202,17 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
             <tr
               key={teamStanding.teamId}
               style={{
-                backgroundColor: isEven ? '#ffffff' : '#f9fafb',
+                backgroundColor: isEven ? 'var(--ks-surface)' : 'var(--ks-page-bg)',
                 borderBottom: '1px solid #e5e7eb'
               }}
             >
-              <td style={{ padding: '6px 2px', fontSize: '13px', textAlign: 'center', fontWeight: '600', color: '#111827' }}>
+              <td style={{ padding: '6px 2px', fontSize: '13px', textAlign: 'center', fontWeight: '600', color: 'var(--ks-text)' }}>
                 {teamStanding.rank}
               </td>
-              <td style={{ padding: '6px 4px', fontSize: '13px', textAlign: 'left', fontWeight: '500', color: '#111827' }}>
+              <td style={{ padding: '6px 4px', fontSize: '13px', textAlign: 'left', fontWeight: '500', color: 'var(--ks-text)' }}>
                 {clubName}
               </td>
-              <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+              <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                 {teamStanding.games}
               </td>
               <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>
@@ -221,13 +221,13 @@ export default function SortableStandingsTable({ standings }: SortableStandingsT
               <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#dc2626', fontWeight: '600' }}>
                 {teamStanding.losses}
               </td>
-              <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+              <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                 {Math.round(teamStanding.goalsFor * 100) / 100}
               </td>
-              <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151' }}>
+              <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
                 {Math.round(teamStanding.goalsAgainst * 100) / 100}
               </td>
-              <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: '#374151', fontWeight: '600' }}>
+              <td style={{ padding: '6px 2px', fontSize: '12px', textAlign: 'center', color: 'var(--ks-text-secondary)', fontWeight: '600' }}>
                 {(() => {
                   const rounded = Math.round(teamStanding.goalDiff * 100) / 100
                   return rounded > 0 ? `+${rounded}` : rounded

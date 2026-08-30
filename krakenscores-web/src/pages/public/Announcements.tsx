@@ -135,7 +135,7 @@ export default function Announcements() {
         return {
           container: {
             borderLeft: '4px solid #dc2626',
-            backgroundColor: '#fef2f2',
+            backgroundColor: 'var(--ks-danger-soft)',
           },
           badge: {
             backgroundColor: '#dc2626',
@@ -146,7 +146,7 @@ export default function Announcements() {
         return {
           container: {
             borderLeft: '4px solid #2563eb',
-            backgroundColor: '#eff6ff',
+            backgroundColor: 'var(--ks-accent-soft)',
           },
           badge: {
             backgroundColor: '#2563eb',
@@ -157,10 +157,10 @@ export default function Announcements() {
         return {
           container: {
             borderLeft: '4px solid #6b7280',
-            backgroundColor: '#f9fafb',
+            backgroundColor: 'var(--ks-page-bg)',
           },
           badge: {
-            backgroundColor: '#6b7280',
+            backgroundColor: 'var(--ks-text-muted)',
             color: '#ffffff',
           },
         }
@@ -169,7 +169,7 @@ export default function Announcements() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: 'var(--ks-page-bg)' }}>
         <PublicNav />
         <div style={{
           display: 'flex',
@@ -177,7 +177,7 @@ export default function Announcements() {
           alignItems: 'center',
           padding: '48px 16px'
         }}>
-          <p style={{ fontSize: '14px', color: '#6b7280', fontFamily: 'system-ui, -apple-system, sans-serif' }}>Loading...</p>
+          <p style={{ fontSize: '14px', color: 'var(--ks-text-muted)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>Loading...</p>
         </div>
       </div>
     )
@@ -185,7 +185,7 @@ export default function Announcements() {
 
   if (tournaments.length === 0) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: 'var(--ks-page-bg)' }}>
         <PublicNav />
         <div style={{
           display: 'flex',
@@ -193,14 +193,14 @@ export default function Announcements() {
           alignItems: 'center',
           padding: '48px 16px'
         }}>
-          <p style={{ fontSize: '14px', color: '#6b7280', fontFamily: 'system-ui, -apple-system, sans-serif' }}>No active tournaments</p>
+          <p style={{ fontSize: '14px', color: 'var(--ks-text-muted)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>No active tournaments</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--ks-page-bg)' }}>
       <PublicNav />
 
       <div style={{
@@ -229,7 +229,7 @@ export default function Announcements() {
           <h1 style={{
             fontSize: '30px',
             fontWeight: 'bold',
-            color: '#111827',
+            color: 'var(--ks-text)',
             margin: 0,
             fontFamily: 'system-ui, -apple-system, sans-serif'
           }}>
@@ -244,7 +244,7 @@ export default function Announcements() {
               display: 'block',
               fontSize: '14px',
               fontWeight: '500',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               marginBottom: '8px',
               fontFamily: 'system-ui, -apple-system, sans-serif'
             }}>
@@ -260,8 +260,8 @@ export default function Announcements() {
                 fontSize: '14px',
                 border: '1px solid #d1d5db',
                 borderRadius: '6px',
-                backgroundColor: '#ffffff',
-                color: '#111827',
+                backgroundColor: 'var(--ks-surface)',
+                color: 'var(--ks-text)',
                 fontFamily: 'system-ui, -apple-system, sans-serif'
               }}
             >
@@ -279,13 +279,13 @@ export default function Announcements() {
           <div style={{
             textAlign: 'center',
             padding: '48px 16px',
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--ks-surface)',
             borderRadius: '8px',
-            border: '1px solid #e5e7eb'
+            border: '1px solid var(--ks-border-subtle)'
           }}>
             <p style={{
               fontSize: '14px',
-              color: '#6b7280',
+              color: 'var(--ks-text-muted)',
               margin: 0,
               fontFamily: 'system-ui, -apple-system, sans-serif'
             }}>
@@ -322,7 +322,7 @@ export default function Announcements() {
                     <h3 style={{
                       fontSize: '18px',
                       fontWeight: '600',
-                      color: '#111827',
+                      color: 'var(--ks-text)',
                       margin: 0,
                       fontFamily: 'system-ui, -apple-system, sans-serif'
                     }}>
@@ -345,7 +345,7 @@ export default function Announcements() {
                   {/* Message */}
                   <p style={{
                     fontSize: '14px',
-                    color: '#374151',
+                    color: 'var(--ks-text-secondary)',
                     lineHeight: '1.6',
                     marginBottom: '12px',
                     whiteSpace: 'pre-wrap',
@@ -357,7 +357,7 @@ export default function Announcements() {
                   {/* Timestamp */}
                   <p style={{
                     fontSize: '13px',
-                    color: '#6b7280',
+                    color: 'var(--ks-text-muted)',
                     margin: 0,
                     fontFamily: 'system-ui, -apple-system, sans-serif'
                   }}>

@@ -180,7 +180,7 @@ export const formStyles = {
   label: {
     fontSize: typography.fontSize.formLabel,
     fontWeight: typography.fontWeight.medium,
-    color: colors.gray.dark,
+    color: 'var(--ks-text-secondary)',
     whiteSpace: 'nowrap' as const,
   },
 
@@ -188,9 +188,10 @@ export const formStyles = {
     flex: 1,
     padding: '8px 12px',
     fontSize: typography.fontSize.buttonText,
-    border: `1px solid ${colors.gray.border}`,
+    border: '1px solid var(--ks-border)',
     borderRadius: spacing.borderRadius.default,
-    backgroundColor: colors.white,
+    backgroundColor: 'var(--ks-surface)',
+    color: 'var(--ks-text)',
     cursor: 'pointer',
   },
 
@@ -213,21 +214,21 @@ export const tableStyles = {
   },
 
   header: {
-    backgroundColor: colors.gray.bg,
-    borderBottom: `2px solid ${colors.gray.borderLight}`,
+    backgroundColor: 'var(--ks-surface-subtle)',
+    borderBottom: '2px solid var(--ks-border-subtle)',
   },
 
   headerCell: {
     padding: spacing.padding.tableCell,
     fontSize: typography.fontSize.tableHeader,
     fontWeight: typography.fontWeight.semiBold,
-    color: colors.gray.medium,
+    color: 'var(--ks-text-muted)',
     textTransform: 'uppercase' as const,
   },
 
   bodyRow: (isEven: boolean) => ({
-    backgroundColor: isEven ? colors.white : colors.gray.bgPage,
-    borderBottom: `1px solid ${colors.gray.borderLight}`,
+    backgroundColor: isEven ? 'var(--ks-surface)' : 'var(--ks-page-bg)',
+    borderBottom: '1px solid var(--ks-border-subtle)',
   }),
 
   bodyCell: {
@@ -243,10 +244,10 @@ export const tableStyles = {
 export const containerStyles = {
   filterCard: {
     marginBottom: spacing.margin.section,
-    backgroundColor: colors.white,
+    backgroundColor: 'var(--ks-surface)',
     borderRadius: spacing.borderRadius.large,
     padding: spacing.padding.filterContainer,
-    border: `1px solid ${colors.gray.borderLight}`,
+    border: '1px solid var(--ks-border-subtle)',
   },
 
   divisionHeader: (divisionColor: string) => ({

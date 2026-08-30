@@ -204,7 +204,7 @@ export default function MasterSchedule() {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
         <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>No Tournaments Available</h2>
-        <p style={{ color: '#6b7280' }}>There are no published tournaments at this time.</p>
+        <p style={{ color: 'var(--ks-text-muted)' }}>There are no published tournaments at this time.</p>
       </div>
     )
   }
@@ -212,7 +212,7 @@ export default function MasterSchedule() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: '#f9fafb',
+      backgroundColor: 'var(--ks-page-bg)',
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
       {/* Public Navigation Menu */}
@@ -221,7 +221,7 @@ export default function MasterSchedule() {
       {/* Header */}
       <div style={{
         backgroundColor: '#2563eb',
-        color: 'white',
+        color: '#ffffff',
         padding: '20px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         display: 'flex',
@@ -258,8 +258,8 @@ export default function MasterSchedule() {
       {/* Filters and Controls */}
       <div style={{
         padding: '16px',
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e5e7eb'
+        backgroundColor: 'var(--ks-surface)',
+        borderBottom: '1px solid var(--ks-border-subtle)'
       }}>
         {/* Tournament Selector (if multiple tournaments) */}
         {tournaments.length > 1 && (
@@ -268,7 +268,7 @@ export default function MasterSchedule() {
               display: 'block',
               fontSize: '14px',
               fontWeight: '500',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               marginBottom: '8px'
             }}>
               Tournament
@@ -282,7 +282,7 @@ export default function MasterSchedule() {
                 fontSize: '16px',
                 border: '1px solid #d1d5db',
                 borderRadius: '6px',
-                backgroundColor: 'white',
+                backgroundColor: 'var(--ks-surface)',
                 cursor: 'pointer'
               }}
             >
@@ -301,7 +301,7 @@ export default function MasterSchedule() {
             display: 'block',
             fontSize: '14px',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--ks-text-secondary)',
             marginBottom: '8px'
           }}>
             Division
@@ -315,7 +315,7 @@ export default function MasterSchedule() {
               fontSize: '16px',
               border: '1px solid #d1d5db',
               borderRadius: '6px',
-              backgroundColor: 'white',
+              backgroundColor: 'var(--ks-surface)',
               cursor: 'pointer'
             }}
           >
@@ -345,7 +345,7 @@ export default function MasterSchedule() {
             htmlFor="showFullClubNames"
             style={{
               fontSize: '14px',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none'
             }}
@@ -359,13 +359,13 @@ export default function MasterSchedule() {
       <div style={{ padding: '16px' }}>
         {matches.length === 0 ? (
           <div style={{
-            backgroundColor: 'white',
+            backgroundColor: 'var(--ks-surface)',
             padding: '40px 20px',
             textAlign: 'center',
             borderRadius: '8px',
-            border: '1px solid #e5e7eb'
+            border: '1px solid var(--ks-border-subtle)'
           }}>
-            <p style={{ color: '#6b7280', fontSize: '16px' }}>
+            <p style={{ color: 'var(--ks-text-muted)', fontSize: '16px' }}>
               No matches scheduled yet.
             </p>
           </div>
@@ -375,7 +375,7 @@ export default function MasterSchedule() {
               {/* Day Header */}
               <div style={{
                 backgroundColor: '#1f2937',
-                color: 'white',
+                color: '#ffffff',
                 padding: '12px 16px',
                 fontSize: '18px',
                 fontWeight: '600',
@@ -387,10 +387,10 @@ export default function MasterSchedule() {
 
               {/* Matches Table */}
               <div style={{
-                backgroundColor: 'white',
+                backgroundColor: 'var(--ks-surface)',
                 borderRadius: '0 0 6px 6px',
                 overflow: 'hidden',
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--ks-border-subtle)',
                 borderTop: 'none'
               }}>
                 <SortableMatchTable
@@ -407,7 +407,7 @@ export default function MasterSchedule() {
       <div style={{
         margin: '16px',
         padding: '16px 20px',
-        backgroundColor: '#f5f3ff',
+        backgroundColor: 'var(--ks-purple-soft)',
         border: '1px solid #ddd6fe',
         borderRadius: '8px',
         display: 'flex',
@@ -431,7 +431,7 @@ export default function MasterSchedule() {
           style={{
             padding: '8px 18px',
             backgroundColor: '#7c3aed',
-            color: 'white',
+            color: '#ffffff',
             fontSize: '13px',
             fontWeight: '600',
             borderRadius: '6px',
@@ -447,7 +447,7 @@ export default function MasterSchedule() {
       <div style={{
         textAlign: 'center',
         padding: '20px',
-        color: '#6b7280',
+        color: 'var(--ks-text-muted)',
         fontSize: '12px'
       }}>
         <p>KrakenScores - Tournament Management System</p>

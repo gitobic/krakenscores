@@ -58,7 +58,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
         <col style={{ width: '60px' }} />
       </colgroup>
       <thead>
-        <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #e5e7eb' }}>
+        <tr style={{ backgroundColor: 'var(--ks-surface-subtle)', borderBottom: '2px solid #e5e7eb' }}>
           <th
             onClick={() => handleSort('matchNumber')}
             style={{
@@ -66,7 +66,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -81,7 +81,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -89,7 +89,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
           >
             Time{getSortIndicator('scheduledTime', sortColumn, sortDirection)}
           </th>
-          <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151', whiteSpace: 'nowrap' }}>
+          <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: 'var(--ks-text-secondary)', whiteSpace: 'nowrap' }}>
             Pool
           </th>
           <th
@@ -99,7 +99,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
               fontSize: '11px',
               fontWeight: '600',
               textAlign: 'center',
-              color: '#374151',
+              color: 'var(--ks-text-secondary)',
               cursor: 'pointer',
               userSelect: 'none',
               whiteSpace: 'nowrap'
@@ -107,10 +107,10 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
           >
             Div{getSortIndicator('divisionName', sortColumn, sortDirection)}
           </th>
-          <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'left', color: '#374151' }}>
+          <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'left', color: 'var(--ks-text-secondary)' }}>
             Dark vs Light
           </th>
-          <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: '#374151' }}>
+          <th style={{ padding: '6px 4px', fontSize: '11px', fontWeight: '600', textAlign: 'center', color: 'var(--ks-text-secondary)' }}>
             Score
           </th>
         </tr>
@@ -124,7 +124,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
             <tr
               key={match.id}
               style={{
-                backgroundColor: isEven ? '#ffffff' : '#f9fafb',
+                backgroundColor: isEven ? 'var(--ks-surface)' : 'var(--ks-page-bg)',
                 borderBottom: '1px solid #e5e7eb'
               }}
             >
@@ -134,7 +134,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
                 fontSize: '13px',
                 textAlign: 'center',
                 fontWeight: '600',
-                color: '#111827'
+                color: 'var(--ks-text)'
               }}>
                 {match.matchNumber}
               </td>
@@ -144,7 +144,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
                 padding: '6px 4px',
                 fontSize: '12px',
                 textAlign: 'center',
-                color: '#374151',
+                color: 'var(--ks-text-secondary)',
                 whiteSpace: 'nowrap'
               }}>
                 {match.scheduledTime}
@@ -155,7 +155,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
                 padding: '6px 4px',
                 fontSize: '12px',
                 textAlign: 'center',
-                color: '#374151'
+                color: 'var(--ks-text-secondary)'
               }}>
                 {pool.name}
               </td>
@@ -177,7 +177,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
               </td>
 
               {/* Teams */}
-              <td style={{ padding: '6px 4px', fontSize: '12px', color: '#111827' }}>
+              <td style={{ padding: '6px 4px', fontSize: '12px', color: 'var(--ks-text)' }}>
                 <span style={{ fontWeight: '600' }}>
                   {match.darkTeamLabel
                     ? match.darkTeamLabel
@@ -208,7 +208,7 @@ export default function SortableMatchTable({ matches, showFullClubNames }: Sorta
                       ? '#16a34a'
                       : match.lightTeamScore > match.darkTeamScore
                         ? '#16a34a'
-                        : '#6b7280'
+                        : 'var(--ks-text-muted)'
                   }}>
                     {match.darkTeamScore} - {match.lightTeamScore}
                   </div>
