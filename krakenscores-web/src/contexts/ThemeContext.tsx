@@ -29,7 +29,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', resolvedTheme === 'dark')
     document.documentElement.dataset.theme = resolvedTheme
-    document.documentElement.style.colorScheme = resolvedTheme
+    // Admin screens use a light surface today. Setting the native color-scheme
+    // globally makes Safari render white select/input text on those white
+    // controls when the spectator theme resolves to dark.
+    document.documentElement.style.removeProperty('color-scheme')
     if (preference === 'system') localStorage.removeItem(STORAGE_KEY)
     else localStorage.setItem(STORAGE_KEY, preference)
   }, [preference, resolvedTheme])
