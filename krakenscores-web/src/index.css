@@ -50,6 +50,7 @@ body {
 .admin-shell h1,
 .admin-shell h2,
 .admin-shell h3,
+.admin-shell .text-gray-950,
 .admin-shell .text-gray-900,
 .admin-shell .text-gray-800,
 .admin-shell .text-gray-700 {
@@ -129,6 +130,11 @@ body {
 
 .admin-shell form label,
 .admin-shell form p {
+  color: var(--ks-text-secondary) !important;
+}
+
+.admin-shell label,
+.admin-shell label span {
   color: var(--ks-text-secondary) !important;
 }
 
