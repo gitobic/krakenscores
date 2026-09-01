@@ -155,7 +155,7 @@ export default function Divisions() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="admin-resource-page min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation */}
         <nav className="mb-6">
@@ -182,12 +182,13 @@ export default function Divisions() {
           </a>
         </nav>
 
-        <div className="flex justify-between items-center mb-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
+            <p className="admin-resource-eyebrow">Tournament setup</p>
             <h1 className="text-3xl font-bold text-gray-900">Divisions</h1>
             <p className="text-gray-600 mt-1">Standard age divisions with color-blind safe colors</p>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             {divisions.length === 0 && (
               <button
                 onClick={initializeStandardDivisions}

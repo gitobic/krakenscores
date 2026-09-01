@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useTheme, type ThemePreference } from '../../contexts/ThemeContext'
 
 interface NavItem {
   path: string
@@ -34,10 +35,10 @@ function NavMenuItem({ item, isActive, onClick }: NavMenuItemProps) {
         gap: '10px',
         width: '100%',
         padding: '10px 16px 10px 36px',
-        backgroundColor: isActive ? '#eff6ff' : (isHovered ? '#ffffff' : 'transparent'),
+        backgroundColor: isActive ? 'var(--ks-accent-soft)' : (isHovered ? 'var(--ks-surface-subtle)' : 'transparent'),
         border: 'none',
         borderLeft: isActive ? '3px solid #2563eb' : '3px solid transparent',
-        color: isActive ? '#2563eb' : '#374151',
+        color: isActive ? '#2563eb' : 'var(--ks-text-secondary)',
         fontSize: '14px',
         fontWeight: isActive ? '600' : '500',
         cursor: 'pointer',
@@ -55,6 +56,8 @@ export default function AdminSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
   const { admin, signOut } = useAuth()
+  const { preference, setPreference } = useTheme()
+  const nextTheme: Record<ThemePreference, ThemePreference> = { system: 'light', light: 'dark', dark: 'system' }
 
   // Track which sections are expanded
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -130,8 +133,8 @@ export default function AdminSidebar() {
     <div style={{
       width: '220px',
       height: '100vh',
-      backgroundColor: 'white',
-      borderRight: '1px solid #e5e7eb',
+      backgroundColor: 'var(--ks-surface)',
+      borderRight: '1px solid var(--ks-border-subtle)',
       display: 'flex',
       flexDirection: 'column',
       position: 'fixed',
@@ -143,7 +146,7 @@ export default function AdminSidebar() {
       {/* Header */}
       <div style={{
         padding: '24px 16px',
-        borderBottom: '1px solid #e5e7eb'
+        borderBottom: '1px solid var(--ks-border-subtle)'
       }}>
         <button
           onClick={() => navigate('/admin')}
@@ -167,7 +170,7 @@ export default function AdminSidebar() {
           </h1>
           <p style={{
             fontSize: '12px',
-            color: '#6b7280',
+            color: 'var(--ks-text-muted)',
             margin: 0
           }}>
             Admin Portal
@@ -201,7 +204,7 @@ export default function AdminSidebar() {
                   backgroundColor: 'transparent',
                   border: 'none',
                   cursor: 'pointer',
-                  color: '#111827',
+                  color: 'var(--ks-text)',
                   fontSize: '13px',
                   fontWeight: '600',
                   textTransform: 'uppercase',
@@ -209,7 +212,7 @@ export default function AdminSidebar() {
                   transition: 'background-color 0.2s'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f9fafb'
+                  e.currentTarget.style.backgroundColor = 'var(--ks-surface-subtle)'
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent'
@@ -221,7 +224,7 @@ export default function AdminSidebar() {
                 </div>
                 <span style={{
                   fontSize: '12px',
-                  color: '#6b7280',
+                  color: 'var(--ks-text-muted)',
                   transition: 'transform 0.2s',
                   transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
                 }}>
@@ -232,9 +235,9 @@ export default function AdminSidebar() {
               {/* Section Items */}
               {isExpanded && (
                 <div style={{
-                  backgroundColor: '#f9fafb',
-                  borderTop: '1px solid #e5e7eb',
-                  borderBottom: '1px solid #e5e7eb'
+                  backgroundColor: 'var(--ks-surface-subtle)',
+                  borderTop: '1px solid var(--ks-border-subtle)',
+                  borderBottom: '1px solid var(--ks-border-subtle)'
                 }}>
                   {section.items.map(item => (
                     <NavMenuItem
@@ -254,16 +257,34 @@ export default function AdminSidebar() {
       {/* Footer - User Info & Sign Out */}
       <div style={{
         padding: '16px',
-        borderTop: '1px solid #e5e7eb',
-        backgroundColor: '#f9fafb'
+        borderTop: '1px solid var(--ks-border-subtle)',
+        backgroundColor: 'var(--ks-surface-subtle)'
       }}>
+        <button
+          type="button"
+          onClick={() => setPreference(nextTheme[preference])}
+          style={{
+            width: '100%',
+            marginBottom: '14px',
+            padding: '8px 12px',
+            fontSize: '12px',
+            fontWeight: '700',
+            color: 'var(--ks-text-secondary)',
+            backgroundColor: 'var(--ks-surface)',
+            border: '1px solid var(--ks-border)',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          Theme: {preference === 'system' ? 'Auto' : preference === 'dark' ? 'Dark' : 'Light'}
+        </button>
         <div style={{
           marginBottom: '12px'
         }}>
           <p style={{
             fontSize: '13px',
             fontWeight: '600',
-            color: '#111827',
+            color: 'var(--ks-text)',
             margin: 0,
             marginBottom: '2px'
           }}>
@@ -271,7 +292,7 @@ export default function AdminSidebar() {
           </p>
           <p style={{
             fontSize: '11px',
-            color: '#6b7280',
+            color: 'var(--ks-text-muted)',
             margin: 0
           }}>
             {admin?.role || 'super_admin'}
@@ -285,19 +306,19 @@ export default function AdminSidebar() {
             fontSize: '13px',
             fontWeight: '500',
             color: '#dc2626',
-            backgroundColor: 'white',
-            border: '1px solid #d1d5db',
+            backgroundColor: 'var(--ks-surface)',
+            border: '1px solid var(--ks-border)',
             borderRadius: '6px',
             cursor: 'pointer',
             transition: 'all 0.2s'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#fef2f2'
+            e.currentTarget.style.backgroundColor = 'var(--ks-danger-soft)'
             e.currentTarget.style.borderColor = '#dc2626'
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'white'
-            e.currentTarget.style.borderColor = '#d1d5db'
+            e.currentTarget.style.backgroundColor = 'var(--ks-surface)'
+            e.currentTarget.style.borderColor = 'var(--ks-border)'
           }}
         >
           Sign Out

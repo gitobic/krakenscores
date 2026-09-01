@@ -7,10 +7,10 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
-    <div style={{
+    <div className="admin-shell" style={{
       display: 'flex',
       minHeight: '100vh',
-      backgroundColor: '#f9fafb',
+      backgroundColor: 'var(--ks-page-bg)',
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
       {/* Sidebar - Fixed position */}

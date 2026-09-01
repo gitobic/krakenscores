@@ -104,7 +104,7 @@ export default function Clubs() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="admin-resource-page min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation */}
         <nav className="mb-6">
@@ -131,8 +131,9 @@ export default function Clubs() {
           </a>
         </nav>
 
-        <div className="flex justify-between items-center mb-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
+            <p className="admin-resource-eyebrow">Tournament setup</p>
             <h1 className="text-3xl font-bold text-gray-900">Clubs</h1>
             <p className="text-gray-600 mt-1">Manage participating water polo clubs</p>
           </div>
@@ -174,7 +175,7 @@ export default function Clubs() {
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="admin-resource-card overflow-hidden">
             <table className="min-w-full" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>

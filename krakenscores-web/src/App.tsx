@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { isRehearsalEnvironment } from './lib/firebase'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminLayout from './components/layout/AdminLayout'
 
 const Login = lazy(() => import('./pages/admin/Login'))
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'))
@@ -66,7 +67,7 @@ function App() {
             path="/admin/tournaments"
             element={
               <ProtectedRoute requiredRole="admin">
-                <Tournaments />
+                <AdminLayout><Tournaments /></AdminLayout>
               </ProtectedRoute>
             }
           />
@@ -74,7 +75,7 @@ function App() {
             path="/admin/clubs"
             element={
               <ProtectedRoute requiredRole="admin">
-                <Clubs />
+                <AdminLayout><Clubs /></AdminLayout>
               </ProtectedRoute>
             }
           />
@@ -82,7 +83,7 @@ function App() {
             path="/admin/divisions"
             element={
               <ProtectedRoute requiredRole="admin">
-                <Divisions />
+                <AdminLayout><Divisions /></AdminLayout>
               </ProtectedRoute>
             }
           />
@@ -90,7 +91,7 @@ function App() {
             path="/admin/teams"
             element={
               <ProtectedRoute requiredRole="admin">
-                <Teams />
+                <AdminLayout><Teams /></AdminLayout>
               </ProtectedRoute>
             }
           />
@@ -98,7 +99,7 @@ function App() {
             path="/admin/pools"
             element={
               <ProtectedRoute requiredRole="admin">
-                <Pools />
+                <AdminLayout><Pools /></AdminLayout>
               </ProtectedRoute>
             }
           />
@@ -106,7 +107,7 @@ function App() {
             path="/admin/matches"
             element={
               <ProtectedRoute requiredRole="admin">
-                <Matches />
+                <AdminLayout><Matches /></AdminLayout>
               </ProtectedRoute>
             }
           />
@@ -114,7 +115,7 @@ function App() {
             path="/admin/schedule-breaks"
             element={
               <ProtectedRoute requiredRole="admin">
-                <ScheduleBreaks />
+                <AdminLayout><ScheduleBreaks /></AdminLayout>
               </ProtectedRoute>
             }
           />
@@ -122,7 +123,7 @@ function App() {
             path="/admin/scorekeeper"
             element={
               <ProtectedRoute requiredRole={['admin', 'scorekeeper']}>
-                <Scorekeeper />
+                <AdminLayout><Scorekeeper /></AdminLayout>
               </ProtectedRoute>
             }
           />
@@ -130,7 +131,7 @@ function App() {
             path="/admin/standings"
             element={
               <ProtectedRoute requiredRole="admin">
-                <Standings />
+                <AdminLayout><Standings /></AdminLayout>
               </ProtectedRoute>
             }
           />
@@ -138,7 +139,7 @@ function App() {
             path="/admin/announcements"
             element={
               <ProtectedRoute requiredRole="admin">
-                <AdminAnnouncements />
+                <AdminLayout><AdminAnnouncements /></AdminLayout>
               </ProtectedRoute>
             }
           />
