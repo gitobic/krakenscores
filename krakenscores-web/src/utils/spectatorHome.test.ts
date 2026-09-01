@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Club, Division, Match, Team } from '../types'
-import { buildSpectatorQueue, matchIncludesTeams, searchTeams } from './spectatorHome'
+import { buildSpectatorQueue, matchIncludesTeams, searchTeams, teamFinderSpacing } from './spectatorHome'
 
 const match = (id: string, time: string, status: Match['status'], overrides: Partial<Match> = {}) => ({
   id, tournamentId: 't1', divisionId: 'd1', poolId: 'p1', matchNumber: Number(id), scheduledDate: '2026-10-10', scheduledTime: time,
@@ -24,6 +24,11 @@ describe('spectator home', () => {
   it('filters games by favorite teams', () => {
     expect(matchIncludesTeams(match('1', '08:00', 'scheduled'), new Set(['a']))).toBe(true)
     expect(matchIncludesTeams(match('1', '08:00', 'scheduled'), new Set(['c']))).toBe(false)
+  })
+
+  it('only overlaps the hero when announcements are absent', () => {
+    expect(teamFinderSpacing(false)).toContain('-mt-4')
+    expect(teamFinderSpacing(true)).toBe('mt-6')
   })
 
   it('finds teams by team, club, abbreviation, or division', () => {

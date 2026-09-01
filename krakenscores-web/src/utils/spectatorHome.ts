@@ -26,6 +26,10 @@ export function matchIncludesTeams(match: Match, teamIds: Set<string>): boolean 
   return teamIds.size === 0 || teamIds.has(match.darkTeamId) || teamIds.has(match.lightTeamId)
 }
 
+export function teamFinderSpacing(hasAnnouncements: boolean): string {
+  return hasAnnouncements ? 'mt-6' : '-mt-4 sm:-mt-6'
+}
+
 export function searchTeams(teams: Team[], clubs: Club[], query: string, divisions: Division[] = []): Team[] {
   const value = query.trim().toLocaleLowerCase()
   if (!value) return []
