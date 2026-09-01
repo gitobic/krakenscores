@@ -388,12 +388,12 @@ export default function Scorekeeper() {
     }
     return <article key={match.id} className={`rounded-xl border bg-white p-4 shadow-sm ${match.status === 'in_progress' ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'}`}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
-        <div className="flex items-center gap-2"><span className="text-lg font-bold text-gray-950">Game {match.matchNumber}</span>{getStatusBadge(match.status)}</div>
+        <div className="flex items-center gap-2"><span className="text-lg font-bold" style={{ color: 'var(--ks-text)' }}>Game {match.matchNumber}</span>{getStatusBadge(match.status)}</div>
         <div className="text-right text-sm text-gray-600"><strong>{getDayOfWeek(match.scheduledDate)} {match.scheduledTime}</strong><br />{pool.name} · {division.name}</div>
       </div>
       <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         {(['dark', 'light'] as const).map((side, index) => <div key={side} className={index ? 'text-right' : ''}>
-          <p className="min-h-12 text-base font-bold leading-tight text-gray-950">{participantName(item, side)}</p>
+          <p className="min-h-12 text-base font-bold leading-tight" style={{ color: 'var(--ks-text)' }}>{participantName(item, side)}</p>
           <div className={`mt-3 flex items-center gap-2 ${index ? 'justify-end' : ''}`}>
             <button type="button" aria-label={`Decrease ${side} score for Game ${match.matchNumber}`} onClick={() => adjust(side, -1)} disabled={match.status === 'final' || isSaving} className="h-11 w-11 rounded-lg border border-gray-300 text-2xl font-bold text-gray-700 disabled:opacity-30">−</button>
             <input aria-label={`${side} score for Game ${match.matchNumber}`} type="number" min="0" step="1" value={side === 'dark' ? scores.darkScore : scores.lightScore} onChange={event => handleScoreChange(match.id, side, event.target.value)} disabled={match.status === 'final' || isSaving} className="h-14 w-20 rounded-lg border-2 border-gray-300 text-center text-3xl font-bold disabled:bg-gray-100" />
@@ -452,14 +452,14 @@ export default function Scorekeeper() {
           <h1 style={{
             fontSize: '30px',
             fontWeight: 'bold',
-            color: '#111827',
+            color: 'var(--ks-text)',
             margin: 0
           }}>
             Scorekeeper
           </h1>
           <p style={{
             fontSize: '16px',
-            color: '#6b7280',
+            color: 'var(--ks-text-muted)',
             marginTop: '8px'
           }}>
             Enter scores and finalize matches
@@ -491,7 +491,7 @@ export default function Scorekeeper() {
                 <label style={{
                   fontSize: '14px',
                   fontWeight: '500',
-                  color: '#374151',
+                  color: 'var(--ks-text-secondary)',
                   whiteSpace: 'nowrap'
                 }}>
                   Tournament:
@@ -527,7 +527,7 @@ export default function Scorekeeper() {
                 <label style={{
                   fontSize: '14px',
                   fontWeight: '500',
-                  color: '#374151',
+                  color: 'var(--ks-text-secondary)',
                   whiteSpace: 'nowrap'
                 }}>
                   Filter by Day:
@@ -575,7 +575,7 @@ export default function Scorekeeper() {
               <span style={{
                 marginLeft: '8px',
                 fontSize: '14px',
-                color: '#374151'
+                color: 'var(--ks-text-secondary)'
               }}>
                 Show full team names
               </span>
@@ -689,7 +689,7 @@ export default function Scorekeeper() {
                           padding: '6px 8px',
                           fontSize: showTeamNames ? '12px' : '13px',
                           fontWeight: '600',
-                          color: '#111827',
+                          color: 'var(--ks-text)',
                           borderRight: '1px solid #e5e7eb',
                           textAlign: 'center',
                           whiteSpace: showTeamNames ? 'nowrap' : 'normal',
@@ -722,7 +722,7 @@ export default function Scorekeeper() {
                           padding: '6px 8px',
                           fontSize: showTeamNames ? '12px' : '13px',
                           fontWeight: '600',
-                          color: '#111827',
+                          color: 'var(--ks-text)',
                           borderRight: '1px solid #e5e7eb',
                           textAlign: 'center',
                           whiteSpace: showTeamNames ? 'nowrap' : 'normal',
