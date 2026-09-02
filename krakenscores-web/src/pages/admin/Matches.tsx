@@ -235,7 +235,7 @@ export default function Matches() {
 
           {/* View Toggle */}
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: '500', color: '#6b7280', marginRight: '8px' }}>
+            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--ks-text-muted)', marginRight: '8px' }}>
               View:
             </span>
             <button
@@ -244,8 +244,8 @@ export default function Matches() {
                 padding: '8px 16px',
                 fontSize: '14px',
                 fontWeight: '600',
-                color: viewMode === 'table' ? 'white' : '#374151',
-                backgroundColor: viewMode === 'table' ? '#2563eb' : 'white',
+                color: viewMode === 'table' ? 'white' : 'var(--ks-text-secondary)',
+                backgroundColor: viewMode === 'table' ? '#2563eb' : 'var(--ks-surface)',
                 border: `1px solid ${viewMode === 'table' ? '#2563eb' : '#d1d5db'}`,
                 borderRadius: '6px 0 0 6px',
                 cursor: 'pointer',
@@ -253,12 +253,12 @@ export default function Matches() {
               }}
               onMouseEnter={(e) => {
                 if (viewMode !== 'table') {
-                  e.currentTarget.style.backgroundColor = '#f9fafb'
+                  e.currentTarget.style.backgroundColor = 'var(--ks-surface-subtle)'
                 }
               }}
               onMouseLeave={(e) => {
                 if (viewMode !== 'table') {
-                  e.currentTarget.style.backgroundColor = 'white'
+                  e.currentTarget.style.backgroundColor = 'var(--ks-surface)'
                 }
               }}
             >
@@ -270,8 +270,8 @@ export default function Matches() {
                 padding: '8px 16px',
                 fontSize: '14px',
                 fontWeight: '600',
-                color: viewMode === 'grid' ? 'white' : '#374151',
-                backgroundColor: viewMode === 'grid' ? '#2563eb' : 'white',
+                color: viewMode === 'grid' ? 'white' : 'var(--ks-text-secondary)',
+                backgroundColor: viewMode === 'grid' ? '#2563eb' : 'var(--ks-surface)',
                 border: `1px solid ${viewMode === 'grid' ? '#2563eb' : '#d1d5db'}`,
                 borderRadius: '0 6px 6px 0',
                 cursor: 'pointer',
@@ -280,12 +280,12 @@ export default function Matches() {
               }}
               onMouseEnter={(e) => {
                 if (viewMode !== 'grid') {
-                  e.currentTarget.style.backgroundColor = '#f9fafb'
+                  e.currentTarget.style.backgroundColor = 'var(--ks-surface-subtle)'
                 }
               }}
               onMouseLeave={(e) => {
                 if (viewMode !== 'grid') {
-                  e.currentTarget.style.backgroundColor = 'white'
+                  e.currentTarget.style.backgroundColor = 'var(--ks-surface)'
                 }
               }}
             >

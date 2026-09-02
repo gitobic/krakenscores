@@ -763,7 +763,7 @@ export default function MatchModal({
                     borderRadius: '6px'
                   }}
                 />
-                <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                <p style={{ fontSize: '12px', color: 'var(--ks-text-muted)', marginTop: '4px' }}>
                   Used to identify playoff matches (SF1, SF2, F, etc.)
                 </p>
               </div>

@@ -428,7 +428,7 @@ export default function BulkImportModal({
             </h2>
             <p style={{
               fontSize: '14px',
-              color: '#6b7280',
+              color: 'var(--ks-text-muted)',
               marginBottom: '24px'
             }}>
               Review the matched teams and confirm to import all matches.
@@ -621,7 +621,7 @@ export default function BulkImportModal({
           </h2>
           <p style={{
             fontSize: '14px',
-            color: '#6b7280',
+            color: 'var(--ks-text-muted)',
             marginBottom: '24px'
           }}>
             Paste schedule data from Excel/spreadsheet (tab or comma separated). Use the "Export Template" button to get a starter file with all available teams and pools.
