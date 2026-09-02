@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { ScheduleBreak } from '../types/index'
+import { sortBreaksChronologically } from '../utils/collectionOrdering'
 
 const COLLECTION = 'scheduleBreaks'
 
@@ -33,13 +34,9 @@ export async function getAllScheduleBreaks(): Promise<ScheduleBreak[]> {
 
 export async function getScheduleBreaksByTournament(tournamentId: string): Promise<ScheduleBreak[]> {
   const snapshot = await getDocs(
-    query(
-      collection(db, COLLECTION),
-      where('tournamentId', '==', tournamentId),
-      orderBy('startTime')
-    )
+    query(collection(db, COLLECTION), where('tournamentId', '==', tournamentId))
   )
-  return snapshot.docs.map(doc => {
+  return sortBreaksChronologically(snapshot.docs.map(doc => {
     const data = doc.data()
     return {
       id: doc.id,
@@ -47,18 +44,14 @@ export async function getScheduleBreaksByTournament(tournamentId: string): Promi
       createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
       updatedAt: (data.updatedAt as Timestamp)?.toDate() || new Date(),
     } as ScheduleBreak
-  })
+  }))
 }
 
 export async function getScheduleBreaksByPool(poolId: string): Promise<ScheduleBreak[]> {
   const snapshot = await getDocs(
-    query(
-      collection(db, COLLECTION),
-      where('poolId', '==', poolId),
-      orderBy('startTime')
-    )
+    query(collection(db, COLLECTION), where('poolId', '==', poolId))
   )
-  return snapshot.docs.map(doc => {
+  return sortBreaksChronologically(snapshot.docs.map(doc => {
     const data = doc.data()
     return {
       id: doc.id,
@@ -66,7 +59,7 @@ export async function getScheduleBreaksByPool(poolId: string): Promise<ScheduleB
       createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
       updatedAt: (data.updatedAt as Timestamp)?.toDate() || new Date(),
     } as ScheduleBreak
-  })
+  }))
 }
 
 export async function createScheduleBreak(

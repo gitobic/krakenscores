@@ -14,6 +14,7 @@ import {
 import type { DocumentData } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { Team } from '../types'
+import { sortTeamsByName } from '../utils/collectionOrdering'
 
 const COLLECTION_NAME = 'teams'
 
@@ -44,14 +45,13 @@ export async function getTeamsByTournament(tournamentId: string): Promise<Team[]
   try {
     const q = query(
       collection(db, COLLECTION_NAME),
-      where('tournamentId', '==', tournamentId),
-      orderBy('name', 'asc')
+      where('tournamentId', '==', tournamentId)
     )
     const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({
+    return sortTeamsByName(snapshot.docs.map(doc => ({
       ...convertTimestamps(doc.data()),
       id: doc.id
-    }))
+    })))
   } catch (error) {
     console.error('Error fetching teams for tournament:', error)
     throw error
@@ -62,14 +62,13 @@ export async function getTeamsByClub(clubId: string): Promise<Team[]> {
   try {
     const q = query(
       collection(db, COLLECTION_NAME),
-      where('clubId', '==', clubId),
-      orderBy('name', 'asc')
+      where('clubId', '==', clubId)
     )
     const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({
+    return sortTeamsByName(snapshot.docs.map(doc => ({
       ...convertTimestamps(doc.data()),
       id: doc.id
-    }))
+    })))
   } catch (error) {
     console.error('Error fetching teams for club:', error)
     throw error
@@ -80,14 +79,13 @@ export async function getTeamsByDivision(divisionId: string): Promise<Team[]> {
   try {
     const q = query(
       collection(db, COLLECTION_NAME),
-      where('divisionId', '==', divisionId),
-      orderBy('name', 'asc')
+      where('divisionId', '==', divisionId)
     )
     const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({
+    return sortTeamsByName(snapshot.docs.map(doc => ({
       ...convertTimestamps(doc.data()),
       id: doc.id
-    }))
+    })))
   } catch (error) {
     console.error('Error fetching teams for division:', error)
     throw error

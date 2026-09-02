@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import type { Pool } from '../types/index'
+import { sortPoolsByName } from '../utils/collectionOrdering'
 
 const COLLECTION = 'pools'
 
@@ -33,13 +34,9 @@ export async function getAllPools(): Promise<Pool[]> {
 
 export async function getPoolsByTournament(tournamentId: string): Promise<Pool[]> {
   const snapshot = await getDocs(
-    query(
-      collection(db, COLLECTION),
-      where('tournamentId', '==', tournamentId),
-      orderBy('name')
-    )
+    query(collection(db, COLLECTION), where('tournamentId', '==', tournamentId))
   )
-  return snapshot.docs.map(doc => {
+  return sortPoolsByName(snapshot.docs.map(doc => {
     const data = doc.data()
     return {
       id: doc.id,
@@ -47,7 +44,7 @@ export async function getPoolsByTournament(tournamentId: string): Promise<Pool[]
       createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
       updatedAt: (data.updatedAt as Timestamp)?.toDate() || new Date(),
     } as Pool
-  })
+  }))
 }
 
 export async function createPool(poolData: Omit<Pool, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {

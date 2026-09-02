@@ -13,14 +13,15 @@ import {
 import { db } from '../lib/firebase'
 import type { Standing, Match, Team } from '../types/index'
 import { calculateStandings as calculateStandingsPure } from '../utils/standingsCalculator'
+import { divisionIdFromStandingDocument, standingDocumentId } from '../utils/standingIdentity'
 
 const COLLECTION = 'standings'
 
 /**
  * Get standings for a specific division
  */
-export async function getStandingsByDivision(divisionId: string): Promise<Standing | null> {
-  const docRef = doc(db, COLLECTION, divisionId)
+export async function getStandingsByDivision(divisionId: string, tournamentId?: string): Promise<Standing | null> {
+  const docRef = doc(db, COLLECTION, tournamentId ? standingDocumentId(tournamentId, divisionId) : divisionId)
   const snapshot = await getDoc(docRef)
 
   if (!snapshot.exists()) {
@@ -29,7 +30,7 @@ export async function getStandingsByDivision(divisionId: string): Promise<Standi
 
   const data = snapshot.data()
   return {
-    divisionId: snapshot.id,
+    divisionId: divisionIdFromStandingDocument(snapshot.id),
     tournamentId: data.tournamentId,
     table: data.table || [],
     tiebreakerNotes: data.tiebreakerNotes,
@@ -47,7 +48,7 @@ export async function getStandingsByTournament(tournamentId: string): Promise<St
   return snapshot.docs.map(doc => {
     const data = doc.data()
     return {
-      divisionId: doc.id,
+      divisionId: divisionIdFromStandingDocument(doc.id),
       tournamentId: data.tournamentId,
       table: data.table || [],
       tiebreakerNotes: data.tiebreakerNotes,
@@ -65,7 +66,7 @@ export async function recalculateStandingsForDivision(divisionId: string, tourna
   // in this tournament rather than silently dropping them.
   const teamsQuery = query(collection(db, 'teams'), where('divisionId', '==', divisionId))
   const matchesQuery = tournamentId
-    ? query(collection(db, 'matches'), where('divisionId', '==', divisionId), where('tournamentId', '==', tournamentId))
+    ? query(collection(db, 'matches'), where('tournamentId', '==', tournamentId))
     : query(collection(db, 'matches'), where('divisionId', '==', divisionId))
   const [teamsSnapshot, matchesSnapshot] = await Promise.all([getDocs(teamsQuery), getDocs(matchesQuery)])
 
@@ -76,7 +77,7 @@ export async function recalculateStandingsForDivision(divisionId: string, tourna
     updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
   } as Team))
 
-  const matches: Match[] = matchesSnapshot.docs.map(doc => {
+  const queriedMatches: Match[] = matchesSnapshot.docs.map(doc => {
     const data = doc.data()
     return {
       id: doc.id,
@@ -85,6 +86,7 @@ export async function recalculateStandingsForDivision(divisionId: string, tourna
       updatedAt: (data.updatedAt as Timestamp)?.toDate() || new Date(),
     } as Match
   })
+  const matches = tournamentId ? queriedMatches.filter(match => match.divisionId === divisionId) : queriedMatches
   const participantTeamIds = new Set(matches.flatMap(match => [match.darkTeamId, match.lightTeamId]).filter(Boolean))
   const teams = tournamentId
     ? allTeams.filter(team => team.tournamentId === tournamentId || participantTeamIds.has(team.id))
@@ -108,7 +110,7 @@ export async function recalculateStandingsForDivision(divisionId: string, tourna
   const standing = calculateStandingsPure(teams, matches)
 
   // 5. Save to Firestore
-  const docRef = doc(db, COLLECTION, divisionId)
+  const docRef = doc(db, COLLECTION, standingDocumentId(resolvedTournamentId, divisionId))
   await setDoc(docRef, {
     tournamentId: resolvedTournamentId,
     table: standing.table,

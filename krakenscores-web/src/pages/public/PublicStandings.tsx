@@ -4,6 +4,7 @@ import { db } from '../../lib/firebase'
 import type { Match, Tournament, Division, Team, Club, Standing } from '../../types/index'
 import PublicNav from '../../components/layout/PublicNav'
 import PublicPageHero from '../../components/layout/PublicPageHero'
+import { divisionIdFromStandingDocument } from '../../utils/standingIdentity'
 import { teamCompactName } from '../../utils/teamIdentity'
 
 interface MatchWithDetails {
@@ -106,8 +107,7 @@ export default function PublicStandings() {
         )),
         getDocs(query(
           collection(db, 'matches'),
-          where('tournamentId', '==', selectedTournamentId),
-          where('status', '==', 'final')
+          where('tournamentId', '==', selectedTournamentId)
         )),
         getDocs(collection(db, 'divisions')),
         getDocs(collection(db, 'teams')),
@@ -116,8 +116,8 @@ export default function PublicStandings() {
 
       // Parse standings
       const standingsData = standingsSnap.docs.map(doc => ({
-        divisionId: doc.id,
         ...doc.data(),
+        divisionId: divisionIdFromStandingDocument(doc.id),
         updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
       } as Standing))
       setStandings(standingsData)
@@ -150,6 +150,7 @@ export default function PublicStandings() {
 
       // Parse matches with details
       const matchesWithDetails: MatchWithDetails[] = matchesSnap.docs
+        .filter(doc => doc.data().status === 'final')
         .map(doc => {
           const matchData = {
             id: doc.id,

@@ -8,7 +8,6 @@ import {
   getDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
   deleteField,
   writeBatch,
@@ -20,14 +19,13 @@ import { recalculateStandingsForDivision } from './standings'
 import { changedParticipantMatchIds, downstreamMatchIds, resolveParticipantAssignments } from '../utils/tournamentEngine'
 import { referencedMatchIds } from '../utils/participantSlots'
 import type { ScheduleChange } from '../utils/scheduleOperations'
+import { sortMatchesChronologically } from '../utils/collectionOrdering'
 
 const COLLECTION = 'matches'
 
 export async function getAllMatches(): Promise<Match[]> {
-  const snapshot = await getDocs(
-    query(collection(db, COLLECTION), orderBy('scheduledTime'))
-  )
-  return snapshot.docs.map(doc => {
+  const snapshot = await getDocs(collection(db, COLLECTION))
+  return sortMatchesChronologically(snapshot.docs.map(doc => {
     const data = doc.data()
     return {
       id: doc.id,
@@ -35,18 +33,14 @@ export async function getAllMatches(): Promise<Match[]> {
       createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
       updatedAt: (data.updatedAt as Timestamp)?.toDate() || new Date(),
     } as Match
-  })
+  }))
 }
 
 export async function getMatchesByTournament(tournamentId: string): Promise<Match[]> {
   const snapshot = await getDocs(
-    query(
-      collection(db, COLLECTION),
-      where('tournamentId', '==', tournamentId),
-      orderBy('scheduledTime')
-    )
+    query(collection(db, COLLECTION), where('tournamentId', '==', tournamentId))
   )
-  return snapshot.docs.map(doc => {
+  return sortMatchesChronologically(snapshot.docs.map(doc => {
     const data = doc.data()
     return {
       id: doc.id,
@@ -54,18 +48,14 @@ export async function getMatchesByTournament(tournamentId: string): Promise<Matc
       createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
       updatedAt: (data.updatedAt as Timestamp)?.toDate() || new Date(),
     } as Match
-  })
+  }))
 }
 
 export async function getMatchesByPool(poolId: string): Promise<Match[]> {
   const snapshot = await getDocs(
-    query(
-      collection(db, COLLECTION),
-      where('poolId', '==', poolId),
-      orderBy('scheduledTime')
-    )
+    query(collection(db, COLLECTION), where('poolId', '==', poolId))
   )
-  return snapshot.docs.map(doc => {
+  return sortMatchesChronologically(snapshot.docs.map(doc => {
     const data = doc.data()
     return {
       id: doc.id,
@@ -73,18 +63,14 @@ export async function getMatchesByPool(poolId: string): Promise<Match[]> {
       createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
       updatedAt: (data.updatedAt as Timestamp)?.toDate() || new Date(),
     } as Match
-  })
+  }))
 }
 
 export async function getMatchesByDivision(divisionId: string): Promise<Match[]> {
   const snapshot = await getDocs(
-    query(
-      collection(db, COLLECTION),
-      where('divisionId', '==', divisionId),
-      orderBy('scheduledTime')
-    )
+    query(collection(db, COLLECTION), where('divisionId', '==', divisionId))
   )
-  return snapshot.docs.map(doc => {
+  return sortMatchesChronologically(snapshot.docs.map(doc => {
     const data = doc.data()
     return {
       id: doc.id,
@@ -92,7 +78,7 @@ export async function getMatchesByDivision(divisionId: string): Promise<Match[]>
       createdAt: (data.createdAt as Timestamp)?.toDate() || new Date(),
       updatedAt: (data.updatedAt as Timestamp)?.toDate() || new Date(),
     } as Match
-  })
+  }))
 }
 
 export async function createMatch(matchData: Omit<Match, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
@@ -257,7 +243,9 @@ export async function saveMatchResult(
     batch.update(doc(db, COLLECTION, assignment.matchId), updates)
   })
   await batch.commit()
-  await recalculateStandingsForDivision(source.divisionId, source.tournamentId)
+  if (source.status === 'final' || status === 'final') {
+    await recalculateStandingsForDivision(source.divisionId, source.tournamentId)
+  }
   return {
     invalidatedMatchIds: invalidatedIds,
     advancedMatches: matches.filter(match => advancedIds.includes(match.id)).map(match => ({ id: match.id, matchNumber: match.matchNumber })),

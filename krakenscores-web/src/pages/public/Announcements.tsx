@@ -94,17 +94,18 @@ export default function Announcements() {
     try {
       const q = query(
         collection(db, 'announcements'),
-        where('tournamentId', '==', selectedTournamentId),
-        where('isActive', '==', true)
+        where('tournamentId', '==', selectedTournamentId)
       )
       const snapshot = await getDocs(q)
 
-      const announcementsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Announcement))
+      const announcementsData = snapshot.docs
+        .filter(doc => doc.data().isActive === true)
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
+          updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
+        } as Announcement))
 
       // Sort by priority (high -> normal -> low) then by creation date (newest first)
       const priorityOrder = { high: 0, normal: 1, low: 2 }
