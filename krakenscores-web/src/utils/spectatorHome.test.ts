@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Club, Division, Match, Team } from '../types'
-import { buildSpectatorQueue, matchIncludesTeams, searchTeams, teamFinderSpacing } from './spectatorHome'
+import { buildSpectatorQueue, matchIncludesTeams, searchTeams, teamFinderSpacing, teamsForTournament } from './spectatorHome'
 
 const match = (id: string, time: string, status: Match['status'], overrides: Partial<Match> = {}) => ({
   id, tournamentId: 't1', divisionId: 'd1', poolId: 'p1', matchNumber: Number(id), scheduledDate: '2026-10-10', scheduledTime: time,
@@ -38,5 +38,16 @@ describe('spectator home', () => {
     expect(searchTeams(teams, clubs, 'blue', divisions).map(team => team.id)).toEqual(['a'])
     expect(searchTeams(teams, clubs, 'towpc', divisions).map(team => team.id)).toEqual(['a'])
     expect(searchTeams(teams, clubs, '18u', divisions).map(team => team.id)).toEqual(['a'])
+  })
+
+  it('keeps scoped teams and only participating legacy teams for the selected tournament', () => {
+    const teams = [
+      { id: 'scoped', tournamentId: 't1', name: 'Scoped', clubId: 'c1', divisionId: 'd1' },
+      { id: 'other', tournamentId: 't2', name: 'Other', clubId: 'c2', divisionId: 'd1' },
+      { id: 'legacy-playing', name: 'Legacy playing', clubId: 'c3', divisionId: 'd1' },
+      { id: 'legacy-unrelated', name: 'Legacy unrelated', clubId: 'c4', divisionId: 'd1' },
+    ] as Team[]
+    const tournamentMatch = match('1', '08:00', 'scheduled', { darkTeamId: 'legacy-playing', lightTeamId: 'scoped' })
+    expect(teamsForTournament(teams, [tournamentMatch], 't1').map(team => team.id)).toEqual(['scoped', 'legacy-playing'])
   })
 })

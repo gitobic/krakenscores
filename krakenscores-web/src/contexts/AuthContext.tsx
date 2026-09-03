@@ -7,7 +7,8 @@ import {
   onAuthStateChanged
 } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
-import { auth, db } from '../lib/firebase'
+import { auth } from '../lib/auth'
+import { db } from '../lib/firebase'
 import type { Admin } from '../types'
 
 interface AuthContextType {
@@ -99,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   )
 }

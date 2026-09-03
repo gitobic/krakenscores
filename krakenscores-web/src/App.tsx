@@ -1,11 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
-import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
-import { isRehearsalEnvironment } from './lib/firebase'
-import ProtectedRoute from './components/ProtectedRoute'
-import AdminLayout from './components/layout/AdminLayout'
 
+const AuthRoute = lazy(() => import('./components/AuthRoute'))
+const isRehearsalEnvironment = import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true'
 const Login = lazy(() => import('./pages/admin/Login'))
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'))
 const Tournaments = lazy(() => import('./pages/admin/Tournaments'))
@@ -30,7 +28,6 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <AuthProvider>
           <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-100 font-bold text-slate-700 dark:bg-slate-950 dark:text-slate-200">Loading KrakenScores…</div>}>
             {isRehearsalEnvironment && <div className="fixed bottom-3 left-1/2 z-[20000] -translate-x-1/2 rounded-full border-2 border-amber-300 bg-amber-950 px-4 py-2 text-xs font-black uppercase tracking-wider text-amber-100 shadow-xl">Local rehearsal · production protected</div>}
             <Routes>
@@ -44,103 +41,103 @@ function App() {
           <Route path="/pocket" element={<TeamSchedule />} /> {/* Legacy route */}
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/brackets" element={<Brackets />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<AuthRoute protect={false}><Login /></AuthRoute>} />
 
           {/* Protected admin routes */}
           <Route
             path="/admin"
             element={
-              <ProtectedRoute requiredRole="admin">
+              <AuthRoute requiredRole="admin">
                 <Dashboard />
-              </ProtectedRoute>
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/setup"
             element={
-              <ProtectedRoute requiredRole="admin">
+              <AuthRoute requiredRole="admin">
                 <TournamentSetup />
-              </ProtectedRoute>
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/tournaments"
             element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout><Tournaments /></AdminLayout>
-              </ProtectedRoute>
+              <AuthRoute requiredRole="admin" layout>
+                <Tournaments />
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/clubs"
             element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout><Clubs /></AdminLayout>
-              </ProtectedRoute>
+              <AuthRoute requiredRole="admin" layout>
+                <Clubs />
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/divisions"
             element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout><Divisions /></AdminLayout>
-              </ProtectedRoute>
+              <AuthRoute requiredRole="admin" layout>
+                <Divisions />
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/teams"
             element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout><Teams /></AdminLayout>
-              </ProtectedRoute>
+              <AuthRoute requiredRole="admin" layout>
+                <Teams />
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/pools"
             element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout><Pools /></AdminLayout>
-              </ProtectedRoute>
+              <AuthRoute requiredRole="admin" layout>
+                <Pools />
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/matches"
             element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout><Matches /></AdminLayout>
-              </ProtectedRoute>
+              <AuthRoute requiredRole="admin" layout>
+                <Matches />
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/schedule-breaks"
             element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout><ScheduleBreaks /></AdminLayout>
-              </ProtectedRoute>
+              <AuthRoute requiredRole="admin" layout>
+                <ScheduleBreaks />
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/scorekeeper"
             element={
-              <ProtectedRoute requiredRole={['admin', 'scorekeeper']}>
-                <AdminLayout><Scorekeeper /></AdminLayout>
-              </ProtectedRoute>
+              <AuthRoute requiredRole={['admin', 'scorekeeper']} layout>
+                <Scorekeeper />
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/standings"
             element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout><Standings /></AdminLayout>
-              </ProtectedRoute>
+              <AuthRoute requiredRole="admin" layout>
+                <Standings />
+              </AuthRoute>
             }
           />
           <Route
             path="/admin/announcements"
             element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout><AdminAnnouncements /></AdminLayout>
-              </ProtectedRoute>
+              <AuthRoute requiredRole="admin" layout>
+                <AdminAnnouncements />
+              </AuthRoute>
             }
           />
 
@@ -148,7 +145,6 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
-        </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
   )

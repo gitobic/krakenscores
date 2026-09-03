@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PublicNav from '../../components/layout/PublicNav'
 import { getAllTournaments } from '../../services/tournaments'
-import { getAllMatches } from '../../services/matches'
+import { getMatchesByTournament } from '../../services/matches'
 import { getAllTeams } from '../../services/teams'
 import { getAllClubs } from '../../services/clubs'
 import { getAllDivisions } from '../../services/divisions'
-import { getAllPools } from '../../services/pools'
-import { getAllAnnouncements } from '../../services/announcements'
+import { getPoolsByTournament } from '../../services/pools'
+import { getAnnouncementsByTournament } from '../../services/announcements'
 import type { Announcement, Club, Division, Match, Pool, Team, Tournament } from '../../types'
-import { buildSpectatorQueue, matchIncludesTeams, searchTeams, teamFinderSpacing } from '../../utils/spectatorHome'
+import { buildSpectatorQueue, matchIncludesTeams, searchTeams, teamFinderSpacing, teamsForTournament } from '../../utils/spectatorHome'
 import { teamPublicName } from '../../utils/teamIdentity'
 
 const FAVORITES_KEY = 'krakenscores.favoriteTeamIds'
@@ -71,36 +71,70 @@ export default function TournamentHome() {
     try { return new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]') as string[]) } catch { return new Set() }
   })
   const [loading, setLoading] = useState(true)
+  const [loadingTournamentData, setLoadingTournamentData] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [allTournaments, allMatches, allTeams, allClubs, allDivisions, allPools, allAnnouncements] = await Promise.all([getAllTournaments(), getAllMatches(), getAllTeams(), getAllClubs(), getAllDivisions(), getAllPools(), getAllAnnouncements()])
+    let active = true
+    getAllTournaments()
+      .then(allTournaments => {
+        if (!active) return
         const published = allTournaments.filter(tournament => tournament.isPublished)
-        setTournaments(published); setMatches(allMatches); setTeams(allTeams); setClubs(allClubs); setDivisions(allDivisions); setPools(allPools); setAnnouncements(allAnnouncements)
-        const today = new Date(); const active = published.find(tournament => tournament.startDate <= today && tournament.endDate >= today) || published[0]
-        setSelectedTournamentId(active?.id || '')
-      } catch (loadError) {
+        setTournaments(published)
+        const today = new Date(); const selectedTournament = published.find(tournament => tournament.startDate <= today && tournament.endDate >= today) || published[0]
+        setSelectedTournamentId(selectedTournament?.id || '')
+      })
+      .catch(loadError => {
         console.error('Unable to load tournament home:', loadError)
         setError('Tournament information could not be loaded. Please try again shortly.')
-      } finally { setLoading(false) }
-    }
-    void load()
+      })
+      .finally(() => { if (active) setLoading(false) })
+
+    void Promise.all([getAllTeams(), getAllClubs(), getAllDivisions()])
+      .then(([allTeams, allClubs, allDivisions]) => {
+        if (!active) return
+        setTeams(allTeams); setClubs(allClubs); setDivisions(allDivisions)
+      })
+      .catch(referenceError => {
+        console.error('Unable to load tournament reference data:', referenceError)
+        if (active) setError('Some team information could not be loaded. Please try again shortly.')
+      })
+
+    return () => { active = false }
   }, [])
 
   useEffect(() => {
+    if (!selectedTournamentId) return
+    let active = true
+    setLoadingTournamentData(true)
+    setMatches([]); setPools([]); setAnnouncements([])
+    void Promise.all([
+      getMatchesByTournament(selectedTournamentId),
+      getPoolsByTournament(selectedTournamentId),
+      getAnnouncementsByTournament(selectedTournamentId),
+    ]).then(([tournamentMatches, tournamentPools, tournamentAnnouncements]) => {
+      if (!active) return
+      setMatches(tournamentMatches); setPools(tournamentPools); setAnnouncements(tournamentAnnouncements)
+    }).catch(loadError => {
+      console.error('Unable to load the selected tournament:', loadError)
+      if (active) setError('Tournament games could not be loaded. Please try again shortly.')
+    }).finally(() => { if (active) setLoadingTournamentData(false) })
+    return () => { active = false }
+  }, [selectedTournamentId])
+
+  useEffect(() => {
+    if (!selectedTournamentId) return
     const refresh = window.setInterval(() => {
-      void Promise.all([getAllMatches(), getAllAnnouncements()]).then(([freshMatches, freshAnnouncements]) => {
+      void Promise.all([getMatchesByTournament(selectedTournamentId), getAnnouncementsByTournament(selectedTournamentId)]).then(([freshMatches, freshAnnouncements]) => {
         setMatches(freshMatches)
         setAnnouncements(freshAnnouncements)
       }).catch(refreshError => console.error('Unable to refresh tournament home:', refreshError))
     }, 30_000)
     return () => window.clearInterval(refresh)
-  }, [])
+  }, [selectedTournamentId])
 
   const tournament = tournaments.find(item => item.id === selectedTournamentId)
-  const tournamentTeams = useMemo(() => teams.filter(team => !team.tournamentId || team.tournamentId === selectedTournamentId), [teams, selectedTournamentId])
+  const tournamentTeams = useMemo(() => teamsForTournament(teams, matches, selectedTournamentId), [teams, matches, selectedTournamentId])
   const clubById = useMemo(() => new Map(clubs.map(club => [club.id, club])), [clubs])
   const divisionById = useMemo(() => new Map(divisions.map(division => [division.id, division])), [divisions])
   const searchResults = useMemo(() => searchTeams(tournamentTeams, clubs, query, divisions).slice(0, 8), [tournamentTeams, clubs, divisions, query])
@@ -129,9 +163,13 @@ export default function TournamentHome() {
         </div>
         {(selectedTeamId || favoritesOnly) && <div className="mt-3 flex items-center justify-between rounded-lg bg-blue-50 px-3 py-2 text-sm font-bold text-blue-900"><span>Showing {selectedTeamId ? tournamentTeams.find(team => team.id === selectedTeamId)?.name : 'your favorite teams'}</span><button type="button" onClick={() => { setSelectedTeamId(''); setFavoritesOnly(false); setQuery('') }} className="underline">Show all games</button></div>}
       </section>
-      <MatchSection title="Live now" accent="bg-red-500 animate-pulse" empty="No games are currently marked in progress." items={queue.live} favoriteIds={favoriteIds} />
-      <MatchSection title="Up next" accent="bg-blue-600" empty={activeTeamIds.size ? 'No upcoming games found for this team yet.' : 'No upcoming games are scheduled.'} items={queue.next} favoriteIds={favoriteIds} />
-      <MatchSection title="Recent results" accent="bg-emerald-600" empty="No completed games are available yet." items={queue.recent} favoriteIds={favoriteIds} />
+      {loadingTournamentData
+        ? <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-5 font-bold text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">Loading games…</div>
+        : <>
+          <MatchSection title="Live now" accent="bg-red-500 animate-pulse" empty="No games are currently marked in progress." items={queue.live} favoriteIds={favoriteIds} />
+          <MatchSection title="Up next" accent="bg-blue-600" empty={activeTeamIds.size ? 'No upcoming games found for this team yet.' : 'No upcoming games are scheduled.'} items={queue.next} favoriteIds={favoriteIds} />
+          <MatchSection title="Recent results" accent="bg-emerald-600" empty="No completed games are available yet." items={queue.recent} favoriteIds={favoriteIds} />
+        </>}
       <div className="mt-10 grid gap-3 sm:grid-cols-3"><Link to="/schedule" className="rounded-xl bg-white p-4 text-center font-black text-blue-800 shadow-sm dark:bg-slate-900 dark:text-blue-300">Full schedule →</Link><Link to="/standings" className="rounded-xl bg-white p-4 text-center font-black text-blue-800 shadow-sm dark:bg-slate-900 dark:text-blue-300">Standings →</Link><Link to="/brackets" className="rounded-xl bg-white p-4 text-center font-black text-blue-800 shadow-sm dark:bg-slate-900 dark:text-blue-300">Brackets →</Link></div>
     </main>
   </div>

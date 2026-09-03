@@ -30,6 +30,11 @@ export function teamFinderSpacing(hasAnnouncements: boolean): string {
   return hasAnnouncements ? 'mt-6' : '-mt-4 sm:-mt-6'
 }
 
+export function teamsForTournament(teams: Team[], matches: Match[], tournamentId: string): Team[] {
+  const participatingTeamIds = new Set(matches.flatMap(match => [match.darkTeamId, match.lightTeamId]).filter(Boolean))
+  return teams.filter(team => team.tournamentId === tournamentId || (!team.tournamentId && participatingTeamIds.has(team.id)))
+}
+
 export function searchTeams(teams: Team[], clubs: Club[], query: string, divisions: Division[] = []): Team[] {
   const value = query.trim().toLocaleLowerCase()
   if (!value) return []
