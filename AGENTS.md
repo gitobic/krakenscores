@@ -1,5 +1,9 @@
 # KrakenScores Repository Guidance
 
+## Start each work session
+
+Read `docs/CURRENT_STATE.md` for the reconciled current iteration and `OCTOBER_2026_READINESS.md` for delivery status. Read specialist references only as needed; historical chats and notes do not override current code or explicit decisions.
+
 ## Product mission
 
 KrakenScores is a water polo tournament operations and spectator web app for Team Orlando Water Polo Club. It should let an administrator prepare a tournament, allow a minimally trained volunteer to enter scores, and let spectators follow schedules, scores, standings, and bracket advancement without creating an account.
@@ -125,17 +129,14 @@ Do not weaken lint, TypeScript, tests, or Firebase rules merely to make a check 
 - `TECHNICAL_SPEC_FIREBASE.md`: original architecture specification; verify details against the current code and dependencies.
 - `STYLE_GUIDE.md`: established interface and color guidance.
 - `memory/`: historical development notes and tournament feedback.
-- `/Users/tobic/Documents/krakenscores-referance`: historical source case, Coach workbook, published workbook export, and earlier project snapshot. Treat this folder as read-only unless the user explicitly requests changes there. Never expose its `.env.local` or `.firebaserc` values.
+- `/Users/tobic/Documents/krakenscores-ref`: historical source case, Coach workbook, published workbook export, and earlier project snapshot. Treat this folder as read-only unless the user explicitly requests changes there. Never expose its `.env.local` or `.firebaserc` values.
 
 ## Current known technical debt
 
-- ESLint passes with zero errors and zero warnings.
-- The production bundle is approximately 1.07 MB and needs measurement plus route-level splitting.
-- The lockfile, Node pin, initial Vitest suite, and CI workflow are now present; test coverage remains minimal.
-- Several page components remain large and combine data access, transformation, and rendering concerns.
-- Head-to-head standings tie-breaking is not integrated.
-- `feedsFrom` exists in the Match type and editor, but score finalization does not currently advance downstream teams.
-- The bracket page groups playoff matches but does not render a connected bracket.
-- `PRD.md` and `TECHNICAL_SPEC_FIREBASE.md` are historical design documents; current status is tracked in `OCTOBER_2026_READINESS.md` and `docs/DEVELOPMENT_BASELINE.md`.
+Reconciled 2026-09-28: automatic advancement, tied-team mini-table standings, connected brackets, route splitting, and theme support are implemented. Older statements that these are missing are obsolete.
 
-Reconfirm these items after the baseline is made reproducible; do not assume historical counts remain exact.
+- Full tournament rehearsal and a measured mobile-performance target remain open in OCTOBER_2026_READINESS.md.
+- Several large page components still combine data loading and rendering.
+- A failed staff-role lookup currently falls back to public access; investigate recovery behavior for reported login interruptions.
+- Local rules testing requires an available Java runtime; record actual check results in docs/DEVELOPMENT_BASELINE.md.
+- PRD.md and TECHNICAL_SPEC_FIREBASE.md remain historical design references.

@@ -80,9 +80,9 @@ export default function MasterSchedule() {
           where('tournamentId', '==', selectedTournamentId)
         )),
         getDocs(collection(db, 'divisions')),
-        getDocs(collection(db, 'teams')),
+        getDocs(query(collection(db, 'teams'), where('tournamentId', '==', selectedTournamentId))),
         getDocs(collection(db, 'clubs')),
-        getDocs(collection(db, 'pools'))
+        getDocs(query(collection(db, 'pools'), where('tournamentId', '==', selectedTournamentId)))
       ])
 
       console.log('Matches found (before filter):', matchesSnap.docs.length)

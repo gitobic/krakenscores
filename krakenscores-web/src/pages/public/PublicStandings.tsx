@@ -1,11 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
-import { db } from '../../lib/firebase'
-import type { Match, Tournament, Division, Team, Club, Standing } from '../../types/index'
+import { useState, useMemo } from 'react'
+import type { Match, Division, Team, Club, Standing } from '../../types/index'
 import PublicNav from '../../components/layout/PublicNav'
 import PublicPageHero from '../../components/layout/PublicPageHero'
-import { divisionIdFromStandingDocument } from '../../utils/standingIdentity'
 import { teamCompactName } from '../../utils/teamIdentity'
+import { usePublicStandings } from '../../hooks/usePublicStandings'
 
 interface MatchWithDetails {
   match: Match
@@ -22,52 +20,33 @@ interface StandingWithClub {
 }
 
 export default function PublicStandings() {
-  const [standings, setStandings] = useState<Standing[]>([])
-  const [matches, setMatches] = useState<MatchWithDetails[]>([])
-  const [tournaments, setTournaments] = useState<Tournament[]>([])
-  const [divisions, setDivisions] = useState<Division[]>([])
-  const [teams, setTeams] = useState<Team[]>([])
-  const [clubs, setClubs] = useState<Club[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedTournamentId, setSelectedTournamentId] = useState<string>('')
-  const [selectedDivisionId, setSelectedDivisionId] = useState<string>('all')
-  const [searchTerm, setSearchTerm] = useState<string>('')
+  const { tournaments, selectedTournamentId, setSelectedTournamentId, standings,
+    matches: finalMatches, divisions: allDivisions, teams, clubs, loading, error,
+    standingsLoading, resultsLoading, standingsError, resultsError } = usePublicStandings()
+  const [selectedDivisionId, setSelectedDivisionId] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  const divisions = useMemo(() => {
+    const ids = new Set([
+      ...(tournaments.find(t => t.id === selectedTournamentId)?.divisionIds || []),
+      ...standings.map(s => s.divisionId), ...finalMatches.map(m => m.divisionId),
+    ])
+    return allDivisions.filter(d => ids.has(d.id)).sort((a, b) => a.name.localeCompare(b.name))
+  }, [allDivisions, tournaments, selectedTournamentId, standings, finalMatches])
 
-  useEffect(() => {
-    // Auto-select first published tournament
-    if (tournaments.length > 0 && !selectedTournamentId) {
-      const firstPublished = tournaments.find(t => t.isPublished)
-      if (firstPublished) {
-        setSelectedTournamentId(firstPublished.id)
-      }
-    }
-  }, [tournaments, selectedTournamentId])
-
-  const loadData = async () => {
-    try {
-      // Only load published tournaments for public view
-      const tournamentsSnapshot = await getDocs(
-        query(collection(db, 'tournaments'), where('isPublished', '==', true))
-      )
-      const tournamentsData = tournamentsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        startDate: (doc.data().startDate as Timestamp)?.toDate() || new Date(),
-        endDate: (doc.data().endDate as Timestamp)?.toDate() || new Date(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Tournament))
-      setTournaments(tournamentsData)
-    } catch (error) {
-      console.error('Error loading tournaments:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const matches = useMemo<MatchWithDetails[]>(() => {
+    const divisionMap = new Map(allDivisions.map(d => [d.id, d]))
+    const teamMap = new Map(teams.map(t => [t.id, t]))
+    const clubMap = new Map(clubs.map(c => [c.id, c]))
+    return finalMatches.flatMap(match => {
+      const division = divisionMap.get(match.divisionId)
+      const darkTeam = teamMap.get(match.darkTeamId), lightTeam = teamMap.get(match.lightTeamId)
+      const darkTeamClub = darkTeam && clubMap.get(darkTeam.clubId)
+      const lightTeamClub = lightTeam && clubMap.get(lightTeam.clubId)
+      return division && darkTeam && lightTeam && darkTeamClub && lightTeamClub
+        ? [{ match, division, darkTeam, lightTeam, darkTeamClub, lightTeamClub }] : []
+    }).sort((a, b) => b.match.matchNumber - a.match.matchNumber)
+  }, [finalMatches, allDivisions, teams, clubs])
 
   // Group team standings by bracket
   const groupByBracket = (teamStandings: StandingWithClub[], teamsMap: Map<string, Team>): Map<string, StandingWithClub[]> => {
@@ -94,115 +73,6 @@ export default function PublicStandings() {
 
     return sorted
   }
-
-  const loadTournamentData = useCallback(async () => {
-    if (!selectedTournamentId) return
-
-    try {
-      // Load standings, matches, divisions, teams, clubs
-      const [standingsSnap, matchesSnap, divisionsSnap, teamsSnap, clubsSnap] = await Promise.all([
-        getDocs(query(
-          collection(db, 'standings'),
-          where('tournamentId', '==', selectedTournamentId)
-        )),
-        getDocs(query(
-          collection(db, 'matches'),
-          where('tournamentId', '==', selectedTournamentId)
-        )),
-        getDocs(collection(db, 'divisions')),
-        getDocs(collection(db, 'teams')),
-        getDocs(collection(db, 'clubs'))
-      ])
-
-      // Parse standings
-      const standingsData = standingsSnap.docs.map(doc => ({
-        ...doc.data(),
-        divisionId: divisionIdFromStandingDocument(doc.id),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Standing))
-      setStandings(standingsData)
-
-      // Create lookup maps
-      const divisionsMap = new Map(divisionsSnap.docs.map(doc => [doc.id, {
-        id: doc.id,
-        ...doc.data(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Division]))
-
-      const teamsData = teamsSnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Team))
-      setTeams(teamsData)
-      const teamsMap = new Map(teamsData.map(t => [t.id, t]))
-
-      const clubsData = clubsSnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-        updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-      } as Club))
-      setClubs(clubsData)
-      const clubsMap = new Map(clubsData.map(c => [c.id, c]))
-
-      // Parse matches with details
-      const matchesWithDetails: MatchWithDetails[] = matchesSnap.docs
-        .filter(doc => doc.data().status === 'final')
-        .map(doc => {
-          const matchData = {
-            id: doc.id,
-            ...doc.data(),
-            createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-            updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
-          } as Match
-
-          const division = divisionsMap.get(matchData.divisionId)
-          const darkTeam = teamsMap.get(matchData.darkTeamId)
-          const lightTeam = teamsMap.get(matchData.lightTeamId)
-          const darkTeamClub = darkTeam ? clubsMap.get(darkTeam.clubId) : undefined
-          const lightTeamClub = lightTeam ? clubsMap.get(lightTeam.clubId) : undefined
-
-          if (!division || !darkTeam || !lightTeam || !darkTeamClub || !lightTeamClub) {
-            return null
-          }
-
-          return {
-            match: matchData,
-            division,
-            darkTeam,
-            lightTeam,
-            darkTeamClub,
-            lightTeamClub,
-          }
-        })
-        .filter((m): m is MatchWithDetails => m !== null)
-        // Sort by match number descending (most recent first)
-        .sort((a, b) => b.match.matchNumber - a.match.matchNumber)
-
-      setMatches(matchesWithDetails)
-
-      // Extract unique divisions from standings
-      const uniqueDivisions = Array.from(
-        new Map(standingsData.map(s => {
-          const div = divisionsMap.get(s.divisionId)
-          return div ? [s.divisionId, div] : null
-        }).filter((pair): pair is [string, Division] => pair !== null))
-        .values()
-      ).sort((a, b) => a.name.localeCompare(b.name))
-      setDivisions(uniqueDivisions)
-    } catch (error) {
-      console.error('Error loading tournament data:', error)
-    }
-  }, [selectedTournamentId])
-
-  useEffect(() => {
-    if (selectedTournamentId) {
-      void loadTournamentData()
-    }
-  }, [selectedTournamentId, loadTournamentData])
 
   // Enrich standings with club names and filter
   const filteredStandings = useMemo(() => {
@@ -277,23 +147,6 @@ export default function PublicStandings() {
     return division?.colorHex || '#9ca3af'
   }
 
-  if (loading) {
-    return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <p>Loading standings...</p>
-      </div>
-    )
-  }
-
-  if (tournaments.length === 0) {
-    return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>No Tournaments Available</h2>
-        <p style={{ color: 'var(--ks-text-muted)' }}>There are no published tournaments at this time.</p>
-      </div>
-    )
-  }
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -311,6 +164,9 @@ export default function PublicStandings() {
         tournamentName={selectedTournament?.name}
         logoUrl={selectedTournament?.logoUrl}
       />
+
+      {error && <p role="alert" className="mx-auto max-w-7xl p-4 text-red-700">{error}</p>}
+      {!loading && !error && tournaments.length === 0 && <p className="mx-auto max-w-7xl p-4">There are no published tournaments at this time.</p>}
 
       {/* Filters */}
       <div className="relative z-10 mx-auto -mt-4 max-w-7xl rounded-2xl shadow-xl sm:-mt-6" style={{
@@ -332,7 +188,7 @@ export default function PublicStandings() {
             </label>
             <select
               value={selectedTournamentId}
-              onChange={(e) => setSelectedTournamentId(e.target.value)}
+              onChange={(e) => { setSelectedTournamentId(e.target.value); setSelectedDivisionId('all') }}
               style={{
                 width: '100%',
                 padding: '12px',
@@ -426,7 +282,7 @@ export default function PublicStandings() {
             Standings
           </h2>
 
-          {filteredStandings.length === 0 ? (
+          {standingsError ? <p role="alert">{standingsError}</p> : standingsLoading && (loading || tournaments.length > 0) ? <p role="status">Loading standings…</p> : filteredStandings.length === 0 ? (
             <div style={{
               backgroundColor: 'var(--ks-surface)',
               padding: '40px 20px',
@@ -592,7 +448,7 @@ export default function PublicStandings() {
             Recent Results
           </h2>
 
-          {filteredMatches.length === 0 ? (
+          {resultsError ? <p role="alert">{resultsError}</p> : resultsLoading && (loading || tournaments.length > 0) ? <p role="status">Loading recent results…</p> : filteredMatches.length === 0 ? (
             <div style={{
               backgroundColor: 'var(--ks-surface)',
               padding: '40px 20px',

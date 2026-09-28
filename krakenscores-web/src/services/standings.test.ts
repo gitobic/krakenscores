@@ -31,6 +31,12 @@ describe('standings tie-break rules', () => {
     expect(result.table.find(row => row.teamId === 'B')).toMatchObject({ draws: 1, points: 1 })
   })
 
+  it('returns a Firestore-safe empty tiebreaker note list when no tie is broken', () => {
+    const result = calculateStandings(teams.slice(0, 2), [match('1', 'A', 'B', 6, 4)])
+
+    expect(result.tiebreakerNotes).toEqual([])
+  })
+
   it('uses head-to-head before overall goal differential for teams tied on points', () => {
     const result = calculateStandings(teams, [
       match('1', 'A', 'B', 5, 4),

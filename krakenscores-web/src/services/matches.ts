@@ -182,7 +182,7 @@ export async function saveMatchResult(
   const source = { id: matchSnapshot.id, ...matchSnapshot.data() } as Match
   const [matches, teamsSnapshot] = await Promise.all([
     getMatchesByTournament(source.tournamentId),
-    getDocs(collection(db, 'teams')),
+    getDocs(query(collection(db, 'teams'), where('tournamentId', '==', source.tournamentId))),
   ])
   const allTeams = teamsSnapshot.docs.map(teamDoc => ({ id: teamDoc.id, ...teamDoc.data() })) as Team[]
   const participatingTeamIds = new Set(matches.flatMap(match => [match.darkTeamId, match.lightTeamId]).filter(Boolean))

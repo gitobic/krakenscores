@@ -1,5 +1,7 @@
 # KrakenScores Style Guide
 
+> Current implementation note (2026-09-28): theme CSS variables and ThemeContext support system/light/dark modes. See docs/CURRENT_STATE.md. Hard-coded light colors below are historical examples; use theme-aware equivalents. Division foreground text must use accessibleTextColor rather than always black.
+
 **Version**: 1.0
 **Last Updated**: 2025-01-20
 
@@ -593,7 +595,7 @@ These colors are assigned to divisions at tournament setup and used consistently
 **Additional Colors Available**: See AGENTS.md for the maintained division color palette
 
 **Usage Guidelines**:
-- Always use black text (#000000) on division color backgrounds
+- Use accessibleTextColor for black or white text on division backgrounds
 - Division badges should use 10-11px font size
 - Division headers should be 18-20px font size
 - Colors should remain consistent across admin and public pages

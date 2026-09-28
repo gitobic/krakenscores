@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Match } from '../types'
-import { bracketColumns, bracketEdges, provisionalParticipantLabel } from './bracketGraph'
+import type { Match, Team } from '../types'
+import { bracketColumns, bracketEdges, isProgressionMatch, matchBracketGroup, provisionalParticipantLabel } from './bracketGraph'
 
 const makeMatch = (id: string, matchNumber: number, overrides: Partial<Match> = {}) => ({
   id, matchNumber, tournamentId: 't1', divisionId: 'd1', poolId: 'p1', scheduledDate: '2026-10-10', scheduledTime: '10:00', duration: 55,
@@ -8,6 +8,23 @@ const makeMatch = (id: string, matchNumber: number, overrides: Partial<Match> = 
 } as Match)
 
 describe('bracket graph', () => {
+  it('keeps scheduled pool pairings visible before progression games begin', () => {
+    const poolMatch = makeMatch('pool', 1, { roundType: 'pool', darkTeamId: 'a', lightTeamId: 'b' })
+    const teams = [
+      { id: 'a', bracket: 'A' },
+      { id: 'b', bracket: 'A' },
+    ] as Team[]
+
+    expect(isProgressionMatch(poolMatch)).toBe(false)
+    expect(matchBracketGroup(poolMatch, teams)).toBe('A')
+  })
+
+  it('recognizes configured playoff and placement progression', () => {
+    expect(isProgressionMatch(makeMatch('semi', 2, { roundType: 'semi' }))).toBe(true)
+    expect(isProgressionMatch(makeMatch('final', 3, { roundType: 'final' }))).toBe(true)
+    expect(isProgressionMatch(makeMatch('placement', 4, { roundType: 'placement' }))).toBe(true)
+  })
+
   it('places dependent games in later columns and exposes winner/loser edges', () => {
     const semi = makeMatch('semi', 69)
     const final = makeMatch('final', 84, { darkParticipant: { source: 'matchOutcome', matchId: 'semi', outcome: 'winner' } })

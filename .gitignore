@@ -65,3 +65,7 @@ coverage/
 
 # Mac specific
 **/.DS_Store
+
+# Local tournament work products, snapshots, and source PDF duplicate
+/outputs/
+/2026 Nightmare on I-Drive Schedule.pdf

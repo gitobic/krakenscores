@@ -9,6 +9,7 @@ import {
   deleteField,
   query,
   orderBy,
+  where,
   writeBatch,
   Timestamp
 } from 'firebase/firestore'
@@ -74,6 +75,13 @@ function convertTimestamps(data: DocumentData): Tournament {
     createdAt: data.createdAt?.toDate() || new Date(),
     updatedAt: data.updatedAt?.toDate() || new Date()
   } as Tournament
+}
+
+/** Public callers must constrain the query: security rules do not filter drafts. */
+export async function getPublishedTournaments(): Promise<Tournament[]> {
+  const snapshot = await getDocs(query(collection(db, COLLECTION_NAME), where('isPublished', '==', true)))
+  return snapshot.docs.map(doc => ({ ...convertTimestamps(doc.data()), id: doc.id }))
+    .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())
 }
 
 export async function getAllTournaments(): Promise<Tournament[]> {

@@ -83,9 +83,9 @@ export default function TeamSchedule() {
           where('tournamentId', '==', selectedTournamentId)
         )),
         getDocs(collection(db, 'divisions')),
-        getDocs(collection(db, 'teams')),
+        getDocs(query(collection(db, 'teams'), where('tournamentId', '==', selectedTournamentId))),
         getDocs(collection(db, 'clubs')),
-        getDocs(collection(db, 'pools'))
+        getDocs(query(collection(db, 'pools'), where('tournamentId', '==', selectedTournamentId)))
       ])
 
       // Create lookup maps

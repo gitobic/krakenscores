@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
+import { useAuth } from '../../contexts/AuthContext'
 import type { Match, Tournament, Division, Team, Club, Pool } from '../../types/index'
 import { ResultImpactError, saveMatchResult } from '../../services/matches'
 import { teamCompactName, teamPublicName } from '../../utils/teamIdentity'
@@ -21,6 +22,7 @@ type SortField = 'matchNumber' | 'day' | 'time' | 'division' | 'pool' | 'status'
 type SortDirection = 'asc' | 'desc'
 
 export default function Scorekeeper() {
+  const { isAdmin } = useAuth()
   const [matches, setMatches] = useState<MatchWithDetails[]>([])
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,9 +41,6 @@ export default function Scorekeeper() {
   // Track edited scores for each match
   const [editedScores, setEditedScores] = useState<Record<string, { darkScore: number; lightScore: number }>>({})
 
-  useEffect(() => {
-    loadData()
-  }, [])
 
   useEffect(() => {
     const online = () => setIsOnline(true)
@@ -57,9 +56,11 @@ export default function Scorekeeper() {
     }
   }, [tournaments, selectedTournamentId])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
-      const tournamentsSnapshot = await getDocs(collection(db, 'tournaments'))
+      const tournamentsSnapshot = await getDocs(isAdmin
+        ? collection(db, 'tournaments')
+        : query(collection(db, 'tournaments'), where('isPublished', '==', true)))
       const tournamentsData = tournamentsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -74,7 +75,9 @@ export default function Scorekeeper() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isAdmin])
+
+  useEffect(() => { void loadData() }, [loadData])
 
   const loadMatches = useCallback(async () => {
     if (!selectedTournamentId) return
@@ -89,9 +92,9 @@ export default function Scorekeeper() {
           where('tournamentId', '==', selectedTournamentId)
         )),
         getDocs(collection(db, 'divisions')),
-        getDocs(collection(db, 'teams')),
+        getDocs(query(collection(db, 'teams'), where('tournamentId', '==', selectedTournamentId))),
         getDocs(collection(db, 'clubs')),
-        getDocs(collection(db, 'pools'))
+        getDocs(query(collection(db, 'pools'), where('tournamentId', '==', selectedTournamentId)))
       ])
 
       const divisionsMap = new Map(divisionsSnap.docs.map(doc => [doc.id, {
