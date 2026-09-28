@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PublicNav from '../../components/layout/PublicNav'
-import { getAllTournaments } from '../../services/tournaments'
+import { getPublishedTournaments } from '../../services/tournaments'
 import { getMatchesByTournament } from '../../services/matches'
-import { getAllTeams } from '../../services/teams'
+import { getTeamsByTournament } from '../../services/teams'
 import { getAllClubs } from '../../services/clubs'
 import { getAllDivisions } from '../../services/divisions'
 import { getPoolsByTournament } from '../../services/pools'
@@ -76,7 +76,7 @@ export default function TournamentHome() {
 
   useEffect(() => {
     let active = true
-    getAllTournaments()
+    getPublishedTournaments()
       .then(allTournaments => {
         if (!active) return
         const published = allTournaments.filter(tournament => tournament.isPublished)
@@ -90,10 +90,10 @@ export default function TournamentHome() {
       })
       .finally(() => { if (active) setLoading(false) })
 
-    void Promise.all([getAllTeams(), getAllClubs(), getAllDivisions()])
-      .then(([allTeams, allClubs, allDivisions]) => {
+    void Promise.all([getAllClubs(), getAllDivisions()])
+      .then(([allClubs, allDivisions]) => {
         if (!active) return
-        setTeams(allTeams); setClubs(allClubs); setDivisions(allDivisions)
+        setClubs(allClubs); setDivisions(allDivisions)
       })
       .catch(referenceError => {
         console.error('Unable to load tournament reference data:', referenceError)
@@ -107,14 +107,15 @@ export default function TournamentHome() {
     if (!selectedTournamentId) return
     let active = true
     setLoadingTournamentData(true)
-    setMatches([]); setPools([]); setAnnouncements([])
+    setMatches([]); setPools([]); setAnnouncements([]); setTeams([])
     void Promise.all([
+      getTeamsByTournament(selectedTournamentId),
       getMatchesByTournament(selectedTournamentId),
       getPoolsByTournament(selectedTournamentId),
       getAnnouncementsByTournament(selectedTournamentId),
-    ]).then(([tournamentMatches, tournamentPools, tournamentAnnouncements]) => {
+    ]).then(([tournamentTeams, tournamentMatches, tournamentPools, tournamentAnnouncements]) => {
       if (!active) return
-      setMatches(tournamentMatches); setPools(tournamentPools); setAnnouncements(tournamentAnnouncements)
+      setTeams(tournamentTeams); setMatches(tournamentMatches); setPools(tournamentPools); setAnnouncements(tournamentAnnouncements)
     }).catch(loadError => {
       console.error('Unable to load the selected tournament:', loadError)
       if (active) setError('Tournament games could not be loaded. Please try again shortly.')

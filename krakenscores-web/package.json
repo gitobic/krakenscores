@@ -22,6 +22,7 @@
   "dependencies": {
     "date-fns": "^4.1.0",
     "firebase": "^12.4.0",
+    "gracket": "^2.1.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-firebase-hooks": "^5.1.1",

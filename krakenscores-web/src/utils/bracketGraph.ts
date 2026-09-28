@@ -1,4 +1,4 @@
-import type { Match, MatchParticipantSlot } from '../types'
+import type { Match, MatchParticipantSlot, Team } from '../types'
 import { participantLabel } from './participantSlots'
 
 export interface BracketEdge {
@@ -6,6 +6,24 @@ export interface BracketEdge {
   targetMatchId: string
   targetSide: 'dark' | 'light'
   outcome: 'winner' | 'loser'
+}
+
+export function isProgressionMatch(match: Match): boolean {
+  return match.roundType === 'semi' || match.roundType === 'final' || match.roundType === 'placement'
+}
+
+export function matchBracketGroup(match: Match, teams: Team[]): string {
+  const teamById = new Map(teams.map(team => [team.id, team]))
+  const labels = [match.darkTeamId, match.lightTeamId]
+    .map(teamId => teamById.get(teamId)?.bracket)
+    .filter((value): value is string => Boolean(value))
+
+  for (const participant of [match.darkParticipant, match.lightParticipant]) {
+    if (participant?.source === 'groupSeed') labels.push(participant.groupId)
+  }
+
+  const unique = [...new Set(labels)]
+  return unique.length === 1 ? unique[0] : 'Tournament'
 }
 
 function legacySlot(match: Match, side: 'dark' | 'light', matches: Match[]): MatchParticipantSlot | null {

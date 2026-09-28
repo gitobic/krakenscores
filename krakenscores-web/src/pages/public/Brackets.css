@@ -1,0 +1,80 @@
+.krakenscores-gracket {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+
+.krakenscores-gracket .g_gracket {
+  min-height: 0;
+  min-width: max-content;
+  padding: 64px 20px 20px;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.krakenscores-gracket .g_team,
+.krakenscores-gracket .g_game .g_team:nth-child(1),
+.krakenscores-gracket .g_game .g_team:nth-child(2) {
+  min-width: 250px;
+  border-right: 1px solid #cbd5e1;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+}
+
+.krakenscores-gracket .g_team h3 {
+  color: #0f172a;
+  text-shadow: none;
+  text-transform: none;
+}
+
+.krakenscores-gracket .g_seed {
+  color: #fff;
+  background: #1d4ed8;
+  text-shadow: none;
+}
+
+.krakenscores-gracket .g_score {
+  color: #1e3a8a;
+  background: #dbeafe;
+  border-color: #93c5fd;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.krakenscores-gracket .g_score-empty {
+  color: #64748b;
+}
+
+.krakenscores-gracket .g_round_label {
+  color: #fff;
+  background: #1d4ed8;
+  border-bottom-color: #1e3a8a;
+  text-shadow: none;
+}
+
+.krakenscores-gracket .g_canvas {
+  opacity: 0.75;
+  filter: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .krakenscores-gracket,
+  .krakenscores-gracket .g_gracket {
+    border-color: #334155;
+    background: #0f172a;
+  }
+
+  .krakenscores-gracket .g_team,
+  .krakenscores-gracket .g_game .g_team:nth-child(1),
+  .krakenscores-gracket .g_game .g_team:nth-child(2) {
+    border-right-color: #475569;
+    background: #1e293b;
+  }
+
+  .krakenscores-gracket .g_team h3 {
+    color: #f8fafc;
+  }
+
+  .krakenscores-gracket .g_score-empty {
+    color: #cbd5e1;
+  }
+}

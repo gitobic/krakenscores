@@ -62,9 +62,11 @@ export async function getStandingsByTournament(tournamentId: string): Promise<St
  * Pass tournamentId explicitly to avoid cross-tournament team pollution.
  */
 export async function recalculateStandingsForDivision(divisionId: string, tournamentId?: string): Promise<void> {
-  // Legacy team records may not have tournamentId, so scope them by participation
-  // in this tournament rather than silently dropping them.
-  const teamsQuery = query(collection(db, 'teams'), where('divisionId', '==', divisionId))
+  // Tournament-scoped queries are required for non-admin scorekeepers.
+  // Unassigned legacy teams must be assigned before a tournament is published.
+  const teamsQuery = tournamentId
+    ? query(collection(db, 'teams'), where('tournamentId', '==', tournamentId))
+    : query(collection(db, 'teams'), where('divisionId', '==', divisionId))
   const matchesQuery = tournamentId
     ? query(collection(db, 'matches'), where('tournamentId', '==', tournamentId))
     : query(collection(db, 'matches'), where('divisionId', '==', divisionId))
@@ -89,7 +91,7 @@ export async function recalculateStandingsForDivision(divisionId: string, tourna
   const matches = tournamentId ? queriedMatches.filter(match => match.divisionId === divisionId) : queriedMatches
   const participantTeamIds = new Set(matches.flatMap(match => [match.darkTeamId, match.lightTeamId]).filter(Boolean))
   const teams = tournamentId
-    ? allTeams.filter(team => team.tournamentId === tournamentId || participantTeamIds.has(team.id))
+    ? allTeams.filter(team => team.divisionId === divisionId && (team.tournamentId === tournamentId || participantTeamIds.has(team.id)))
     : allTeams
 
   if (teams.length === 0) {
@@ -114,7 +116,7 @@ export async function recalculateStandingsForDivision(divisionId: string, tourna
   await setDoc(docRef, {
     tournamentId: resolvedTournamentId,
     table: standing.table,
-    tiebreakerNotes: standing.tiebreakerNotes,
+    ...(standing.tiebreakerNotes !== undefined && { tiebreakerNotes: standing.tiebreakerNotes }),
     updatedAt: serverTimestamp(),
   })
 }

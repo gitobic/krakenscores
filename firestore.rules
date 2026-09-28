@@ -17,10 +17,19 @@
                exists(/databases/$(database)/documents/staff/$(request.auth.uid));
       }
 
-      // Public read for all tournament data (anyone can view scores)
+      function isPublished(tournamentId) {
+        return tournamentId is string &&
+               get(/databases/$(database)/documents/tournaments/$(tournamentId)).data.isPublished == true;
+      }
+
+      function canReadTournamentData() {
+        return isAdmin() || isPublished(resource.data.tournamentId);
+      }
+
+      // Only published tournament data is public; drafts are admin-only.
       // Only admins can write
       match /tournaments/{tournamentId} {
-        allow read: if true;
+        allow read: if isAdmin() || resource.data.isPublished == true;
         allow write: if isAdmin();
       }
 
@@ -35,20 +44,20 @@
       }
 
       match /teams/{teamId} {
-        allow read: if true;
+        allow read: if canReadTournamentData();
         allow write: if isAdmin();
       }
 
       match /pools/{poolId} {
-        allow read: if true;
+        allow read: if canReadTournamentData();
         allow write: if isAdmin();
       }
 
       match /matches/{matchId} {
-        allow read: if true;
+        allow read: if canReadTournamentData();
         // Staff can update scores plus app-derived participant resolution only.
         // Participant source definitions, scheduling, and match metadata remain admin-only.
-        allow update: if isStaff() &&
+        allow update: if isStaff() && isPublished(resource.data.tournamentId) &&
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['darkTeamScore', 'lightTeamScore', 'darkTeamId', 'lightTeamId',
                       'darkTeamLabel', 'lightTeamLabel', 'status', 'period', 'updatedAt']);
@@ -58,18 +67,20 @@
       }
 
       match /scheduleBreaks/{breakId} {
-        allow read: if true;
+        allow read: if canReadTournamentData();
         allow write: if isAdmin();
       }
 
       match /announcements/{announcementId} {
-        allow read: if true;
+        allow read: if canReadTournamentData();
         allow write: if isAdmin();
       }
 
       match /standings/{standingId} {
-        allow read: if true;
-        allow create, update: if isStaff() &&
+        allow read: if canReadTournamentData();
+        allow create, update: if isStaff() && isPublished(request.resource.data.tournamentId) &&
+          (!exists(/databases/$(database)/documents/standings/$(standingId)) ||
+            resource.data.tournamentId == request.resource.data.tournamentId) &&
           request.resource.data.keys().hasOnly(['tournamentId', 'table', 'tiebreakerNotes', 'updatedAt']);
         allow write: if isAdmin();
       }

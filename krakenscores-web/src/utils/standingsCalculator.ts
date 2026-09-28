@@ -121,5 +121,5 @@ export function calculateStandings(teams: Team[], matches: Match[]): Omit<Standi
     tiebreakerNotes.push(`${previous.teamName} ranked above ${row.teamName} on ${reason}.`)
   })
 
-  return { table, tiebreakerNotes: tiebreakerNotes.length ? tiebreakerNotes : undefined }
+  return { table, tiebreakerNotes }
 }
