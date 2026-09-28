@@ -14,7 +14,7 @@ Add export to every admin list page (Clubs, Teams, Matches). Format should match
 **Bulk import should use club abbreviations, not full team names**
 Matches bulk import was updated to accept club abbreviations (same as Teams page) with full team name as fallback.
 **Why:** Full team names are auto-generated and hard to know/type; club abbreviations are short and already used in the Teams import format.
-**How to apply:** Any import that references teams should use club abbreviation as the primary lookup key.
+**How to apply:** Use explicit team abbreviations as the primary lookup key; club abbreviations are only safe when unambiguous within the division/tournament. Never collapse same-club team variants. See docs/TEAM_IDENTITY.md.
 
 ---
 
@@ -28,7 +28,7 @@ Use `firebase deploy --only hosting:krakenscores` — not `--only hosting`.
 **Division colors: Okabe-Ito colorblind-safe palette**
 Colors were updated from the original set to the Okabe-Ito palette after user flagged that 13u/14u and 18u Boys/Masters were too similar under colorblindness.
 **Why:** Tournament has colorblind participants/spectators.
-**How to apply:** New divisions should use colors from the CLAUDE.md color table. "Sync Standard Colors" button in admin/divisions updates existing Firestore records.
+**How to apply:** New divisions should use colors from the AGENTS.md color table. "Sync Standard Colors" button in admin/divisions updates existing Firestore records.
 
 ---
 

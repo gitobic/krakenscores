@@ -34,7 +34,9 @@ KrakenScores replaces a manual Google Sheets-based system with a dedicated web a
 - ✅ Match conflict validation
 - ✅ Deployed to Firebase Hosting
 
-**Up next:** automatic bracket advancement, easier tournament setup, volunteer-ready score entry, and connected public brackets
+**Implemented:** automatic advancement, guided setup, volunteer score entry, connected brackets, and light/dark themes.
+
+**Up next:** complete tournament rehearsal and release checks. Start with [Current context](docs/CURRENT_STATE.md) for the reconciled September 28 state.
 
 ## Local Development
 
@@ -84,6 +86,10 @@ cd .. && firebase deploy --only hosting:krakenscores
 ```
 
 ## Documentation
+
+- **[Current context](docs/CURRENT_STATE.md)** — Start here: current event, design, architecture, deployment, and remaining work
+- **[Tournament operations](docs/TOURNAMENT_OPERATIONS.md)** — Login renewal, preflight checks, and recovery
+- **[Cleanup inventory](docs/CLEANUP_INVENTORY.md)** — Removable files and references to preserve
 
 - **[October 2026 Readiness](OCTOBER_2026_READINESS.md)** — Canonical phased checklist and decision log
 - **[AGENTS.md](AGENTS.md)** — Repository guidance, product priorities, domain model, and safety rules
